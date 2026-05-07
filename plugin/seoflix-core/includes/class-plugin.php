@@ -29,6 +29,7 @@ final class Plugin {
 		Security::init();
 		Frontend::init();
 		Channel_Meta::init();
+		Video_Meta::init();
 		YouTube_API::init();
 
 		// Re-seed des termes si la version a bumpé (ajout du topic « youtube » par exemple).
@@ -52,5 +53,6 @@ final class Plugin {
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-frontend.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-youtube-api.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-channel-meta.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-video-meta.php';
 	}
 }

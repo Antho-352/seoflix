@@ -363,6 +363,12 @@ final class Channel_Meta {
 			update_post_meta( $post_id, Meta_Keys::VIDEO_THUMBNAIL_URL, esc_url_raw( $v['thumbnail_url'] ) );
 			update_post_meta( $post_id, Meta_Keys::VIDEO_YOUTUBE_URL, esc_url_raw( $v['youtube_url'] ) );
 
+			// Auto-détection des produits mentionnés dans titre + description
+			$detected_products = Video_Meta::detect_products_in_text( $v['title'] . "\n" . $v['description'] );
+			if ( $detected_products ) {
+				update_post_meta( $post_id, Meta_Keys::VIDEO_PRODUCTS, wp_json_encode( $detected_products ) );
+			}
+
 			$created++;
 		}
 
