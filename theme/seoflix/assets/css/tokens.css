@@ -1,0 +1,35 @@
+:root {
+	/* Couleurs (alignées sur theme.json) */
+	--sx-color-bg: #0B0B0F;
+	--sx-color-surface: #16161D;
+	--sx-color-surface-2: #1F1F28;
+	--sx-color-border: #23232C;
+	--sx-color-accent: #FF2D3F;
+	--sx-color-accent-deep: #C81E2C;
+	--sx-color-text: #F5F5F7;
+	--sx-color-text-muted: #9A9AA3;
+	--sx-color-text-subtle: #62626A;
+
+	/* Espacements */
+	--sx-space-1: 0.25rem;
+	--sx-space-2: 0.5rem;
+	--sx-space-3: 0.75rem;
+	--sx-space-4: 1rem;
+	--sx-space-6: 1.5rem;
+	--sx-space-8: 2rem;
+	--sx-space-12: 3rem;
+	--sx-space-16: 4rem;
+
+	/* Rayon */
+	--sx-radius-sm: 4px;
+	--sx-radius-md: 6px;
+	--sx-radius-lg: 12px;
+
+	/* Ombres */
+	--sx-shadow-card: 0 2px 8px rgba(0,0,0,0.3);
+	--sx-shadow-card-hover: 0 8px 24px rgba(0,0,0,0.5);
+
+	/* Transitions */
+	--sx-transition-fast: 150ms ease-out;
+	--sx-transition: 250ms ease-out;
+}

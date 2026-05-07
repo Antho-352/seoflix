@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+._*
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs
+*.log
+
+# Local config / secrets
+.env
+.env.local
+
+# Backlog raw scrape (intermediate, non-canonical)
+backlog/raw/
+backlog/cache/
+
+# Build artifacts (zips) — exception : on garde les zips finaux dans dist/
+*.zip
+!dist/*.zip
+
+# Python local install artifacts
+__pycache__/
+*.pyc

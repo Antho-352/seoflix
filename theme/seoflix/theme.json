@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "settings": {
+    "appearanceTools": true,
+    "useRootPaddingAwareAlignments": true,
+    "color": {
+      "background": true,
+      "text": true,
+      "link": true,
+      "custom": true,
+      "customDuotone": false,
+      "customGradient": false,
+      "defaultPalette": false,
+      "defaultGradients": false,
+      "palette": [
+        { "slug": "background", "color": "#0B0B0F", "name": "Fond" },
+        { "slug": "surface", "color": "#16161D", "name": "Surface" },
+        { "slug": "surface-2", "color": "#1F1F28", "name": "Surface élevée" },
+        { "slug": "border", "color": "#23232C", "name": "Bordure" },
+        { "slug": "accent", "color": "#FF2D3F", "name": "Accent" },
+        { "slug": "accent-deep", "color": "#C81E2C", "name": "Accent foncé" },
+        { "slug": "text", "color": "#F5F5F7", "name": "Texte" },
+        { "slug": "text-muted", "color": "#9A9AA3", "name": "Texte secondaire" },
+        { "slug": "text-subtle", "color": "#62626A", "name": "Texte discret" }
+      ]
+    },
+    "typography": {
+      "customFontSize": true,
+      "fluid": true,
+      "fontFamilies": [
+        {
+          "slug": "system",
+          "name": "Système",
+          "fontFamily": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif"
+        }
+      ]
+    },
+    "layout": {
+      "contentSize": "1280px",
+      "wideSize": "1600px"
+    }
+  },
+  "styles": {
+    "color": {
+      "background": "var(--wp--preset--color--background)",
+      "text": "var(--wp--preset--color--text)"
+    },
+    "typography": {
+      "fontFamily": "var(--wp--preset--font-family--system)",
+      "fontSize": "1rem",
+      "lineHeight": "1.6"
+    }
+  }
+}

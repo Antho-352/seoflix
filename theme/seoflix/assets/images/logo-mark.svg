@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Seoflix">
+	<title>Seoflix</title>
+	<defs>
+		<linearGradient id="seoflix-mark-gradient" x1="0" y1="1" x2="0" y2="0">
+			<stop offset="0" stop-color="#C81E2C"/>
+			<stop offset="1" stop-color="#FF2D3F"/>
+		</linearGradient>
+	</defs>
+	<rect width="100" height="100" rx="22" fill="#16161D"/>
+	<path d="M50 28 L74 72 L26 72 Z" fill="url(#seoflix-mark-gradient)"/>
+</svg>
