@@ -19,6 +19,7 @@ final class Admin {
 		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-admin-pending.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-admin-settings.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-admin-affiliate-stats.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-admin-columns.php';
 
 		Admin_Menu::init();
 		Admin_Ingestion::init();
@@ -26,6 +27,7 @@ final class Admin {
 		Admin_Settings::init();
 		Admin_Dashboard::init();
 		Admin_Affiliate_Stats::init();
+		Admin_Columns::init();
 
 		add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_assets' ] );
 	}

@@ -11,13 +11,16 @@
 	align-items: baseline;
 	justify-content: space-between;
 	gap: var(--sx-space-4);
-	margin-bottom: var(--sx-space-4);
+	margin-bottom: var(--sx-space-5);
+	border-left: 4px solid var(--sx-color-accent);
+	padding-left: var(--sx-space-3);
 }
 
 .sx-row__title {
-	font-size: 1.5rem;
-	font-weight: 700;
-	letter-spacing: -0.01em;
+	font-size: clamp(1.6rem, 2.6vw, 2.25rem);
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	line-height: 1.1;
 }
 
 .sx-row__see-more {

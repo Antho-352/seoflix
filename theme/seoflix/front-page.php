@@ -46,17 +46,6 @@ $total_products = wp_count_posts( 'seoflix_product' )->publish ?? 0;
 	] );
 	seoflix_render_video_row( 'Nouveautés', $new_videos, get_post_type_archive_link( 'seoflix_video' ) );
 
-	// Rangée : Top vues
-	$top_videos = get_posts( [
-		'post_type'      => 'seoflix_video',
-		'post_status'    => 'publish',
-		'posts_per_page' => 12,
-		'meta_key'       => '_seoflix_view_count',
-		'orderby'        => 'meta_value_num',
-		'order'          => 'DESC',
-	] );
-	seoflix_render_video_row( 'Les plus vues', $top_videos );
-
 	// Rangées par sujet (uniquement sujets ayant des vidéos)
 	$topics = get_terms( [
 		'taxonomy'   => 'seoflix_topic',
@@ -121,7 +110,7 @@ $total_products = wp_count_posts( 'seoflix_product' )->publish ?? 0;
 	const el = document.getElementById('sx-rotate');
 	if (!el) return;
 	const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	const words = ["SEO", "l'Affiliation", "Youtube", "la Vente de Liens", "le Black Hat", "le Business", "le Netlinking"];
+	const words = ["SEO", "l'Affiliation", "Youtube", "la Vente de Liens", "le Black Hat", "le Business", "la Vente de Leads"];
 	if (reduced) { el.textContent = words[0]; return; }
 	let i = 0;
 	el.textContent = words[0];
