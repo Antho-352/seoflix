@@ -3,6 +3,7 @@ namespace Seoflix\Admin;
 
 use Seoflix\CPT;
 use Seoflix\Meta_Keys;
+use Seoflix\Video_Meta;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -32,6 +33,63 @@ final class Admin_Columns {
 		// Produits
 		add_filter( 'manage_seoflix_product_posts_columns',         [ self::class, 'product_columns' ] );
 		add_action( 'manage_seoflix_product_posts_custom_column',   [ self::class, 'product_column_content' ], 10, 2 );
+
+		// Bulk action : auto-détection produits sur les vidéos sélectionnées
+		add_filter( 'bulk_actions-edit-seoflix_video',         [ self::class, 'register_bulk_actions' ] );
+		add_filter( 'handle_bulk_actions-edit-seoflix_video',  [ self::class, 'handle_bulk_detect_products' ], 10, 3 );
+		add_action( 'admin_notices',                           [ self::class, 'bulk_detect_notice' ] );
+	}
+
+	/* ======================================================================
+	 *  Bulk action : auto-détection produits sur sélection
+	 * ====================================================================== */
+
+	public static function register_bulk_actions( array $actions ): array {
+		$actions['seoflix_detect_products'] = '🔍 Auto-détecter les produits';
+		return $actions;
+	}
+
+	public static function handle_bulk_detect_products( string $redirect_url, string $action, array $post_ids ): string {
+		if ( $action !== 'seoflix_detect_products' ) {
+			return $redirect_url;
+		}
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return $redirect_url;
+		}
+
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-video-meta.php';
+
+		$updated     = 0;
+		$total_links = 0;
+		foreach ( $post_ids as $post_id ) {
+			$post = get_post( $post_id );
+			if ( ! $post || $post->post_type !== CPT::VIDEO ) {
+				continue;
+			}
+			$text     = $post->post_title . "\n" . $post->post_content;
+			$products = Video_Meta::detect_products_in_text( $text );
+			update_post_meta( $post_id, Meta_Keys::VIDEO_PRODUCTS, wp_json_encode( $products ) );
+			$updated++;
+			$total_links += count( $products );
+		}
+
+		return add_query_arg( [
+			'seoflix_detected' => $updated,
+			'seoflix_links'    => $total_links,
+		], $redirect_url );
+	}
+
+	public static function bulk_detect_notice(): void {
+		if ( ! isset( $_GET['seoflix_detected'] ) ) {
+			return;
+		}
+		$count = (int) $_GET['seoflix_detected'];
+		$links = (int) ( $_GET['seoflix_links'] ?? 0 );
+		printf(
+			'<div class="notice notice-success is-dismissible"><p><strong>%s</strong> vidéo(s) re-scannée(s), <strong>%s</strong> liaison(s) produit attribuée(s).</p></div>',
+			esc_html( number_format_i18n( $count ) ),
+			esc_html( number_format_i18n( $links ) )
+		);
 	}
 
 	/* ======================================================================
