@@ -51,8 +51,7 @@ final class Channel_Meta {
 		$channel_id = (string) get_post_meta( $post->ID, Meta_Keys::CHANNEL_YOUTUBE_ID, true );
 		$ready      = $api_ready && $channel_id;
 
-		$count_existing = (int) wp_count_posts( CPT::VIDEO )->publish + (int) wp_count_posts( CPT::VIDEO )->pending;
-		$channel_videos = $channel_id ? get_posts( [
+		$channel_videos = get_posts( [
 			'post_type'      => CPT::VIDEO,
 			'post_status'    => 'any',
 			'posts_per_page' => -1,
@@ -60,11 +59,20 @@ final class Channel_Meta {
 			'meta_query'     => [
 				[ 'key' => Meta_Keys::VIDEO_CHANNEL_ID, 'value' => $post->ID ],
 			],
-		] ) : [];
+		] );
 		?>
 		<p>
+			<label for="seoflix-sync-limit" style="display: block; margin-bottom: 0.4rem; font-weight: 600;">Nombre de vidéos à récupérer :</label>
+			<select id="seoflix-sync-limit" style="width: 100%;">
+				<option value="50">50 dernières (rapide, ~3 unités)</option>
+				<option value="200">200 dernières (~5 unités)</option>
+				<option value="500">500 dernières (~11 unités)</option>
+				<option value="1000">Toutes (jusqu'à 1000, ~21 unités)</option>
+			</select>
+		</p>
+		<p>
 			<button type="button" class="button button-primary" id="seoflix-sync-videos" style="width:100%;" <?php disabled( ! $ready ); ?>>
-				🔄 Récupérer les nouvelles vidéos
+				🔄 Récupérer les vidéos
 			</button>
 		</p>
 		<p id="seoflix-sync-status" style="font-size: 0.85rem; color: #666; margin: 0.75rem 0 0;"></p>
@@ -77,9 +85,8 @@ final class Channel_Meta {
 			<?php elseif ( ! $channel_id ) : ?>
 				<p style="color: #dc3545;">❗ ID de chaîne YouTube manquant. Saisis-le dans la section « Identité YouTube » ou clique sur « Récupérer depuis YouTube ».</p>
 			<?php else : ?>
-				<p>Le bouton récupère jusqu'à 50 dernières vidéos &gt; 7 min, filtre les Shorts, et crée les nouvelles en statut <strong>« en attente »</strong>.</p>
-				<p>Les vidéos déjà en base sont ignorées (dédup par <code>youtube_id</code>).</p>
-				<p>Coût API : ~3 unités (sur 10 000/jour).</p>
+				<p>Filtre durée &ge; 7 min (Shorts exclus). Les vidéos déjà en base sont ignorées (dédup par <code>youtube_id</code>).</p>
+				<p>Pour rattraper les anciennes vidéos d'une chaîne, choisis 200 / 500 / Toutes.</p>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -247,14 +254,17 @@ final class Channel_Meta {
 			if (!syncBtn) return;
 			const syncStatus = document.getElementById('seoflix-sync-status');
 			syncBtn.addEventListener('click', async function() {
-				if (!confirm('Récupérer toutes les nouvelles vidéos > 7 min de cette chaîne ? Elles seront créées en statut \"En attente\".')) return;
+				const limitSelect = document.getElementById('seoflix-sync-limit');
+				const limit = limitSelect ? parseInt(limitSelect.value, 10) : 50;
+				if (!confirm('Récupérer jusqu\\'à ' + limit + ' vidéos > 7 min de cette chaîne ? Elles seront créées en statut \"En attente\".')) return;
 				syncBtn.disabled = true;
-				syncStatus.innerHTML = '⏳ Synchronisation en cours...';
+				syncStatus.innerHTML = '⏳ Synchronisation en cours…';
 				try {
 					const formData = new FormData();
 					formData.append('action', 'seoflix_sync_channel_videos');
 					formData.append('_ajax_nonce', " . wp_json_encode( $sync_nonce ) . ");
 					formData.append('channel_post_id', " . wp_json_encode( $post_id ) . ");
+					formData.append('max_videos', String(limit));
 					const r = await fetch(" . wp_json_encode( $ajax_url ) . ", { method: 'POST', body: formData, credentials: 'same-origin' });
 					const json = await r.json();
 					if (!json.success) throw new Error(json.data || 'Erreur inconnue');
@@ -300,8 +310,11 @@ final class Channel_Meta {
 			wp_send_json_error( 'ID YouTube de la chaîne manquant. Saisis-le ou utilise « Récupérer depuis YouTube » d\'abord.' );
 		}
 
+		$max_videos = isset( $_POST['max_videos'] ) ? (int) $_POST['max_videos'] : 50;
+		$max_videos = max( 1, min( 1000, $max_videos ) );
+
 		// Récupère les vidéos via API
-		$videos = YouTube_API::fetch_channel_videos( $channel_yt_id, 50, 420 );
+		$videos = YouTube_API::fetch_channel_videos( $channel_yt_id, $max_videos, 420 );
 		if ( is_wp_error( $videos ) ) {
 			wp_send_json_error( $videos->get_error_message() );
 		}
