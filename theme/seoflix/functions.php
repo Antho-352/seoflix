@@ -55,6 +55,39 @@ add_action( 'after_setup_theme', static function () {
 } );
 
 /* ============================================================
+ *  Query overrides — archives custom
+ * ============================================================ */
+
+add_action( 'pre_get_posts', static function ( $query ) {
+	if ( is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+
+	// Toutes les chaînes sur une seule page, triées par abonnés desc
+	if ( $query->is_post_type_archive( 'seoflix_channel' ) ) {
+		$query->set( 'posts_per_page', -1 );
+		$query->set( 'meta_key', '_seoflix_subscriber_count' );
+		$query->set( 'orderby', 'meta_value_num' );
+		$query->set( 'order', 'DESC' );
+	}
+
+	// Vidéos par sujet/format/parcours : 24 par page
+	if ( is_tax( [ 'seoflix_topic', 'seoflix_format', 'seoflix_path' ] ) ) {
+		$query->set( 'posts_per_page', 24 );
+	}
+
+	// Archive des vidéos : 24 par page
+	if ( $query->is_post_type_archive( 'seoflix_video' ) ) {
+		$query->set( 'posts_per_page', 24 );
+	}
+
+	// Archive produits : tous sur une page (max ~50)
+	if ( $query->is_post_type_archive( 'seoflix_product' ) || is_tax( 'seoflix_product_category' ) ) {
+		$query->set( 'posts_per_page', -1 );
+	}
+} );
+
+/* ============================================================
  *  Helpers — Vidéo
  * ============================================================ */
 

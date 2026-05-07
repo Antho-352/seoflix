@@ -33,10 +33,6 @@ $categories = get_terms( [
 				seoflix_render_product_card( get_post() );
 			endwhile; ?>
 		</div>
-
-		<nav class="sx-pagination" aria-label="Pagination">
-			<?php echo paginate_links( [ 'prev_text' => '←', 'next_text' => '→' ] ); ?>
-		</nav>
 	<?php else : ?>
 		<div class="sx-empty">Aucun outil référencé.</div>
 	<?php endif; ?>
