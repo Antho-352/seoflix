@@ -88,8 +88,91 @@ add_action( 'pre_get_posts', static function ( $query ) {
 } );
 
 /* ============================================================
- *  Nav menu — walker custom + fallback
+ *  Nav menu — walker + auto-création du menu par défaut
  * ============================================================ */
+
+/**
+ * Crée automatiquement un menu "Menu principal" pré-rempli avec les 8 items
+ * et l'assigne à l'emplacement « primary », au premier chargement après activation.
+ *
+ * Idempotent : le flag `seoflix_default_menu_installed` empêche les doublons.
+ *
+ * Tu peux ensuite éditer ce menu librement dans Apparence → Menus
+ * (réordonner, ajouter Blog, supprimer des items, etc.).
+ *
+ * Pour repartir de zéro : supprimer l'option via wp_options
+ *   DELETE FROM wp_options WHERE option_name = 'seoflix_default_menu_installed';
+ * puis recharger une page côté admin.
+ */
+add_action( 'init', static function () {
+	if ( ! is_admin() && ! ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+		// On ne tente la création que dans un contexte admin pour éviter les coûts en front
+		return;
+	}
+	if ( get_option( 'seoflix_default_menu_installed' ) ) {
+		return;
+	}
+	seoflix_install_default_menu();
+}, 999 );
+
+// Trigger explicite à l'activation du thème (au cas où l'utilisateur switche de thème)
+add_action( 'after_switch_theme', 'seoflix_install_default_menu' );
+
+function seoflix_install_default_menu(): void {
+	if ( ! function_exists( 'wp_create_nav_menu' ) ) {
+		require_once ABSPATH . 'wp-includes/nav-menu.php';
+	}
+
+	$menu_name = 'Menu principal';
+
+	// Si le menu existe déjà (créé manuellement par l'utilisateur), on l'assigne juste
+	$existing = wp_get_nav_menu_object( $menu_name );
+	if ( $existing ) {
+		$menu_id = (int) $existing->term_id;
+	} else {
+		$menu_id = wp_create_nav_menu( $menu_name );
+		if ( is_wp_error( $menu_id ) ) {
+			return;
+		}
+		$menu_id = (int) $menu_id;
+
+		// Items par défaut (uniquement si le menu vient d'être créé)
+		$items = [
+			[ 'title' => 'SEO',                    'url' => home_url( '/sujet/seo-technique/' ) ],
+			[ 'title' => 'Affiliation',            'url' => home_url( '/sujet/affiliation/' ) ],
+			[ 'title' => 'YouTube',                'url' => home_url( '/sujet/youtube/' ) ],
+			[ 'title' => 'Vente de liens',         'url' => home_url( '/sujet/vente-de-liens/' ) ],
+			[ 'title' => 'Business',               'url' => home_url( '/sujet/business-general/' ) ],
+			[ 'title' => 'Toutes les catégories',  'url' => home_url( '/categories/' ) ],
+			[ 'title' => 'Chaînes',                'url' => home_url( '/chaines/' ) ],
+			[ 'title' => 'Outils SEO',             'url' => home_url( '/outils/' ) ],
+		];
+
+		foreach ( $items as $i => $item ) {
+			wp_update_nav_menu_item( $menu_id, 0, [
+				'menu-item-title'    => $item['title'],
+				'menu-item-url'      => $item['url'],
+				'menu-item-type'     => 'custom',
+				'menu-item-status'   => 'publish',
+				'menu-item-position' => $i + 1,
+			] );
+		}
+	}
+
+	// Assigner ce menu à l'emplacement « primary »
+	$locations = get_theme_mod( 'nav_menu_locations', [] );
+	if ( empty( $locations['primary'] ) ) {
+		$locations['primary'] = $menu_id;
+		set_theme_mod( 'nav_menu_locations', $locations );
+	}
+
+	update_option( 'seoflix_default_menu_installed', '1' );
+}
+
+/**
+ * Walker minimaliste : pas de <ul>/<li>, juste des <a> directs.
+ * Permet de réutiliser le CSS existant `.sx-nav > a`.
+ */
 
 /**
  * Walker minimaliste : pas de <ul>/<li>, juste des <a> directs.
