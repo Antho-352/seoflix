@@ -29,6 +29,7 @@ final class Plugin {
 		Security::init();
 		Frontend::init();
 		Channel_Meta::init();
+		YouTube_API::init();
 
 		// Re-seed des termes si la version a bumpé (ajout du topic « youtube » par exemple).
 		add_action( 'init', [ Activator::class, 'ensure_terms_seeded' ], 20 );

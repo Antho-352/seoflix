@@ -17,6 +17,27 @@ final class YouTube_API {
 	private const ENDPOINT_PLAYLIST_ITEMS = 'https://www.googleapis.com/youtube/v3/playlistItems';
 	private const ENDPOINT_VIDEOS         = 'https://www.googleapis.com/youtube/v3/videos';
 
+	/**
+	 * Initialise le hook qui force IPv4 pour tous les appels googleapis.com.
+	 *
+	 * Pourquoi : sur certains serveurs (notamment Kimsufi/OVH), PHP utilise IPv6 par
+	 * défaut pour ses requêtes sortantes vers Google. Comme la restriction d'IP de la
+	 * clé API est généralement configurée avec l'IPv4 du serveur uniquement, les
+	 * appels échouent avec "IP address restriction violated".
+	 *
+	 * En forçant IPv4 via curl, on s'assure que toutes les requêtes partent depuis
+	 * l'IPv4 du serveur, qui matche la whitelist Google.
+	 */
+	public static function init(): void {
+		add_action( 'http_api_curl', [ self::class, 'force_ipv4_for_google' ], 10, 3 );
+	}
+
+	public static function force_ipv4_for_google( $handle, $args, $url ): void {
+		if ( strpos( (string) $url, 'googleapis.com' ) !== false ) {
+			curl_setopt( $handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4 );
+		}
+	}
+
 	public static function get_api_key(): string {
 		return (string) get_option( 'seoflix_youtube_api_key', '' );
 	}
