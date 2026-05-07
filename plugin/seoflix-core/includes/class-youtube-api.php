@@ -29,41 +29,70 @@ final class YouTube_API {
 	 *  Quota soft-cap (côté plugin, par-dessus le hard cap Google de 10k/jour)
 	 * ====================================================================== */
 
-	private const USAGE_TRANSIENT_PREFIX = 'seoflix_yt_api_usage_';
+	private const USAGE_DAY_PREFIX  = 'seoflix_yt_api_usage_d_';
+	private const USAGE_HOUR_PREFIX = 'seoflix_yt_api_usage_h_';
 
-	/**
-	 * Limite quotidienne soft, configurable dans Réglages.
-	 * Défaut 1000 unités/jour (sur 10000 disponibles), volontairement bas.
-	 */
 	public static function get_daily_limit(): int {
 		return max( 0, (int) get_option( 'seoflix_yt_daily_limit', 1000 ) );
 	}
 
+	public static function get_hourly_limit(): int {
+		return max( 0, (int) get_option( 'seoflix_yt_hourly_limit', 200 ) );
+	}
+
 	public static function get_today_usage(): int {
-		$key = self::USAGE_TRANSIENT_PREFIX . gmdate( 'Y-m-d' );
+		$key = self::USAGE_DAY_PREFIX . gmdate( 'Y-m-d' );
 		return (int) get_transient( $key );
 	}
 
-	public static function quota_remaining(): int {
-		$limit = self::get_daily_limit();
-		if ( $limit <= 0 ) {
-			return PHP_INT_MAX; // 0 = illimité (= seul le hard cap Google s'applique)
-		}
-		return max( 0, $limit - self::get_today_usage() );
+	public static function get_current_hour_usage(): int {
+		$key = self::USAGE_HOUR_PREFIX . gmdate( 'Y-m-d-H' );
+		return (int) get_transient( $key );
 	}
 
 	public static function has_quota( int $needed ): bool {
-		$limit = self::get_daily_limit();
-		if ( $limit <= 0 ) {
-			return true;
+		// Cap horaire : ne pas brûler tout le budget en une heure (ceinture anti-runaway)
+		$hourly_limit = self::get_hourly_limit();
+		if ( $hourly_limit > 0 && self::get_current_hour_usage() + $needed > $hourly_limit ) {
+			return false;
 		}
-		return self::quota_remaining() >= $needed;
+
+		// Cap quotidien
+		$daily_limit = self::get_daily_limit();
+		if ( $daily_limit > 0 && self::get_today_usage() + $needed > $daily_limit ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	public static function quota_blocker_message(): string {
+		$hourly_limit = self::get_hourly_limit();
+		$daily_limit  = self::get_daily_limit();
+		$hour_used    = self::get_current_hour_usage();
+		$day_used     = self::get_today_usage();
+
+		if ( $hourly_limit > 0 && $hour_used >= $hourly_limit ) {
+			return sprintf(
+				'Cap horaire atteint (%d unités utilisées cette heure sur %d). Réessaye dans l\'heure suivante. Ce cap protège contre les boucles accidentelles.',
+				$hour_used, $hourly_limit
+			);
+		}
+		if ( $daily_limit > 0 && $day_used >= $daily_limit ) {
+			return sprintf(
+				'Cap quotidien atteint (%d/%d). Reset à minuit Pacific Time (≈ 9h heure française).',
+				$day_used, $daily_limit
+			);
+		}
+		return 'Quota dépassé.';
 	}
 
 	public static function increment_usage( int $units ): void {
-		$key     = self::USAGE_TRANSIENT_PREFIX . gmdate( 'Y-m-d' );
-		$current = (int) get_transient( $key );
-		set_transient( $key, $current + $units, DAY_IN_SECONDS );
+		$day_key  = self::USAGE_DAY_PREFIX . gmdate( 'Y-m-d' );
+		$hour_key = self::USAGE_HOUR_PREFIX . gmdate( 'Y-m-d-H' );
+
+		set_transient( $day_key,  ( (int) get_transient( $day_key ) ) + $units, DAY_IN_SECONDS );
+		set_transient( $hour_key, ( (int) get_transient( $hour_key ) ) + $units, HOUR_IN_SECONDS );
 	}
 
 	/**
@@ -78,7 +107,7 @@ final class YouTube_API {
 			return new \WP_Error( 'no_api_key', 'Clé YouTube Data API non configurée. Va dans Seoflix → Réglages.' );
 		}
 		if ( ! self::has_quota( 1 ) ) {
-			return new \WP_Error( 'quota_exceeded', sprintf( 'Quota local atteint (%d unités utilisées aujourd\'hui sur %d). Augmente la limite dans Seoflix → Réglages, ou attends demain.', self::get_today_usage(), self::get_daily_limit() ) );
+			return new \WP_Error( 'quota_exceeded', self::quota_blocker_message() );
 		}
 
 		$handle_or_id = trim( $handle_or_id );
@@ -175,7 +204,7 @@ final class YouTube_API {
 		// Estimation du coût : 1 unit pour playlist + 1 unit par chunk de 50 videos = max ~3 units pour 50 videos
 		$estimated_cost = 1 + max( 1, (int) ceil( $max_videos / 50 ) );
 		if ( ! self::has_quota( $estimated_cost ) ) {
-			return new \WP_Error( 'quota_exceeded', sprintf( 'Quota local atteint (%d/%d unités utilisées aujourd\'hui). Augmente la limite dans Seoflix → Réglages, ou attends demain (reset à minuit Pacific Time).', self::get_today_usage(), self::get_daily_limit() ) );
+			return new \WP_Error( 'quota_exceeded', self::quota_blocker_message() );
 		}
 
 		// Uploads playlist = UU + suffix du channel_id (sans le préfixe UC)
