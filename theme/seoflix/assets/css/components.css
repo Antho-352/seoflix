@@ -239,6 +239,7 @@
 	padding: var(--sx-space-4);
 	transition: border-color var(--sx-transition), transform var(--sx-transition);
 	position: relative;
+	overflow: hidden;
 }
 
 .sx-card-product:hover {
@@ -249,6 +250,29 @@
 .sx-card-product__link {
 	display: block;
 	color: var(--sx-color-text);
+}
+
+.sx-card-product__image {
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	margin: calc(-1 * var(--sx-space-4)) calc(-1 * var(--sx-space-4)) var(--sx-space-3);
+	background: var(--sx-color-bg);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+
+.sx-card-product__image img {
+	max-width: 70%;
+	max-height: 70%;
+	width: auto;
+	height: auto;
+	object-fit: contain;
+}
+
+.sx-card-product__body {
+	min-width: 0;
 }
 
 .sx-card-product__name {
@@ -286,6 +310,48 @@
 .sx-card-product__pricing--free { background: rgba(46, 184, 92, 0.2); color: #5dde94; }
 .sx-card-product__pricing--freemium { background: rgba(255, 200, 0, 0.2); color: #ffc800; }
 .sx-card-product__pricing--paid { background: rgba(255, 45, 63, 0.2); color: var(--sx-color-accent); }
+
+/* Variante compacte (utilisée dans la sidebar de la page vidéo) */
+.sx-card-product--compact {
+	padding: var(--sx-space-3);
+}
+
+.sx-card-product--compact .sx-card-product__link {
+	display: flex;
+	gap: var(--sx-space-3);
+	align-items: flex-start;
+}
+
+.sx-card-product--compact .sx-card-product__image {
+	flex-shrink: 0;
+	width: 56px;
+	height: 56px;
+	aspect-ratio: 1 / 1;
+	margin: 0;
+	border-radius: var(--sx-radius-sm);
+	background: var(--sx-color-surface-2);
+}
+
+.sx-card-product--compact .sx-card-product__image img {
+	max-width: 80%;
+	max-height: 80%;
+}
+
+.sx-card-product--compact .sx-card-product__body {
+	flex: 1;
+	min-width: 0;
+}
+
+.sx-card-product--compact .sx-card-product__name {
+	font-size: 0.95rem;
+	margin-bottom: 0.15rem;
+}
+
+.sx-card-product--compact .sx-card-product__excerpt {
+	font-size: 0.8rem;
+	line-height: 1.4;
+	margin-bottom: 0;
+}
 
 /* ===================================================================
  *  HERO

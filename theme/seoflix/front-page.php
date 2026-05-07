@@ -110,7 +110,7 @@ $total_products = wp_count_posts( 'seoflix_product' )->publish ?? 0;
 	const el = document.getElementById('sx-rotate');
 	if (!el) return;
 	const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	const words = ["SEO", "l'Affiliation", "Youtube", "la Vente de Liens", "le Black Hat", "le Business", "la Vente de Leads"];
+	const words = ["l'Edition de Sites", "le SEO", "l'Affiliation", "Youtube", "la Vente de Liens", "l'IA", "le GEO", "la Vente de Leads", "le Black Hat", "le Business en ligne"];
 	if (reduced) { el.textContent = words[0]; return; }
 	let i = 0;
 	el.textContent = words[0];

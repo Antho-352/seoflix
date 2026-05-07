@@ -451,27 +451,47 @@ function seoflix_render_channel_card( WP_Post $channel ): void {
 	<?php
 }
 
-function seoflix_render_product_card( WP_Post $product ): void {
+function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void {
+	$opts = wp_parse_args( $opts, [
+		'show_pricing' => true,
+		'compact'      => false,
+	] );
+
+	$thumb_id  = get_post_thumbnail_id( $product->ID );
+	$thumb_url = $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium' ) : '';
+
 	$category = wp_get_object_terms( $product->ID, 'seoflix_product_category', [ 'number' => 1 ] );
 	$cat_name = ( ! is_wp_error( $category ) && $category ) ? $category[0]->name : '';
-	$pricing  = seoflix_product_pricing( $product->ID );
+
+	$pricing       = seoflix_product_pricing( $product->ID );
 	$pricing_label = match ( $pricing ) {
 		'free'     => 'Gratuit',
 		'freemium' => 'Freemium',
 		'paid'     => 'Payant',
 		default    => '',
 	};
+
+	$classes = [ 'sx-card-product' ];
+	if ( $opts['compact'] )  { $classes[] = 'sx-card-product--compact'; }
+	if ( $thumb_url )        { $classes[] = 'sx-card-product--has-image'; }
 	?>
-	<article class="sx-card-product">
+	<article class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
 		<a href="<?php echo esc_url( get_permalink( $product ) ); ?>" class="sx-card-product__link">
-			<h3 class="sx-card-product__name"><?php echo esc_html( get_the_title( $product ) ); ?></h3>
-			<?php if ( $cat_name ) : ?>
-				<div class="sx-card-product__category"><?php echo esc_html( $cat_name ); ?></div>
+			<?php if ( $thumb_url ) : ?>
+				<div class="sx-card-product__image">
+					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="<?php echo esc_attr( get_the_title( $product ) ); ?>" loading="lazy">
+				</div>
 			<?php endif; ?>
-			<p class="sx-card-product__excerpt"><?php echo esc_html( wp_trim_words( get_the_excerpt( $product ) ?: $product->post_content, 20 ) ); ?></p>
-			<?php if ( $pricing_label ) : ?>
-				<span class="sx-card-product__pricing sx-card-product__pricing--<?php echo esc_attr( $pricing ); ?>"><?php echo esc_html( $pricing_label ); ?></span>
-			<?php endif; ?>
+			<div class="sx-card-product__body">
+				<h3 class="sx-card-product__name"><?php echo esc_html( get_the_title( $product ) ); ?></h3>
+				<?php if ( $cat_name && ! $opts['compact'] ) : ?>
+					<div class="sx-card-product__category"><?php echo esc_html( $cat_name ); ?></div>
+				<?php endif; ?>
+				<p class="sx-card-product__excerpt"><?php echo esc_html( wp_trim_words( get_the_excerpt( $product ) ?: $product->post_content, $opts['compact'] ? 14 : 20 ) ); ?></p>
+				<?php if ( $opts['show_pricing'] && $pricing_label ) : ?>
+					<span class="sx-card-product__pricing sx-card-product__pricing--<?php echo esc_attr( $pricing ); ?>"><?php echo esc_html( $pricing_label ); ?></span>
+				<?php endif; ?>
+			</div>
 		</a>
 	</article>
 	<?php

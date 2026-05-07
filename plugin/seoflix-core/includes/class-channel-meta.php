@@ -14,15 +14,17 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Channel_Meta {
 
-	private const NONCE_ACTION = 'seoflix_channel_meta';
-	private const NONCE_NAME   = 'seoflix_channel_meta_nonce';
-	private const AJAX_NONCE   = 'seoflix_fetch_channel';
+	private const NONCE_ACTION       = 'seoflix_channel_meta';
+	private const NONCE_NAME         = 'seoflix_channel_meta_nonce';
+	private const AJAX_NONCE         = 'seoflix_fetch_channel';
+	private const SYNC_AJAX_NONCE    = 'seoflix_sync_videos';
 
 	public static function init(): void {
 		add_action( 'add_meta_boxes',                       [ self::class, 'register_metabox' ] );
 		add_action( 'save_post_seoflix_channel',            [ self::class, 'save_metabox' ], 10, 2 );
 		add_action( 'admin_enqueue_scripts',                [ self::class, 'enqueue_assets' ] );
 		add_action( 'wp_ajax_seoflix_fetch_channel',        [ self::class, 'ajax_fetch_channel' ] );
+		add_action( 'wp_ajax_seoflix_sync_channel_videos',  [ self::class, 'ajax_sync_videos' ] );
 	}
 
 	public static function register_metabox(): void {
@@ -34,6 +36,53 @@ final class Channel_Meta {
 			'normal',
 			'high'
 		);
+		add_meta_box(
+			'seoflix_channel_sync',
+			'Synchronisation des vidéos',
+			[ self::class, 'render_sync_metabox' ],
+			CPT::CHANNEL,
+			'side',
+			'high'
+		);
+	}
+
+	public static function render_sync_metabox( \WP_Post $post ): void {
+		$api_ready  = YouTube_API::is_configured();
+		$channel_id = (string) get_post_meta( $post->ID, Meta_Keys::CHANNEL_YOUTUBE_ID, true );
+		$ready      = $api_ready && $channel_id;
+
+		$count_existing = (int) wp_count_posts( CPT::VIDEO )->publish + (int) wp_count_posts( CPT::VIDEO )->pending;
+		$channel_videos = $channel_id ? get_posts( [
+			'post_type'      => CPT::VIDEO,
+			'post_status'    => 'any',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'meta_query'     => [
+				[ 'key' => Meta_Keys::VIDEO_CHANNEL_ID, 'value' => $post->ID ],
+			],
+		] ) : [];
+		?>
+		<p>
+			<button type="button" class="button button-primary" id="seoflix-sync-videos" style="width:100%;" <?php disabled( ! $ready ); ?>>
+				🔄 Récupérer les nouvelles vidéos
+			</button>
+		</p>
+		<p id="seoflix-sync-status" style="font-size: 0.85rem; color: #666; margin: 0.75rem 0 0;"></p>
+
+		<div style="font-size: 0.85rem; color: #666; margin-top: 1rem;">
+			<p><strong><?php echo (int) count( $channel_videos ); ?></strong> vidéo<?php echo count( $channel_videos ) > 1 ? 's' : ''; ?> déjà en base pour cette chaîne.</p>
+
+			<?php if ( ! $api_ready ) : ?>
+				<p style="color: #dc3545;">❗ Clé YouTube Data API non configurée. <a href="<?php echo esc_url( admin_url( 'admin.php?page=seoflix-settings' ) ); ?>">Configurer</a>.</p>
+			<?php elseif ( ! $channel_id ) : ?>
+				<p style="color: #dc3545;">❗ ID de chaîne YouTube manquant. Saisis-le dans la section « Identité YouTube » ou clique sur « Récupérer depuis YouTube ».</p>
+			<?php else : ?>
+				<p>Le bouton récupère jusqu'à 50 dernières vidéos &gt; 7 min, filtre les Shorts, et crée les nouvelles en statut <strong>« en attente »</strong>.</p>
+				<p>Les vidéos déjà en base sont ignorées (dédup par <code>youtube_id</code>).</p>
+				<p>Coût API : ~3 unités (sur 10 000/jour).</p>
+			<?php endif; ?>
+		</div>
+		<?php
 	}
 
 	public static function render_metabox( \WP_Post $post ): void {
@@ -150,9 +199,11 @@ final class Channel_Meta {
 			return;
 		}
 
-		// JS inline pour le bouton "Récupérer"
-		$nonce = wp_create_nonce( self::AJAX_NONCE );
-		$ajax_url = admin_url( 'admin-ajax.php' );
+		// JS inline pour les boutons "Récupérer" + "Sync"
+		$nonce      = wp_create_nonce( self::AJAX_NONCE );
+		$sync_nonce = wp_create_nonce( self::SYNC_AJAX_NONCE );
+		$ajax_url   = admin_url( 'admin-ajax.php' );
+		$post_id    = isset( $_GET['post'] ) ? (int) $_GET['post'] : 0;
 
 		$js = "
 		(function() {
@@ -189,10 +240,118 @@ final class Channel_Meta {
 				}
 			});
 		})();
+
+		// Bouton Sync (récupération des nouvelles vidéos depuis YouTube)
+		(function() {
+			const syncBtn = document.getElementById('seoflix-sync-videos');
+			if (!syncBtn) return;
+			const syncStatus = document.getElementById('seoflix-sync-status');
+			syncBtn.addEventListener('click', async function() {
+				if (!confirm('Récupérer toutes les nouvelles vidéos > 7 min de cette chaîne ? Elles seront créées en statut \"En attente\".')) return;
+				syncBtn.disabled = true;
+				syncStatus.innerHTML = '⏳ Synchronisation en cours...';
+				try {
+					const formData = new FormData();
+					formData.append('action', 'seoflix_sync_channel_videos');
+					formData.append('_ajax_nonce', " . wp_json_encode( $sync_nonce ) . ");
+					formData.append('channel_post_id', " . wp_json_encode( $post_id ) . ");
+					const r = await fetch(" . wp_json_encode( $ajax_url ) . ", { method: 'POST', body: formData, credentials: 'same-origin' });
+					const json = await r.json();
+					if (!json.success) throw new Error(json.data || 'Erreur inconnue');
+					const d = json.data;
+					let msg = '<span style=\"color: #28a745;\">✓ ' + d.created + ' nouvelle(s) vidéo(s) créée(s) en attente</span>';
+					if (d.skipped_existing > 0) msg += ', <span style=\"color: #999;\">' + d.skipped_existing + ' déjà en base</span>';
+					if (d.skipped_short > 0) msg += ', <span style=\"color: #999;\">' + d.skipped_short + ' < 7 min ignorée(s)</span>';
+					syncStatus.innerHTML = msg + '. <a href=\"' + " . wp_json_encode( admin_url( 'admin.php?page=seoflix-pending' ) ) . " + '\">Valider les vidéos →</a>';
+				} catch (e) {
+					syncStatus.innerHTML = '<span style=\"color: #dc3545;\">✗ ' + e.message + '</span>';
+				} finally {
+					syncBtn.disabled = false;
+				}
+			});
+		})();
 		";
 		wp_register_script( 'seoflix-channel-meta', '', [], '1.0', true );
 		wp_enqueue_script( 'seoflix-channel-meta' );
 		wp_add_inline_script( 'seoflix-channel-meta', $js );
+	}
+
+	public static function ajax_sync_videos(): void {
+		check_ajax_referer( self::SYNC_AJAX_NONCE );
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( 'Accès refusé.' );
+		}
+
+		$channel_post_id = isset( $_POST['channel_post_id'] ) ? (int) $_POST['channel_post_id'] : 0;
+		if ( ! $channel_post_id || get_post_type( $channel_post_id ) !== CPT::CHANNEL ) {
+			wp_send_json_error( 'Chaîne invalide.' );
+		}
+
+		$channel_yt_id = (string) get_post_meta( $channel_post_id, Meta_Keys::CHANNEL_YOUTUBE_ID, true );
+		if ( ! $channel_yt_id ) {
+			wp_send_json_error( 'ID YouTube de la chaîne manquant. Saisis-le ou utilise « Récupérer depuis YouTube » d\'abord.' );
+		}
+
+		// Récupère les vidéos via API
+		$videos = YouTube_API::fetch_channel_videos( $channel_yt_id, 50, 420 );
+		if ( is_wp_error( $videos ) ) {
+			wp_send_json_error( $videos->get_error_message() );
+		}
+
+		$created          = 0;
+		$skipped_existing = 0;
+		$skipped_short    = 0; // pour info, déjà filtré côté API
+
+		foreach ( $videos as $v ) {
+			// Dédup par youtube_id
+			$existing = get_posts( [
+				'post_type'      => CPT::VIDEO,
+				'post_status'    => 'any',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_query'     => [
+					[ 'key' => Meta_Keys::VIDEO_YOUTUBE_ID, 'value' => $v['youtube_id'] ],
+				],
+			] );
+			if ( $existing ) {
+				$skipped_existing++;
+				continue;
+			}
+
+			$post_date = $v['published_at'] && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $v['published_at'] )
+				? $v['published_at'] . ' 00:00:00'
+				: current_time( 'mysql' );
+
+			$post_id = wp_insert_post( [
+				'post_type'    => CPT::VIDEO,
+				'post_title'   => sanitize_text_field( $v['title'] ),
+				'post_content' => wp_kses_post( $v['description'] ),
+				'post_status'  => 'pending',
+				'post_date'    => $post_date,
+			], true );
+
+			if ( is_wp_error( $post_id ) ) {
+				continue;
+			}
+
+			update_post_meta( $post_id, Meta_Keys::VIDEO_YOUTUBE_ID, $v['youtube_id'] );
+			update_post_meta( $post_id, Meta_Keys::VIDEO_CHANNEL_ID, $channel_post_id );
+			update_post_meta( $post_id, Meta_Keys::VIDEO_DURATION, (int) $v['duration_seconds'] );
+			update_post_meta( $post_id, Meta_Keys::VIDEO_VIEW_COUNT, (int) $v['view_count'] );
+			update_post_meta( $post_id, Meta_Keys::VIDEO_PUBLISHED_AT, $v['published_at'] );
+			update_post_meta( $post_id, Meta_Keys::VIDEO_THUMBNAIL_URL, esc_url_raw( $v['thumbnail_url'] ) );
+			update_post_meta( $post_id, Meta_Keys::VIDEO_YOUTUBE_URL, esc_url_raw( $v['youtube_url'] ) );
+
+			$created++;
+		}
+
+		wp_send_json_success( [
+			'created'          => $created,
+			'skipped_existing' => $skipped_existing,
+			'skipped_short'    => $skipped_short,
+			'total_fetched'    => count( $videos ),
+		] );
 	}
 
 	public static function ajax_fetch_channel(): void {

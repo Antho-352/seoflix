@@ -85,7 +85,7 @@ while ( have_posts() ) :
 						<h2>Produits &amp; services mentionnés</h2>
 						<div class="sx-product-list">
 							<?php foreach ( $products as $p ) {
-								seoflix_render_product_card( $p );
+								seoflix_render_product_card( $p, [ 'show_pricing' => false, 'compact' => true ] );
 							} ?>
 						</div>
 					</div>
