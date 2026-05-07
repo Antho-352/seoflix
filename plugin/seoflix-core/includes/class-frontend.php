@@ -24,6 +24,22 @@ final class Frontend {
 
 	public static function register_rewrite(): void {
 		add_rewrite_rule( '^categories/?$', 'index.php?' . self::QUERY_VAR . '=topics', 'top' );
+
+		// Alias raccourcis vers les catégories de produits les plus utilisées
+		// (le slug technique reste `categorie-outil/<slug>` mais ces URLs sont plus propres)
+		$category_aliases = [
+			'formations'      => 'formations',
+			'outils-seo'      => 'outils-seo',
+			'plateformes'     => 'plateformes-vente-de-liens',
+			'hebergement'     => 'hebergement',
+		];
+		foreach ( $category_aliases as $public_slug => $term_slug ) {
+			add_rewrite_rule(
+				'^' . preg_quote( $public_slug, '#' ) . '/?$',
+				'index.php?seoflix_product_category=' . $term_slug,
+				'top'
+			);
+		}
 	}
 
 	public static function add_query_var( array $vars ): array {
