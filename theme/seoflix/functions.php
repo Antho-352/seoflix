@@ -63,12 +63,12 @@ add_action( 'pre_get_posts', static function ( $query ) {
 		return;
 	}
 
-	// Toutes les chaînes sur une seule page, triées par abonnés desc
+	// Toutes les chaînes sur une seule page, triées alphabétiquement
+	// (l'ancien tri par meta_key excluait les chaînes nouvellement créées sans subscriber_count)
 	if ( $query->is_post_type_archive( 'seoflix_channel' ) ) {
 		$query->set( 'posts_per_page', -1 );
-		$query->set( 'meta_key', '_seoflix_subscriber_count' );
-		$query->set( 'orderby', 'meta_value_num' );
-		$query->set( 'order', 'DESC' );
+		$query->set( 'orderby', 'title' );
+		$query->set( 'order', 'ASC' );
 	}
 
 	// Vidéos par sujet/format/parcours : 24 par page

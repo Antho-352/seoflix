@@ -1,0 +1,217 @@
+<?php
+namespace Seoflix;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Métabox "Identité YouTube" sur l'écran d'édition d'une chaîne.
+ *
+ * Permet :
+ *   - Saisie manuelle des champs YouTube
+ *   - Bouton "Récupérer depuis YouTube" qui fait un AJAX vers l'API et auto-remplit
+ */
+final class Channel_Meta {
+
+	private const NONCE_ACTION = 'seoflix_channel_meta';
+	private const NONCE_NAME   = 'seoflix_channel_meta_nonce';
+	private const AJAX_NONCE   = 'seoflix_fetch_channel';
+
+	public static function init(): void {
+		add_action( 'add_meta_boxes',                       [ self::class, 'register_metabox' ] );
+		add_action( 'save_post_seoflix_channel',            [ self::class, 'save_metabox' ], 10, 2 );
+		add_action( 'admin_enqueue_scripts',                [ self::class, 'enqueue_assets' ] );
+		add_action( 'wp_ajax_seoflix_fetch_channel',        [ self::class, 'ajax_fetch_channel' ] );
+	}
+
+	public static function register_metabox(): void {
+		add_meta_box(
+			'seoflix_channel_identity',
+			'Identité YouTube',
+			[ self::class, 'render_metabox' ],
+			CPT::CHANNEL,
+			'normal',
+			'high'
+		);
+	}
+
+	public static function render_metabox( \WP_Post $post ): void {
+		wp_nonce_field( self::NONCE_ACTION, self::NONCE_NAME );
+
+		$handle       = (string) get_post_meta( $post->ID, Meta_Keys::CHANNEL_HANDLE, true );
+		$channel_id   = (string) get_post_meta( $post->ID, Meta_Keys::CHANNEL_YOUTUBE_ID, true );
+		$real_name    = (string) get_post_meta( $post->ID, Meta_Keys::CHANNEL_REAL_NAME, true );
+		$subs         = (int) get_post_meta( $post->ID, Meta_Keys::CHANNEL_SUBSCRIBER_COUNT, true );
+		$thumb_url    = (string) get_post_meta( $post->ID, Meta_Keys::CHANNEL_THUMBNAIL_URL, true );
+		$channel_url  = (string) get_post_meta( $post->ID, Meta_Keys::CHANNEL_YOUTUBE_URL, true );
+		$api_ready    = YouTube_API::is_configured();
+
+		?>
+		<table class="form-table seoflix-channel-meta">
+			<tr>
+				<th scope="row"><label for="seoflix_handle">Handle YouTube</label></th>
+				<td>
+					<input type="text" id="seoflix_handle" name="seoflix_handle" value="<?php echo esc_attr( $handle ); ?>" class="regular-text" placeholder="@MaChaine">
+					<button type="button" class="button" id="seoflix-fetch-channel" <?php disabled( ! $api_ready ); ?>>
+						🔄 Récupérer depuis YouTube
+					</button>
+					<span id="seoflix-fetch-status" style="margin-left: 0.5rem; color: #666;"></span>
+					<p class="description">
+						<?php if ( $api_ready ) : ?>
+							Saisis le handle (@xxx), clique sur le bouton, et tous les champs ci-dessous se rempliront automatiquement depuis YouTube.
+						<?php else : ?>
+							<strong>Clé YouTube Data API non configurée.</strong> Configure-la dans <a href="<?php echo esc_url( admin_url( 'admin.php?page=seoflix-settings' ) ); ?>">Réglages</a> pour activer le bouton « Récupérer ». Sinon, remplis les champs manuellement.
+						<?php endif; ?>
+					</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="seoflix_youtube_channel_id">ID de chaîne YouTube</label></th>
+				<td>
+					<input type="text" id="seoflix_youtube_channel_id" name="seoflix_youtube_channel_id" value="<?php echo esc_attr( $channel_id ); ?>" class="regular-text code" placeholder="UCxxxxxxxxxxxxxxxxxxxx">
+					<p class="description">Format <code>UCxxx...</code>, 24 caractères. Visible dans l'URL <code>/channel/UCxxx</code> sur YouTube.</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="seoflix_real_name">Nom réel / animateur(s)</label></th>
+				<td>
+					<input type="text" id="seoflix_real_name" name="seoflix_real_name" value="<?php echo esc_attr( $real_name ); ?>" class="regular-text" placeholder="Sylvain Peyronnet, ou Paul Vengeons + Antoine Veyrieres">
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="seoflix_subscriber_count">Nombre d'abonnés</label></th>
+				<td>
+					<input type="number" id="seoflix_subscriber_count" name="seoflix_subscriber_count" value="<?php echo esc_attr( (string) $subs ); ?>" min="0" step="1" class="small-text">
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="seoflix_thumbnail_url">URL miniature (avatar)</label></th>
+				<td>
+					<input type="url" id="seoflix_thumbnail_url" name="seoflix_thumbnail_url" value="<?php echo esc_attr( $thumb_url ); ?>" class="large-text code" placeholder="https://yt3.googleusercontent.com/...">
+					<?php if ( $thumb_url ) : ?>
+						<p><img src="<?php echo esc_url( $thumb_url ); ?>" alt="" style="max-width: 80px; border-radius: 50%; margin-top: 0.5rem;"></p>
+					<?php endif; ?>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="seoflix_channel_url">URL YouTube</label></th>
+				<td>
+					<input type="url" id="seoflix_channel_url" name="seoflix_channel_url" value="<?php echo esc_attr( $channel_url ); ?>" class="large-text code" placeholder="https://www.youtube.com/@MaChaine">
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	public static function save_metabox( int $post_id, \WP_Post $post ): void {
+		if ( ! isset( $_POST[ self::NONCE_NAME ] ) || ! wp_verify_nonce( $_POST[ self::NONCE_NAME ], self::NONCE_ACTION ) ) {
+			return;
+		}
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
+		$fields = [
+			'seoflix_handle'             => Meta_Keys::CHANNEL_HANDLE,
+			'seoflix_youtube_channel_id' => Meta_Keys::CHANNEL_YOUTUBE_ID,
+			'seoflix_real_name'          => Meta_Keys::CHANNEL_REAL_NAME,
+			'seoflix_thumbnail_url'      => Meta_Keys::CHANNEL_THUMBNAIL_URL,
+			'seoflix_channel_url'        => Meta_Keys::CHANNEL_YOUTUBE_URL,
+		];
+
+		foreach ( $fields as $key => $meta_key ) {
+			if ( isset( $_POST[ $key ] ) ) {
+				$value = trim( wp_unslash( $_POST[ $key ] ) );
+				if ( $value ) {
+					$value = ( strpos( $key, '_url' ) !== false ) ? esc_url_raw( $value ) : sanitize_text_field( $value );
+					update_post_meta( $post_id, $meta_key, $value );
+				} else {
+					delete_post_meta( $post_id, $meta_key );
+				}
+			}
+		}
+
+		if ( isset( $_POST['seoflix_subscriber_count'] ) ) {
+			$subs = max( 0, (int) $_POST['seoflix_subscriber_count'] );
+			update_post_meta( $post_id, Meta_Keys::CHANNEL_SUBSCRIBER_COUNT, $subs );
+		}
+	}
+
+	public static function enqueue_assets( string $hook ): void {
+		if ( ! in_array( $hook, [ 'post.php', 'post-new.php' ], true ) ) {
+			return;
+		}
+		$screen = get_current_screen();
+		if ( ! $screen || $screen->post_type !== CPT::CHANNEL ) {
+			return;
+		}
+
+		// JS inline pour le bouton "Récupérer"
+		$nonce = wp_create_nonce( self::AJAX_NONCE );
+		$ajax_url = admin_url( 'admin-ajax.php' );
+
+		$js = "
+		(function() {
+			const btn = document.getElementById('seoflix-fetch-channel');
+			if (!btn) return;
+			const status = document.getElementById('seoflix-fetch-status');
+			btn.addEventListener('click', async function() {
+				const handle = document.getElementById('seoflix_handle').value.trim();
+				if (!handle) { status.textContent = 'Saisis un handle d\\'abord.'; return; }
+				btn.disabled = true;
+				status.textContent = 'Récupération…';
+				try {
+					const formData = new FormData();
+					formData.append('action', 'seoflix_fetch_channel');
+					formData.append('_ajax_nonce', " . wp_json_encode( $nonce ) . ");
+					formData.append('handle', handle);
+					const r = await fetch(" . wp_json_encode( $ajax_url ) . ", { method: 'POST', body: formData, credentials: 'same-origin' });
+					const json = await r.json();
+					if (!json.success) throw new Error(json.data || 'Erreur inconnue');
+					const d = json.data;
+					if (d.handle) document.getElementById('seoflix_handle').value = d.handle;
+					if (d.youtube_channel_id) document.getElementById('seoflix_youtube_channel_id').value = d.youtube_channel_id;
+					if (d.subscriber_count) document.getElementById('seoflix_subscriber_count').value = d.subscriber_count;
+					if (d.thumbnail_url) document.getElementById('seoflix_thumbnail_url').value = d.thumbnail_url;
+					if (d.channel_url) document.getElementById('seoflix_channel_url').value = d.channel_url;
+					// Pré-remplir titre + description si vides
+					const titleInput = document.getElementById('title');
+					if (titleInput && !titleInput.value && d.title) titleInput.value = d.title;
+					status.innerHTML = '<span style=\"color: #28a745;\">✓ Récupéré : ' + (d.subscriber_count || 0).toLocaleString('fr-FR') + ' abonnés.</span>';
+				} catch (e) {
+					status.innerHTML = '<span style=\"color: #dc3545;\">✗ ' + e.message + '</span>';
+				} finally {
+					btn.disabled = false;
+				}
+			});
+		})();
+		";
+		wp_register_script( 'seoflix-channel-meta', '', [], '1.0', true );
+		wp_enqueue_script( 'seoflix-channel-meta' );
+		wp_add_inline_script( 'seoflix-channel-meta', $js );
+	}
+
+	public static function ajax_fetch_channel(): void {
+		check_ajax_referer( self::AJAX_NONCE );
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( 'Accès refusé.' );
+		}
+
+		$handle = isset( $_POST['handle'] ) ? sanitize_text_field( wp_unslash( $_POST['handle'] ) ) : '';
+		if ( ! $handle ) {
+			wp_send_json_error( 'Handle requis.' );
+		}
+
+		$result = YouTube_API::fetch_channel( $handle );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( $result->get_error_message() );
+		}
+
+		wp_send_json_success( $result );
+	}
+}

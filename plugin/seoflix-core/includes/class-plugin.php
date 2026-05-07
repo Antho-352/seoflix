@@ -28,6 +28,7 @@ final class Plugin {
 		Affiliate::init();
 		Security::init();
 		Frontend::init();
+		Channel_Meta::init();
 
 		// Re-seed des termes si la version a bumpé (ajout du topic « youtube » par exemple).
 		add_action( 'init', [ Activator::class, 'ensure_terms_seeded' ], 20 );
@@ -48,5 +49,7 @@ final class Plugin {
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-affiliate.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-security.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-frontend.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-youtube-api.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-channel-meta.php';
 	}
 }
