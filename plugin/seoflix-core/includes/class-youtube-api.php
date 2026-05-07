@@ -25,6 +25,47 @@ final class YouTube_API {
 		return self::get_api_key() !== '';
 	}
 
+	/* ======================================================================
+	 *  Quota soft-cap (côté plugin, par-dessus le hard cap Google de 10k/jour)
+	 * ====================================================================== */
+
+	private const USAGE_TRANSIENT_PREFIX = 'seoflix_yt_api_usage_';
+
+	/**
+	 * Limite quotidienne soft, configurable dans Réglages.
+	 * Défaut 1000 unités/jour (sur 10000 disponibles), volontairement bas.
+	 */
+	public static function get_daily_limit(): int {
+		return max( 0, (int) get_option( 'seoflix_yt_daily_limit', 1000 ) );
+	}
+
+	public static function get_today_usage(): int {
+		$key = self::USAGE_TRANSIENT_PREFIX . gmdate( 'Y-m-d' );
+		return (int) get_transient( $key );
+	}
+
+	public static function quota_remaining(): int {
+		$limit = self::get_daily_limit();
+		if ( $limit <= 0 ) {
+			return PHP_INT_MAX; // 0 = illimité (= seul le hard cap Google s'applique)
+		}
+		return max( 0, $limit - self::get_today_usage() );
+	}
+
+	public static function has_quota( int $needed ): bool {
+		$limit = self::get_daily_limit();
+		if ( $limit <= 0 ) {
+			return true;
+		}
+		return self::quota_remaining() >= $needed;
+	}
+
+	public static function increment_usage( int $units ): void {
+		$key     = self::USAGE_TRANSIENT_PREFIX . gmdate( 'Y-m-d' );
+		$current = (int) get_transient( $key );
+		set_transient( $key, $current + $units, DAY_IN_SECONDS );
+	}
+
 	/**
 	 * Récupère les infos d'une chaîne YouTube.
 	 *
@@ -35,6 +76,9 @@ final class YouTube_API {
 		$api_key = self::get_api_key();
 		if ( ! $api_key ) {
 			return new \WP_Error( 'no_api_key', 'Clé YouTube Data API non configurée. Va dans Seoflix → Réglages.' );
+		}
+		if ( ! self::has_quota( 1 ) ) {
+			return new \WP_Error( 'quota_exceeded', sprintf( 'Quota local atteint (%d unités utilisées aujourd\'hui sur %d). Augmente la limite dans Seoflix → Réglages, ou attends demain.', self::get_today_usage(), self::get_daily_limit() ) );
 		}
 
 		$handle_or_id = trim( $handle_or_id );
@@ -78,6 +122,8 @@ final class YouTube_API {
 		if ( empty( $body['items'][0] ) ) {
 			return new \WP_Error( 'channel_not_found', 'Aucune chaîne trouvée pour : ' . $handle_or_id );
 		}
+
+		self::increment_usage( 1 );
 
 		$item    = $body['items'][0];
 		$snippet = $item['snippet'] ?? [];
@@ -126,10 +172,18 @@ final class YouTube_API {
 			return new \WP_Error( 'invalid_channel_id', "ID de chaîne invalide ($channel_id). Format attendu : UC + 22 caractères." );
 		}
 
+		// Estimation du coût : 1 unit pour playlist + 1 unit par chunk de 50 videos = max ~3 units pour 50 videos
+		$estimated_cost = 1 + max( 1, (int) ceil( $max_videos / 50 ) );
+		if ( ! self::has_quota( $estimated_cost ) ) {
+			return new \WP_Error( 'quota_exceeded', sprintf( 'Quota local atteint (%d/%d unités utilisées aujourd\'hui). Augmente la limite dans Seoflix → Réglages, ou attends demain (reset à minuit Pacific Time).', self::get_today_usage(), self::get_daily_limit() ) );
+		}
+
 		// Uploads playlist = UU + suffix du channel_id (sans le préfixe UC)
 		$uploads_playlist_id = 'UU' . substr( $channel_id, 2 );
 
 		$api_key = self::get_api_key();
+
+		$units_used = 0;
 
 		// Étape 1 : récupérer les playlistItems (juste les video IDs)
 		$video_ids = [];
@@ -149,11 +203,14 @@ final class YouTube_API {
 				self::ENDPOINT_PLAYLIST_ITEMS . '?' . http_build_query( $params ),
 				[ 'timeout' => 15, 'user-agent' => 'Seoflix/1.0' ]
 			);
+			$units_used += 1;
 			if ( is_wp_error( $resp ) ) {
+				self::increment_usage( $units_used );
 				return $resp;
 			}
 			$body = json_decode( wp_remote_retrieve_body( $resp ), true );
 			if ( wp_remote_retrieve_response_code( $resp ) !== 200 ) {
+				self::increment_usage( $units_used );
 				return new \WP_Error( 'youtube_api_error', $body['error']['message'] ?? 'Erreur API' );
 			}
 
@@ -170,6 +227,7 @@ final class YouTube_API {
 		}
 
 		if ( ! $video_ids ) {
+			self::increment_usage( $units_used );
 			return [];
 		}
 
@@ -186,11 +244,14 @@ final class YouTube_API {
 				self::ENDPOINT_VIDEOS . '?' . http_build_query( $params ),
 				[ 'timeout' => 20, 'user-agent' => 'Seoflix/1.0' ]
 			);
+			$units_used += 1;
 			if ( is_wp_error( $resp ) ) {
+				self::increment_usage( $units_used );
 				return $resp;
 			}
 			$body = json_decode( wp_remote_retrieve_body( $resp ), true );
 			if ( wp_remote_retrieve_response_code( $resp ) !== 200 ) {
+				self::increment_usage( $units_used );
 				return new \WP_Error( 'youtube_api_error', $body['error']['message'] ?? 'Erreur API' );
 			}
 
@@ -221,6 +282,7 @@ final class YouTube_API {
 			}
 		}
 
+		self::increment_usage( $units_used );
 		return $results;
 	}
 

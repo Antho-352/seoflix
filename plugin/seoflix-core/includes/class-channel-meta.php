@@ -288,6 +288,13 @@ final class Channel_Meta {
 			wp_send_json_error( 'Chaîne invalide.' );
 		}
 
+		// Cooldown anti-spam : 30s entre 2 syncs sur la même chaîne
+		$lock_key = 'seoflix_sync_lock_' . $channel_post_id;
+		if ( get_transient( $lock_key ) ) {
+			wp_send_json_error( 'Patiente 30 secondes entre 2 sync sur la même chaîne (anti-spam).' );
+		}
+		set_transient( $lock_key, 1, 30 );
+
 		$channel_yt_id = (string) get_post_meta( $channel_post_id, Meta_Keys::CHANNEL_YOUTUBE_ID, true );
 		if ( ! $channel_yt_id ) {
 			wp_send_json_error( 'ID YouTube de la chaîne manquant. Saisis-le ou utilise « Récupérer depuis YouTube » d\'abord.' );

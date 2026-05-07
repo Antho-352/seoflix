@@ -38,6 +38,11 @@ final class Admin_Settings {
 			'sanitize_callback' => static fn( $v ) => (bool) $v,
 			'default'           => true,
 		] );
+		register_setting( self::OPTION_GROUP, 'seoflix_yt_daily_limit', [
+			'type'              => 'integer',
+			'sanitize_callback' => static fn( $v ) => max( 0, (int) $v ),
+			'default'           => 1000,
+		] );
 	}
 
 	public static function render(): void {
@@ -46,9 +51,13 @@ final class Admin_Settings {
 		}
 
 		$api_key      = (string) get_option( 'seoflix_youtube_api_key', '' );
+		$daily_limit  = (int) get_option( 'seoflix_yt_daily_limit', 1000 );
 		$accounts_on  = (bool) get_option( 'seoflix_user_accounts_enabled', false );
 		$auto_publish = (bool) get_option( 'seoflix_auto_publish_ai', false );
 		$cron_on      = (bool) get_option( 'seoflix_ingestion_cron_enabled', true );
+
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-youtube-api.php';
+		$today_usage = \Seoflix\YouTube_API::get_today_usage();
 
 		?>
 		<div class="wrap seoflix-wrap">
@@ -63,8 +72,17 @@ final class Admin_Settings {
 						<tr>
 							<th scope="row"><label for="seoflix_youtube_api_key">Clé API YouTube Data v3</label></th>
 							<td>
-								<input type="text" id="seoflix_youtube_api_key" name="seoflix_youtube_api_key" value="<?php echo esc_attr( $api_key ); ?>" class="regular-text" autocomplete="off">
-								<p class="description">Pour activer l'ingestion automatique. Créer la clé sur <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> (activer « YouTube Data API v3 »). Restreindre à l'IP du serveur.</p>
+								<input type="password" id="seoflix_youtube_api_key" name="seoflix_youtube_api_key" value="<?php echo esc_attr( $api_key ); ?>" class="regular-text" autocomplete="off">
+								<p class="description">Créer la clé sur <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> (activer « YouTube Data API v3 »). Restreindre à l'IP du serveur Kimsufi. La clé reste affichée masquée par sécurité.</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="seoflix_yt_daily_limit">Limite quotidienne (unités API)</label></th>
+							<td>
+								<input type="number" id="seoflix_yt_daily_limit" name="seoflix_yt_daily_limit" value="<?php echo esc_attr( (string) $daily_limit ); ?>" min="0" step="100" class="small-text">
+								<p class="description">Plafond local appliqué côté plugin. Au-delà, les appels sont bloqués jusqu'à demain (reset minuit Pacific Time). <strong>Mettre 0 = pas de limite</strong> (seul le hard cap Google de 10 000/j s'applique).<br>
+								Coûts indicatifs : Récupérer une chaîne = 1 unité, Sync de 50 vidéos = 3 unités.<br>
+								<strong>Aujourd'hui : <?php echo esc_html( number_format_i18n( $today_usage ) ); ?> unités utilisées</strong> sur <?php echo $daily_limit > 0 ? esc_html( number_format_i18n( $daily_limit ) ) : '∞'; ?>.</p>
 							</td>
 						</tr>
 					</table>

@@ -2,6 +2,7 @@
 namespace Seoflix\Admin;
 
 use Seoflix\CPT;
+use Seoflix\YouTube_API;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -59,6 +60,37 @@ final class Admin_Dashboard {
 					<p><a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=seoflix-pending' ) ); ?>">Voir les vidéos à valider</a></p>
 				</div>
 			<?php endif; ?>
+
+			<?php
+			require_once SEOFLIX_PLUGIN_DIR . 'includes/class-youtube-api.php';
+			$yt_today      = YouTube_API::get_today_usage();
+			$yt_limit      = YouTube_API::get_daily_limit();
+			$yt_configured = YouTube_API::is_configured();
+			?>
+			<div class="seoflix-card">
+				<h2>YouTube Data API — utilisation aujourd'hui</h2>
+				<?php if ( ! $yt_configured ) : ?>
+					<p>Clé API non configurée. <a href="<?php echo esc_url( admin_url( 'admin.php?page=seoflix-settings' ) ); ?>">Configurer la clé →</a></p>
+				<?php else : ?>
+					<?php
+					$pct = $yt_limit > 0 ? min( 100, (int) round( $yt_today / $yt_limit * 100 ) ) : 0;
+					$bar_color = $pct >= 90 ? '#dc3545' : ( $pct >= 70 ? '#ffc107' : '#28a745' );
+					?>
+					<p style="font-size: 1.1rem; margin-bottom: 0.5rem;"><strong><?php echo esc_html( number_format_i18n( $yt_today ) ); ?></strong> unités utilisées
+						<?php if ( $yt_limit > 0 ) : ?>
+							sur <strong><?php echo esc_html( number_format_i18n( $yt_limit ) ); ?></strong> (limite locale)
+						<?php else : ?>
+							(pas de limite locale ; cap Google global = 10 000/j)
+						<?php endif; ?>
+					</p>
+					<?php if ( $yt_limit > 0 ) : ?>
+						<div style="background: #eee; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 0.5rem;">
+							<div style="background: <?php echo esc_attr( $bar_color ); ?>; height: 100%; width: <?php echo (int) $pct; ?>%;"></div>
+						</div>
+					<?php endif; ?>
+					<p style="color: #666; font-size: 0.9rem;">Reset à minuit Pacific Time (≈ 9h du matin heure française). Modifier la limite : <a href="<?php echo esc_url( admin_url( 'admin.php?page=seoflix-settings' ) ); ?>">Réglages</a>.</p>
+				<?php endif; ?>
+			</div>
 		</div>
 		<?php
 	}
