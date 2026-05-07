@@ -20,6 +20,8 @@ final class Admin {
 		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-admin-settings.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-admin-affiliate-stats.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-admin-columns.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-product-logo.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-legal-pages.php';
 
 		Admin_Menu::init();
 		Admin_Ingestion::init();
@@ -28,6 +30,8 @@ final class Admin {
 		Admin_Dashboard::init();
 		Admin_Affiliate_Stats::init();
 		Admin_Columns::init();
+		Product_Logo::init();
+		Legal_Pages::init();
 
 		add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_assets' ] );
 	}

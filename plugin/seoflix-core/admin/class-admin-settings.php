@@ -131,7 +131,32 @@ final class Admin_Settings {
 									<input type="checkbox" name="seoflix_ingestion_cron_enabled" value="1" <?php checked( $cron_on ); ?>>
 									Activer le scan quotidien des chaînes
 								</label>
-								<p class="description">Scan quotidien à 4h du matin (heure serveur). Nécessite la clé YouTube Data API.</p>
+								<p class="description">Scan quotidien à 4h du matin (heure serveur). 50 dernières vidéos par chaîne, dédup auto par YouTube ID. Nécessite la clé YouTube Data API.</p>
+								<?php
+								$last_run = get_option( \Seoflix\Cron::LAST_RUN_OPTION, [] );
+								$next     = wp_next_scheduled( \Seoflix\Cron::HOOK );
+								if ( $next ) {
+									echo '<p class="description"><strong>Prochaine exécution :</strong> ' . esc_html( wp_date( 'd/m/Y H:i', $next ) ) . '</p>';
+								}
+								if ( ! empty( $last_run['timestamp'] ) ) {
+									$ago   = human_time_diff( $last_run['timestamp'], time() );
+									$stats = $last_run['stats'] ?? [];
+									if ( ! empty( $stats['error'] ) ) {
+										printf(
+											'<p class="description" style="color:#dc3545;"><strong>Dernière exécution :</strong> il y a %s — erreur : %s</p>',
+											esc_html( $ago ), esc_html( $stats['error'] )
+										);
+									} else {
+										printf(
+											'<p class="description"><strong>Dernière exécution :</strong> il y a %s — %d vidéo(s) créée(s), %d ignorée(s) (déjà en base), %d chaîne(s) scannée(s).</p>',
+											esc_html( $ago ),
+											(int) ( $stats['created'] ?? 0 ),
+											(int) ( $stats['skipped_existing'] ?? 0 ),
+											(int) ( $stats['channels_done'] ?? 0 )
+										);
+									}
+								}
+								?>
 							</td>
 						</tr>
 					</table>
@@ -139,6 +164,12 @@ final class Admin_Settings {
 
 				<?php submit_button(); ?>
 			</form>
+
+			<div class="seoflix-card">
+				<h2>Pages légales</h2>
+				<p>Génère les 3 pages légales référencées dans le footer (Mentions légales, Politique de confidentialité, Politique d'affiliation).</p>
+				<?php Legal_Pages::render_button(); ?>
+			</div>
 		</div>
 		<?php
 	}

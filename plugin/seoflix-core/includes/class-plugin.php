@@ -31,6 +31,7 @@ final class Plugin {
 		Channel_Meta::init();
 		Video_Meta::init();
 		YouTube_API::init();
+		Cron::init();
 
 		// Re-seed des termes si la version a bumpé (ajout du topic « youtube » par exemple).
 		add_action( 'init', [ Activator::class, 'ensure_terms_seeded' ], 20 );
@@ -54,5 +55,6 @@ final class Plugin {
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-youtube-api.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-channel-meta.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-video-meta.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-cron.php';
 	}
 }
