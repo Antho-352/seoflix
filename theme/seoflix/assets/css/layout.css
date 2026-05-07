@@ -5,7 +5,7 @@
 }
 
 .sx-page {
-	padding-block: var(--sx-space-8) var(--sx-space-16);
+	padding-block: var(--sx-space-6) var(--sx-space-12);
 }
 
 .sx-page--narrow {
@@ -27,22 +27,27 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: var(--sx-space-6);
-	padding-block: var(--sx-space-2);
-	min-height: 48px;
+	gap: var(--sx-space-4);
+	padding-block: 6px;
+	min-height: 40px;
 }
 
 .sx-logo {
 	display: inline-flex;
 	align-items: center;
-	gap: var(--sx-space-2);
-	font-size: 1.25rem;
+	gap: 0.4rem;
+	font-size: 1.05rem;
 	font-weight: 800;
 	letter-spacing: -0.02em;
 	color: var(--sx-color-text);
 	text-decoration: none;
 	transition: opacity var(--sx-transition-fast);
 	flex-shrink: 0;
+}
+
+.sx-logo__mark {
+	width: 24px !important;
+	height: 24px !important;
 }
 
 .sx-logo:hover {
@@ -101,7 +106,7 @@
 	border: none;
 	outline: none;
 	color: var(--sx-color-text);
-	padding: 0.4rem 0;
+	padding: 0.25rem 0;
 	width: 180px;
 	font-size: 0.85rem;
 }
