@@ -65,6 +65,37 @@ define( 'DISABLE_WP_CRON', true );
 3. **Importer**
 4. Rapport : 14 chaînes, 47 vidéos (statut « pending »), 34 produits
 
+## 6 bis. Configurer le menu (Apparence → Menus)
+
+Par défaut, le thème affiche un menu hardcodé : **SEO / Affiliation / YouTube / Vente de liens / Business / Toutes les catégories / Chaînes / Outils SEO**.
+
+Pour pouvoir le modifier (ajouter une entrée Blog, retirer/réordonner) :
+
+1. **Apparence → Menus**
+2. **Créer un nouveau menu** → nom : « Menu principal » → **Créer le menu**
+3. Ajouter les items dans l'ordre voulu :
+   - **Catégories** (panneau gauche, dérouler « Sujets ») → cocher : SEO technique, Affiliation, YouTube, Vente de liens, Business → **Ajouter au menu**
+   - **Liens personnalisés** :
+     - URL : `/categories/` — Texte : `Toutes les catégories`
+     - URL : `/chaines/` — Texte : `Chaînes`
+     - URL : `/outils/` — Texte : `Outils SEO`
+4. Réordonner par drag & drop si besoin
+5. **Réglages du menu** (en bas) → cocher **« Menu principal »**
+6. **Enregistrer le menu**
+
+Dès qu'un menu est assigné à l'emplacement « Menu principal », le fallback hardcodé disparaît et c'est ton menu qui s'affiche.
+
+### Ajouter une entrée Blog
+
+WP a un module d'articles natif (CPT `post`). Pour l'utiliser et avoir une page Blog :
+
+1. **Pages → Ajouter** → titre : `Blog` → publier (la laisser vide, son contenu sera remplacé par la liste des articles)
+2. **Réglages → Lecture** → « Page des articles » → sélectionner **Blog** → enregistrer
+3. **Apparence → Menus** → ajouter un **Lien personnalisé** : URL `/blog/`, texte `Blog` → **Ajouter au menu**
+4. Tu peux maintenant créer des articles via **Articles → Ajouter**, ils apparaîtront automatiquement sur `/blog/`
+
+Le template `index.php` du thème gère déjà l'affichage des articles WP en grille style Seoflix.
+
 ## 7. Valider les vidéos
 
 1. **Seoflix → Vidéos à valider**

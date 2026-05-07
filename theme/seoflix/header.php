@@ -26,14 +26,20 @@
 		</a>
 
 		<nav class="sx-nav" aria-label="Navigation principale">
-			<a href="<?php echo esc_url( home_url( '/sujet/seo-technique/' ) ); ?>">SEO</a>
-			<a href="<?php echo esc_url( home_url( '/sujet/affiliation/' ) ); ?>">Affiliation</a>
-			<a href="<?php echo esc_url( home_url( '/sujet/youtube/' ) ); ?>">YouTube</a>
-			<a href="<?php echo esc_url( home_url( '/sujet/vente-de-liens/' ) ); ?>">Vente de liens</a>
-			<a href="<?php echo esc_url( home_url( '/sujet/business-general/' ) ); ?>">Business</a>
-			<a href="<?php echo esc_url( home_url( '/categories/' ) ); ?>">Toutes les catégories</a>
-			<a href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_channel' ) ?: home_url( '/chaines/' ) ); ?>">Chaînes</a>
-			<a href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_product' ) ?: home_url( '/outils/' ) ); ?>">Outils SEO</a>
+			<?php
+			if ( has_nav_menu( 'primary' ) ) {
+				wp_nav_menu( [
+					'theme_location' => 'primary',
+					'container'      => false,
+					'items_wrap'     => '%3$s',
+					'walker'         => new Seoflix_Nav_Walker(),
+					'depth'          => 1,
+					'fallback_cb'    => false,
+				] );
+			} else {
+				seoflix_default_primary_menu();
+			}
+			?>
 		</nav>
 
 		<form role="search" method="get" class="sx-search-form" action="<?php echo esc_url( home_url( '/' ) ); ?>">

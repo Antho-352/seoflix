@@ -88,6 +88,52 @@ add_action( 'pre_get_posts', static function ( $query ) {
 } );
 
 /* ============================================================
+ *  Nav menu — walker custom + fallback
+ * ============================================================ */
+
+/**
+ * Walker minimaliste : pas de <ul>/<li>, juste des <a> directs.
+ * Permet de réutiliser le CSS existant `.sx-nav > a`.
+ */
+class Seoflix_Nav_Walker extends Walker_Nav_Menu {
+	public function start_lvl( &$output, $depth = 0, $args = null ) {}
+	public function end_lvl( &$output, $depth = 0, $args = null ) {}
+	public function start_el( &$output, $item, $depth = 0, $args = null, $id = 0 ) {
+		$url   = ! empty( $item->url ) ? $item->url : '#';
+		$title = apply_filters( 'the_title', $item->title, $item->ID );
+		$output .= '<a href="' . esc_url( $url ) . '"';
+		if ( ! empty( $item->target ) ) {
+			$output .= ' target="' . esc_attr( $item->target ) . '"';
+		}
+		if ( ! empty( $item->xfn ) ) {
+			$output .= ' rel="' . esc_attr( $item->xfn ) . '"';
+		}
+		$output .= '>' . esc_html( $title ) . '</a>';
+	}
+	public function end_el( &$output, $item, $depth = 0, $args = null ) {}
+}
+
+/**
+ * Fallback : menu hardcodé utilisé tant qu'aucun menu n'est assigné à l'emplacement
+ * « Menu principal » dans Apparence → Menus.
+ *
+ * Dès que tu crées un menu et que tu coches « Menu principal » dans son
+ * affectation, ce fallback disparaît et c'est ton menu qui s'affiche.
+ */
+function seoflix_default_primary_menu(): void {
+	?>
+	<a href="<?php echo esc_url( home_url( '/sujet/seo-technique/' ) ); ?>">SEO</a>
+	<a href="<?php echo esc_url( home_url( '/sujet/affiliation/' ) ); ?>">Affiliation</a>
+	<a href="<?php echo esc_url( home_url( '/sujet/youtube/' ) ); ?>">YouTube</a>
+	<a href="<?php echo esc_url( home_url( '/sujet/vente-de-liens/' ) ); ?>">Vente de liens</a>
+	<a href="<?php echo esc_url( home_url( '/sujet/business-general/' ) ); ?>">Business</a>
+	<a href="<?php echo esc_url( home_url( '/categories/' ) ); ?>">Toutes les catégories</a>
+	<a href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_channel' ) ?: home_url( '/chaines/' ) ); ?>">Chaînes</a>
+	<a href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_product' ) ?: home_url( '/outils/' ) ); ?>">Outils SEO</a>
+	<?php
+}
+
+/* ============================================================
  *  Helpers — Vidéo
  * ============================================================ */
 
