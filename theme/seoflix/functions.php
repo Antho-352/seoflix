@@ -21,6 +21,31 @@ add_action( 'after_setup_theme', static function () {
 } );
 
 /* ============================================================
+ *  Sidebars (zones de widgets) — 4 colonnes du footer
+ *  Configurables depuis Apparence → Widgets
+ * ============================================================ */
+
+add_action( 'widgets_init', static function () {
+	$columns = [
+		[ 'id' => 'sx-footer-1', 'name' => 'Pied de page — Colonne 1 (Branding)' ],
+		[ 'id' => 'sx-footer-2', 'name' => 'Pied de page — Colonne 2 (Explorer)' ],
+		[ 'id' => 'sx-footer-3', 'name' => 'Pied de page — Colonne 3 (Sujets)' ],
+		[ 'id' => 'sx-footer-4', 'name' => 'Pied de page — Colonne 4 (Légal)' ],
+	];
+	foreach ( $columns as $col ) {
+		register_sidebar( [
+			'id'            => $col['id'],
+			'name'          => $col['name'],
+			'description'   => 'Glisse-dépose ici un widget « Menu de navigation », « HTML personnalisé » ou « Liste personnalisée ». Si vide, le contenu par défaut s\'affiche.',
+			'before_widget' => '<div class="sx-footer-widget %2$s" id="%1$s">',
+			'after_widget'  => '</div>',
+			'before_title'  => '<h3>',
+			'after_title'   => '</h3>',
+		] );
+	}
+} );
+
+/* ============================================================
  *  Assets
  * ============================================================ */
 

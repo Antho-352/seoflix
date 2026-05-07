@@ -308,6 +308,22 @@
 	font-style: normal;
 }
 
+.sx-rotate {
+	display: inline-block;
+	color: var(--sx-color-accent);
+	transition: opacity 250ms ease, transform 250ms ease;
+	will-change: opacity, transform;
+}
+
+.sx-rotate.is-out {
+	opacity: 0;
+	transform: translateY(-12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sx-rotate { transition: none; transform: none; }
+}
+
 .sx-hero__subtitle {
 	color: var(--sx-color-text-muted);
 	font-size: clamp(0.95rem, 1.5vw, 1.1rem);

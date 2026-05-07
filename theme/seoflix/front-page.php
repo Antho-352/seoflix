@@ -11,7 +11,10 @@ $total_products = wp_count_posts( 'seoflix_product' )->publish ?? 0;
 
 <section class="sx-hero">
 	<div class="sx-container">
-		<h1 class="sx-hero__title"><em>Tout</em> le SEO francophone. En vidéo.</h1>
+		<h1 class="sx-hero__title">
+			Maîtrise <span id="sx-rotate" class="sx-rotate" aria-live="polite">SEO</span><br>
+			avec les meilleurs.
+		</h1>
 		<p class="sx-hero__subtitle">Les meilleures interviews, podcasts et tutos sur le SEO, le netlinking, l'affiliation, la vente de liens et le business web — agrégés en un seul endroit.</p>
 		<div class="sx-hero__stats">
 			<div class="sx-hero__stat">
@@ -112,5 +115,25 @@ $total_products = wp_count_posts( 'seoflix_product' )->publish ?? 0;
 	<?php endif; ?>
 
 </div>
+
+<script>
+(function() {
+	const el = document.getElementById('sx-rotate');
+	if (!el) return;
+	const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const words = ["SEO", "l'Affiliation", "Youtube", "la Vente de Liens", "le Black Hat", "le Business", "le Netlinking"];
+	if (reduced) { el.textContent = words[0]; return; }
+	let i = 0;
+	el.textContent = words[0];
+	setInterval(function() {
+		el.classList.add('is-out');
+		setTimeout(function() {
+			i = (i + 1) % words.length;
+			el.textContent = words[i];
+			el.classList.remove('is-out');
+		}, 280);
+	}, 2200);
+})();
+</script>
 
 <?php get_footer();

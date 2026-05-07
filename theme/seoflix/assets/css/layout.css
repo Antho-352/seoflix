@@ -144,6 +144,13 @@
 	letter-spacing: 0.06em;
 	color: var(--sx-color-text-muted);
 	margin-bottom: var(--sx-space-3);
+	margin-top: 0;
+}
+
+.sx-site-footer ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
 }
 
 .sx-site-footer ul li {
@@ -157,6 +164,14 @@
 
 .sx-site-footer a:hover {
 	color: var(--sx-color-text);
+}
+
+.sx-footer-widget {
+	margin-bottom: var(--sx-space-4);
+}
+
+.sx-footer-widget:last-child {
+	margin-bottom: 0;
 }
 
 .sx-site-footer__bottom {
