@@ -114,6 +114,11 @@ $error_text = $error_messages[ $error_code ] ?? '';
 				<span>J'accepte les <a href="<?php echo esc_url( home_url( '/mentions-legales/' ) ); ?>">mentions légales</a> et la <a href="<?php echo esc_url( home_url( '/confidentialite/' ) ); ?>">politique de confidentialité</a>. <em>*</em></span>
 			</label>
 
+			<label class="sx-form__label sx-form__label--check">
+				<input type="checkbox" name="newsletter_optin" value="1">
+				<span>Je m'inscris aussi à la newsletter Seoflix (~2 envois/mois, désinscription en 1 clic).</span>
+			</label>
+
 			<?php if ( $turnstile ) : ?>
 				<div class="cf-turnstile" data-sitekey="<?php echo esc_attr( $turnstile ); ?>" data-theme="dark"></div>
 				<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

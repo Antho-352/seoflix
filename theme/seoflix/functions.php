@@ -529,6 +529,44 @@ function seoflix_product_go_url( int $product_id ): string {
  *  Renderers — partials
  * ============================================================ */
 
+function seoflix_render_newsletter( string $source = 'homepage', array $opts = [] ): void {
+	$opts = wp_parse_args( $opts, [
+		'title'    => 'Reste dans la boucle',
+		'subtitle' => "Suivez les dernières actualités de l'édition de site. Nouvelles stratégies, nouveaux outils, interviews exclusives et autres bonus pour ton business en ligne. Pas de spam, deux envois par mois maximum.",
+		'compact'  => false,
+	] );
+	$status = isset( $_GET['newsletter'] ) ? sanitize_key( wp_unslash( $_GET['newsletter'] ) ) : '';
+	$action = home_url( '/sx-auth/newsletter/' );
+	?>
+	<section class="sx-newsletter <?php echo $opts['compact'] ? 'sx-newsletter--compact' : ''; ?>">
+		<div class="sx-newsletter__inner">
+			<div class="sx-newsletter__copy">
+				<h2 class="sx-newsletter__title"><?php echo esc_html( $opts['title'] ); ?></h2>
+				<p class="sx-newsletter__subtitle"><?php echo esc_html( $opts['subtitle'] ); ?></p>
+			</div>
+			<form method="post" action="<?php echo esc_url( $action ); ?>" class="sx-newsletter__form">
+				<?php wp_nonce_field( 'seoflix_newsletter', '_seoflix_newsletter_nonce' ); ?>
+				<input type="hidden" name="source" value="<?php echo esc_attr( $source ); ?>">
+				<input type="hidden" name="_wp_http_referer" value="<?php echo esc_attr( ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ); ?>">
+				<!-- Honeypot -->
+				<div style="position:absolute; left:-9999px;" aria-hidden="true">
+					<label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+				</div>
+				<input type="email" name="email" required placeholder="ton@email.fr" aria-label="E-mail" class="sx-newsletter__input">
+				<button type="submit" class="sx-btn sx-newsletter__submit">M'inscrire</button>
+			</form>
+			<?php if ( $status === 'ok' ) : ?>
+				<p class="sx-newsletter__notice sx-newsletter__notice--ok">✓ Inscription enregistrée. Merci !</p>
+			<?php elseif ( $status === 'invalid' ) : ?>
+				<p class="sx-newsletter__notice sx-newsletter__notice--err">E-mail invalide.</p>
+			<?php elseif ( $status === 'session_expired' ) : ?>
+				<p class="sx-newsletter__notice sx-newsletter__notice--err">Session expirée, recharge la page.</p>
+			<?php endif; ?>
+		</div>
+	</section>
+	<?php
+}
+
 function seoflix_render_video_card( WP_Post $video ): void {
 	$thumb    = seoflix_video_thumbnail_url( $video->ID );
 	$duration = seoflix_video_duration_formatted( $video->ID );

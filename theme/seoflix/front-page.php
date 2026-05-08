@@ -58,7 +58,9 @@ $has_rotate    = strpos( $hero_title, '[rotate]' ) !== false;
 <div class="sx-container sx-page">
 
 	<?php
+	$section_index = 0;
 	foreach ( $sections as $section ) {
+		$section_index++;
 		$type  = $section['type'] ?? '';
 		$title = (string) ( $section['title'] ?? '' );
 		$limit = (int) ( $section['limit'] ?? 12 );
@@ -161,6 +163,11 @@ $has_rotate    = strpos( $hero_title, '[rotate]' ) !== false;
 					<?php
 				endif;
 				break;
+		}
+
+		// Insère le bloc newsletter APRÈS la 2e section visible
+		if ( $section_index === 2 ) {
+			seoflix_render_newsletter( \Seoflix\Newsletter::SOURCE_HOMEPAGE, [ 'compact' => true ] );
 		}
 	}
 	?>

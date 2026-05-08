@@ -93,11 +93,12 @@ final class Custom_Auth {
 			return;
 		}
 		$handlers = [
-			'register' => [ self::class, 'handle_register' ],
-			'login'    => [ self::class, 'handle_login' ],
-			'lostpass' => [ self::class, 'handle_lostpass' ],
-			'resend'   => [ self::class, 'handle_resend_activation' ],
-			'setpwd'   => [ self::class, 'handle_setpwd' ],
+			'register'   => [ self::class, 'handle_register' ],
+			'login'      => [ self::class, 'handle_login' ],
+			'lostpass'   => [ self::class, 'handle_lostpass' ],
+			'resend'     => [ self::class, 'handle_resend_activation' ],
+			'setpwd'     => [ self::class, 'handle_setpwd' ],
+			'newsletter' => [ Newsletter::class, 'handle_subscribe' ],
 		];
 		if ( isset( $handlers[ $action ] ) ) {
 			call_user_func( $handlers[ $action ] );
@@ -262,6 +263,11 @@ final class Custom_Auth {
 		$activation_token = bin2hex( random_bytes( 32 ) );
 		update_user_meta( $user_id, self::META_PENDING, $activation_token );
 		update_user_meta( $user_id, self::META_PENDING . '_expires', time() + ( 7 * DAY_IN_SECONDS ) );
+
+		// Opt-in newsletter (case cochée sur le form)
+		if ( ! empty( $_POST['newsletter_optin'] ) ) {
+			Newsletter::subscribe( $user_email, Newsletter::SOURCE_REGISTRATION );
+		}
 
 		set_transient( $rate_key, $rate_count + 1, HOUR_IN_SECONDS );
 

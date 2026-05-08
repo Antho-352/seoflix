@@ -1,5 +1,16 @@
 </main>
 
+<?php
+// Newsletter dans le footer (sauf sur les pages auth pour ne pas confondre)
+if ( ! is_page( [ 'connexion', 'inscription', 'mot-de-passe-oublie' ] )
+	&& ! ( function_exists( 'get_query_var' ) && ( get_query_var( 'seoflix_setpwd' ) || get_query_var( 'seoflix_activate' ) || get_query_var( 'seoflix_dashboard' ) ) )
+	&& function_exists( 'seoflix_render_newsletter' ) ) {
+	echo '<div class="sx-container sx-newsletter-footer-wrap">';
+	seoflix_render_newsletter( \Seoflix\Newsletter::SOURCE_FOOTER, [ 'compact' => true, 'title' => 'Newsletter Seoflix' ] );
+	echo '</div>';
+}
+?>
+
 <footer class="sx-site-footer">
 	<div class="sx-container">
 		<div class="sx-site-footer__cols">
