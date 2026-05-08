@@ -38,6 +38,67 @@ final class Admin_Columns {
 		add_filter( 'bulk_actions-edit-seoflix_video',         [ self::class, 'register_bulk_actions' ] );
 		add_filter( 'handle_bulk_actions-edit-seoflix_video',  [ self::class, 'handle_bulk_detect_products' ], 10, 3 );
 		add_action( 'admin_notices',                           [ self::class, 'bulk_detect_notice' ] );
+
+		// Recherche par URL / ID YouTube sur la liste des vidéos
+		add_action( 'pre_get_posts',                           [ self::class, 'video_search_by_youtube' ] );
+	}
+
+	/**
+	 * Hijacke la recherche admin de la liste des vidéos pour matcher aussi
+	 * sur le meta `_seoflix_youtube_id`. Accepte :
+	 *   - URL YouTube complète : https://www.youtube.com/watch?v=XXXXXXXXXXX
+	 *   - URL courte : https://youtu.be/XXXXXXXXXXX
+	 *   - ID nu : XXXXXXXXXXX (11 chars)
+	 *   - Sinon : recherche normale par titre/contenu
+	 */
+	public static function video_search_by_youtube( \WP_Query $query ): void {
+		if ( ! is_admin() || ! $query->is_main_query() ) {
+			return;
+		}
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || $screen->id !== 'edit-seoflix_video' ) {
+			return;
+		}
+		$s = trim( (string) $query->get( 's' ) );
+		if ( ! $s ) {
+			return;
+		}
+
+		$yt_id = self::extract_youtube_id( $s );
+		if ( ! $yt_id ) {
+			return; // recherche normale par titre
+		}
+
+		// Switch vers une meta_query exacte sur _seoflix_youtube_id
+		$query->set( 's', '' );
+		$query->set( 'meta_query', [
+			[
+				'key'     => Meta_Keys::VIDEO_YOUTUBE_ID,
+				'value'   => $yt_id,
+				'compare' => '=',
+			],
+		] );
+	}
+
+	private static function extract_youtube_id( string $input ): string {
+		$input = trim( $input );
+		// URL longue
+		if ( preg_match( '~[?&]v=([a-zA-Z0-9_\-]{11})~', $input, $m ) ) {
+			return $m[1];
+		}
+		// URL courte youtu.be
+		if ( preg_match( '~youtu\.be/([a-zA-Z0-9_\-]{11})~', $input, $m ) ) {
+			return $m[1];
+		}
+		// URL embed
+		if ( preg_match( '~youtube(?:-nocookie)?\.com/embed/([a-zA-Z0-9_\-]{11})~', $input, $m ) ) {
+			return $m[1];
+		}
+		// ID brut
+		if ( preg_match( '~^[a-zA-Z0-9_\-]{11}$~', $input ) ) {
+			return $input;
+		}
+		return '';
 	}
 
 	/* ======================================================================
