@@ -297,6 +297,31 @@ class Seoflix_Nav_Walker extends Walker_Nav_Menu {
  * Dès que tu crées un menu et que tu coches « Menu principal » dans son
  * affectation, ce fallback disparaît et c'est ton menu qui s'affiche.
  */
+/**
+ * Rend le menu primaire avec fallback robuste :
+ *   - Si un menu est assigné à "primary" ET contient des items → l'utilise
+ *   - Sinon → fallback hardcodé (pour ne JAMAIS avoir un menu vide)
+ */
+function seoflix_render_primary_menu(): void {
+	$rendered = '';
+	if ( has_nav_menu( 'primary' ) ) {
+		$rendered = wp_nav_menu( [
+			'theme_location' => 'primary',
+			'container'      => false,
+			'items_wrap'     => '%3$s',
+			'walker'         => new Seoflix_Nav_Walker(),
+			'depth'          => 1,
+			'fallback_cb'    => false,
+			'echo'           => false,
+		] );
+	}
+	if ( $rendered && trim( $rendered ) !== '' ) {
+		echo $rendered;
+		return;
+	}
+	seoflix_default_primary_menu();
+}
+
 function seoflix_default_primary_menu(): void {
 	?>
 	<a href="<?php echo esc_url( home_url( '/sujet/seo-technique/' ) ); ?>">SEO</a>

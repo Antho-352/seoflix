@@ -18,59 +18,28 @@ get_header();
 $register_post = \Seoflix\Custom_Auth::frontend_action_url( 'register' );
 $turnstile     = (string) get_option( \Seoflix\Contact::OPTION_TURNSTILE_SITE, '' );
 
-$check_email = isset( $_GET['check'] ) && $_GET['check'] === 'email';
-$has_error   = ! empty( $_GET['registration'] );
-$error_code  = $has_error ? sanitize_text_field( wp_unslash( $_GET['registration'] ) ) : '';
+$has_error  = ! empty( $_GET['registration'] );
+$error_code = $has_error ? sanitize_text_field( wp_unslash( $_GET['registration'] ) ) : '';
 
 $error_messages = [
 	'session_expired'  => 'Session expirée, recharge la page.',
 	'invalid_email'    => 'E-mail invalide.',
 	'invalid_username' => 'Identifiant invalide. 3 à 30 caractères, lettres, chiffres, _ et - uniquement.',
-	'taken'            => 'Cet identifiant ou cet e-mail est déjà associé à un compte. Si c\'est toi, va sur la page Connexion.',
+	'taken'            => "Cet identifiant ou cet e-mail est déjà associé à un compte. Si c'est toi, va sur la page Connexion.",
 	'rgpd_required'    => 'Tu dois accepter les conditions.',
-	'rate_limit'       => 'Trop d\'inscriptions depuis cette adresse. Réessaye dans 1 heure.',
+	'rate_limit'       => "Trop d'inscriptions depuis cette adresse. Réessaye dans 1 heure.",
 	'turnstile'        => 'Vérification anti-bot échouée. Recharge la page.',
 	'create_failed'    => 'Erreur lors de la création du compte. Réessaye.',
+	'pwd_too_short'    => 'Mot de passe trop court (12 caractères minimum).',
+	'pwd_mismatch'     => 'Les deux mots de passe ne correspondent pas.',
 ];
 $error_text = $error_messages[ $error_code ] ?? '';
 ?>
 
 <div class="sx-container sx-page sx-auth-page">
-	<?php if ( $check_email ) : ?>
-		<div class="sx-auth-card sx-auth-card--success">
-			<div style="text-align:center; font-size:3rem; margin-bottom:0.5rem;">📧</div>
-			<h1 style="text-align:center;">Vérifie ta boîte mail</h1>
-			<p class="sx-auth-card__lead" style="text-align:center;">
-				On vient d'envoyer un <strong>lien d'activation</strong> à l'adresse fournie.
-				Clique dessus pour choisir ton mot de passe et accéder à ton compte.
-			</p>
-			<div class="sx-notice sx-notice--ok" style="margin-top: 1.5rem;">
-				<strong>Important :</strong>
-				<ul style="margin: 0.5rem 0 0 1.2rem; padding: 0;">
-					<li>Le lien est valable <strong>7 jours</strong></li>
-					<li>Pense à vérifier tes <strong>spams</strong> si tu ne vois rien dans la boîte de réception</li>
-					<li>Tu ne pourras pas te connecter tant que ton compte n'est pas activé</li>
-				</ul>
-			</div>
-			<p style="text-align:center; font-size:0.9rem; color:var(--sx-color-text-muted); margin-top: 1.5rem;">
-				Pas reçu ? <a href="#" onclick="document.getElementById('sx-resend').classList.toggle('is-open');return false;" style="color:var(--sx-color-accent); font-weight:600;">Renvoyer l'e-mail</a>
-			</p>
-			<form id="sx-resend" method="post" action="<?php echo esc_url( \Seoflix\Custom_Auth::frontend_action_url( 'resend' ) ); ?>" style="display:none; margin-top:1rem;" class="sx-form">
-				<?php wp_nonce_field( 'seoflix_resend', '_seoflix_resend_nonce' ); ?>
-				<label class="sx-form__label">
-					<span>E-mail utilisé à l'inscription</span>
-					<input type="email" name="user_email" required>
-				</label>
-				<button type="submit" class="sx-btn sx-btn--ghost sx-btn--full">Renvoyer le lien</button>
-			</form>
-		</div>
-	<?php else : ?>
 	<div class="sx-auth-card">
 		<h1>Créer un compte</h1>
 		<p class="sx-auth-card__lead">Suis ta progression sur les parcours d'apprentissage. Gratuit, sans pub.</p>
-		<div class="sx-notice" style="background: rgba(255, 200, 0, 0.1); border-left: 3px solid #ffc800; color: #ffc800; padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.85rem; margin-bottom: 1.5rem;">
-			<strong>Étape 1/2 :</strong> tu vas recevoir un e-mail pour activer ton compte et choisir ton mot de passe.
-		</div>
 
 		<?php if ( $error_text ) : ?>
 			<div class="sx-notice sx-notice--err"><?php echo esc_html( $error_text ); ?></div>
@@ -94,7 +63,17 @@ $error_text = $error_messages[ $error_code ] ?? '';
 			<label class="sx-form__label">
 				<span>E-mail</span>
 				<input type="email" name="user_email" required autocomplete="email">
-				<small class="sx-form__hint">Tu recevras un lien d'activation à cette adresse.</small>
+			</label>
+
+			<label class="sx-form__label">
+				<span>Mot de passe</span>
+				<input type="password" name="pwd" required autocomplete="new-password" minlength="12">
+				<small class="sx-form__hint">12 caractères minimum.</small>
+			</label>
+
+			<label class="sx-form__label">
+				<span>Confirme le mot de passe</span>
+				<input type="password" name="pwd2" required autocomplete="new-password" minlength="12">
 			</label>
 
 			<label class="sx-form__label sx-form__label--check">
@@ -114,7 +93,6 @@ $error_text = $error_messages[ $error_code ] ?? '';
 			Déjà inscrit ? <a href="<?php echo esc_url( home_url( '/connexion/' ) ); ?>">Se connecter</a>
 		</div>
 	</div>
-	<?php endif; ?>
 </div>
 
 <?php get_footer();

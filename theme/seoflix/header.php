@@ -26,20 +26,7 @@
 		</a>
 
 		<nav class="sx-nav sx-nav--desktop" aria-label="Navigation principale">
-			<?php
-			if ( has_nav_menu( 'primary' ) ) {
-				wp_nav_menu( [
-					'theme_location' => 'primary',
-					'container'      => false,
-					'items_wrap'     => '%3$s',
-					'walker'         => new Seoflix_Nav_Walker(),
-					'depth'          => 1,
-					'fallback_cb'    => false,
-				] );
-			} else {
-				seoflix_default_primary_menu();
-			}
-			?>
+			<?php seoflix_render_primary_menu(); ?>
 		</nav>
 
 		<form role="search" method="get" class="sx-search-form sx-search-form--desktop" action="<?php echo esc_url( home_url( '/' ) ); ?>">
@@ -82,20 +69,7 @@
 		</form>
 
 		<nav class="sx-nav sx-nav--drawer" aria-label="Navigation mobile">
-			<?php
-			if ( has_nav_menu( 'primary' ) ) {
-				wp_nav_menu( [
-					'theme_location' => 'primary',
-					'container'      => false,
-					'items_wrap'     => '%3$s',
-					'walker'         => new Seoflix_Nav_Walker(),
-					'depth'          => 1,
-					'fallback_cb'    => false,
-				] );
-			} else {
-				seoflix_default_primary_menu();
-			}
-			?>
+			<?php seoflix_render_primary_menu(); ?>
 		</nav>
 
 		<?php if ( is_user_logged_in() ) : ?>

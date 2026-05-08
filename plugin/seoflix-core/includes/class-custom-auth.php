@@ -233,9 +233,18 @@ final class Custom_Auth {
 			}
 		}
 
-		// Création du compte (mot de passe random, sera défini après activation)
-		$password = wp_generate_password( 20, true, true );
-		$user_id  = wp_create_user( $user_login, $password, $user_email );
+		// Mot de passe choisi par l'utilisateur sur le form
+		$password         = isset( $_POST['pwd'] )  ? (string) wp_unslash( $_POST['pwd'] )  : '';
+		$password_confirm = isset( $_POST['pwd2'] ) ? (string) wp_unslash( $_POST['pwd2'] ) : '';
+		if ( strlen( $password ) < 12 ) {
+			self::redirect_error( $back, 'pwd_too_short' );
+		}
+		if ( $password !== $password_confirm ) {
+			self::redirect_error( $back, 'pwd_mismatch' );
+		}
+
+		// Création du compte
+		$user_id = wp_create_user( $user_login, $password, $user_email );
 		if ( is_wp_error( $user_id ) ) {
 			self::redirect_error( $back, 'create_failed' );
 		}
@@ -243,15 +252,14 @@ final class Custom_Auth {
 		$user = new \WP_User( $user_id );
 		$user->set_role( User_Accounts::ROLE );
 
-		// Token d'activation : 32 bytes hex = 64 chars
-		$activation_token = bin2hex( random_bytes( 32 ) );
-		update_user_meta( $user_id, self::META_PENDING, $activation_token );
-		update_user_meta( $user_id, self::META_PENDING . '_expires', time() + ( 7 * DAY_IN_SECONDS ) );
-
 		set_transient( $rate_key, $rate_count + 1, HOUR_IN_SECONDS );
 
-		// Redirige IMMÉDIATEMENT (UX) puis envoie les mails après
-		wp_safe_redirect( add_query_arg( 'check', 'email', $back ) );
+		// Auto-login direct (pas de double opt-in)
+		wp_set_current_user( $user_id );
+		wp_set_auth_cookie( $user_id, true, is_ssl() );
+
+		// Redirige vers le dashboard
+		wp_safe_redirect( home_url( '/mon-parcours/?welcome=1' ) );
 
 		if ( function_exists( 'fastcgi_finish_request' ) ) {
 			fastcgi_finish_request();
@@ -259,15 +267,15 @@ final class Custom_Auth {
 			litespeed_finish_request();
 		}
 
-		// E-mail d'activation à l'utilisateur
-		$activate_url = home_url( '/activer/' . $activation_token . '/' );
+		// E-mail de bienvenue (non bloquant — si SMTP foire, l'inscription a déjà réussi)
 		$site_name    = get_bloginfo( 'name' );
-		$user_subject = sprintf( '[%s] Confirme ton inscription', $site_name );
+		$user_subject = sprintf( '[%s] Bienvenue !', $site_name );
 		$user_body    = "Salut,\n\n"
-			. "Merci de t'être inscrit sur {$site_name}.\n\n"
-			. "Pour activer ton compte et choisir ton mot de passe, clique sur le lien ci-dessous (valable 7 jours) :\n\n"
-			. $activate_url . "\n\n"
-			. "Si tu n'es pas à l'origine de cette inscription, ignore simplement cet e-mail — ton compte ne sera pas activé.\n\n"
+			. "Bienvenue sur {$site_name} ! Ton compte a bien été créé.\n\n"
+			. "Tu peux te connecter à tout moment ici :\n"
+			. home_url( '/connexion/' ) . "\n\n"
+			. "Et accéder à ton tableau de bord :\n"
+			. home_url( '/mon-parcours/' ) . "\n\n"
 			. "À bientôt,\n"
 			. $site_name . "\n"
 			. home_url();
