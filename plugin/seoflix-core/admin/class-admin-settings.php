@@ -10,55 +10,64 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Admin_Settings {
 
-	private const OPTION_GROUP = 'seoflix_settings';
-	private const PAGE_SLUG    = 'seoflix-settings';
+	// Un option_group par formulaire pour éviter que la soumission d'un formulaire
+	// efface les options gérées par un autre formulaire (limitation Settings API).
+	private const GROUP_YOUTUBE  = 'seoflix_settings_youtube';
+	private const GROUP_BEHAVIOR = 'seoflix_settings_behavior';
+	private const GROUP_CONTACT  = 'seoflix_settings_contact';
+	private const PAGE_SLUG      = 'seoflix-settings';
 
 	public static function init(): void {
 		add_action( 'admin_init', [ self::class, 'register_settings' ] );
 	}
 
 	public static function register_settings(): void {
-		register_setting( self::OPTION_GROUP, 'seoflix_youtube_api_key', [
+		// YouTube Data API
+		register_setting( self::GROUP_YOUTUBE, 'seoflix_youtube_api_key', [
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'default'           => '',
 		] );
-		register_setting( self::OPTION_GROUP, 'seoflix_user_accounts_enabled', [
-			'type'              => 'boolean',
-			'sanitize_callback' => static fn( $v ) => (bool) $v,
-			'default'           => false,
-		] );
-		register_setting( self::OPTION_GROUP, 'seoflix_auto_publish_ai', [
-			'type'              => 'boolean',
-			'sanitize_callback' => static fn( $v ) => (bool) $v,
-			'default'           => false,
-		] );
-		register_setting( self::OPTION_GROUP, 'seoflix_ingestion_cron_enabled', [
-			'type'              => 'boolean',
-			'sanitize_callback' => static fn( $v ) => (bool) $v,
-			'default'           => true,
-		] );
-		register_setting( self::OPTION_GROUP, 'seoflix_yt_daily_limit', [
+		register_setting( self::GROUP_YOUTUBE, 'seoflix_yt_daily_limit', [
 			'type'              => 'integer',
 			'sanitize_callback' => static fn( $v ) => max( 0, (int) $v ),
 			'default'           => 1000,
 		] );
-		register_setting( self::OPTION_GROUP, 'seoflix_yt_hourly_limit', [
+		register_setting( self::GROUP_YOUTUBE, 'seoflix_yt_hourly_limit', [
 			'type'              => 'integer',
 			'sanitize_callback' => static fn( $v ) => max( 0, (int) $v ),
 			'default'           => 200,
 		] );
-		register_setting( self::OPTION_GROUP, \Seoflix\Contact::OPTION_RECIPIENT, [
+
+		// Comportement
+		register_setting( self::GROUP_BEHAVIOR, 'seoflix_user_accounts_enabled', [
+			'type'              => 'boolean',
+			'sanitize_callback' => static fn( $v ) => (bool) $v,
+			'default'           => false,
+		] );
+		register_setting( self::GROUP_BEHAVIOR, 'seoflix_auto_publish_ai', [
+			'type'              => 'boolean',
+			'sanitize_callback' => static fn( $v ) => (bool) $v,
+			'default'           => false,
+		] );
+		register_setting( self::GROUP_BEHAVIOR, 'seoflix_ingestion_cron_enabled', [
+			'type'              => 'boolean',
+			'sanitize_callback' => static fn( $v ) => (bool) $v,
+			'default'           => true,
+		] );
+
+		// Contact
+		register_setting( self::GROUP_CONTACT, \Seoflix\Contact::OPTION_RECIPIENT, [
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_email',
 			'default'           => '',
 		] );
-		register_setting( self::OPTION_GROUP, \Seoflix\Contact::OPTION_TURNSTILE_SITE, [
+		register_setting( self::GROUP_CONTACT, \Seoflix\Contact::OPTION_TURNSTILE_SITE, [
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'default'           => '',
 		] );
-		register_setting( self::OPTION_GROUP, \Seoflix\Contact::OPTION_TURNSTILE_SECRET, [
+		register_setting( self::GROUP_CONTACT, \Seoflix\Contact::OPTION_TURNSTILE_SECRET, [
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'default'           => '',
@@ -86,7 +95,7 @@ final class Admin_Settings {
 			<h1>Seoflix — Réglages</h1>
 
 			<form method="post" action="options.php">
-				<?php settings_fields( self::OPTION_GROUP ); ?>
+				<?php settings_fields( self::GROUP_YOUTUBE ); ?>
 
 				<div class="seoflix-card">
 					<h2>YouTube Data API</h2>
@@ -116,6 +125,11 @@ final class Admin_Settings {
 					</table>
 				</div>
 
+				<?php submit_button( 'Enregistrer YouTube' ); ?>
+			</form>
+
+			<form method="post" action="options.php">
+				<?php settings_fields( self::GROUP_BEHAVIOR ); ?>
 				<div class="seoflix-card">
 					<h2>Comportement</h2>
 					<table class="form-table">
@@ -177,13 +191,13 @@ final class Admin_Settings {
 					</table>
 				</div>
 
-				<?php submit_button(); ?>
+				<?php submit_button( 'Enregistrer le comportement' ); ?>
 			</form>
 
 			<div class="seoflix-card">
 				<h2>Formulaire de contact</h2>
 				<form method="post" action="options.php">
-					<?php settings_fields( self::OPTION_GROUP ); ?>
+					<?php settings_fields( self::GROUP_CONTACT ); ?>
 					<table class="form-table">
 						<tr>
 							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Contact::OPTION_RECIPIENT ); ?>">E-mail destinataire</label></th>
