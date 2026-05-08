@@ -60,6 +60,16 @@ final class Admin_Settings {
 			'sanitize_callback' => static fn( $v ) => (bool) $v,
 			'default'           => false,
 		] );
+		register_setting( self::GROUP_BEHAVIOR, 'seoflix_default_fallback_products', [
+			'type'              => 'array',
+			'sanitize_callback' => static function ( $v ) {
+				if ( ! is_array( $v ) ) {
+					return [];
+				}
+				return array_values( array_filter( array_map( 'intval', $v ) ) );
+			},
+			'default'           => [],
+		] );
 
 		// Contact
 		register_setting( self::GROUP_CONTACT, \Seoflix\Contact::OPTION_RECIPIENT, [
@@ -91,6 +101,7 @@ final class Admin_Settings {
 		$auto_publish = (bool) get_option( 'seoflix_auto_publish_ai', false );
 		$cron_on      = (bool) get_option( 'seoflix_ingestion_cron_enabled', true );
 		$lock_videos  = (bool) get_option( 'seoflix_lock_videos_to_users', false );
+		$fallback_ids = (array) get_option( 'seoflix_default_fallback_products', [] );
 
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-youtube-api.php';
 		$today_usage = \Seoflix\YouTube_API::get_today_usage();
@@ -167,6 +178,28 @@ final class Admin_Settings {
 									Réserver le visionnage aux utilisateurs connectés
 								</label>
 								<p class="description">Si activé (et que les comptes utilisateurs sont activés), les visiteurs non connectés voient le titre, les badges et les produits liés mais le player vidéo est remplacé par un encart « Connecte-toi pour regarder ». Lead-gen friendly.</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="seoflix_default_fallback_products">Produits par défaut (sidebar vidéo)</label></th>
+							<td>
+								<?php
+								$all_products = get_posts( [
+									'post_type'      => 'seoflix_product',
+									'post_status'    => 'publish',
+									'posts_per_page' => -1,
+									'orderby'        => 'title',
+									'order'          => 'ASC',
+								] );
+								?>
+								<select id="seoflix_default_fallback_products" name="seoflix_default_fallback_products[]" multiple size="8" style="min-width:360px;">
+									<?php foreach ( $all_products as $p ) : ?>
+										<option value="<?php echo (int) $p->ID; ?>" <?php echo in_array( $p->ID, array_map( 'intval', $fallback_ids ), true ) ? 'selected' : ''; ?>>
+											<?php echo esc_html( $p->post_title ); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+								<p class="description">Sélectionne 1 à 3 produits (Cmd/Ctrl + clic pour multi-sélection). Affichés sur les pages vidéos qui n'ont aucun produit lié, sous le texte « ces outils pourraient t'intéresser ».</p>
 							</td>
 						</tr>
 						<tr>

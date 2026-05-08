@@ -136,12 +136,35 @@ while ( have_posts() ) :
 							} ?>
 						</div>
 					</div>
-				<?php else : ?>
-					<div class="sx-video-page__products sx-video-page__products--empty">
-						<h2>Aucun produit référencé pour cette vidéo</h2>
-						<p>Découvre tous les outils SEO recommandés sur Seoflix.</p>
-						<p><a class="sx-btn sx-btn--ghost" href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_product' ) ); ?>">Voir le catalogue</a></p>
-					</div>
+				<?php else :
+					$fallback_ids = array_map( 'intval', (array) get_option( 'seoflix_default_fallback_products', [] ) );
+					$fallback_ids = array_slice( array_filter( $fallback_ids ), 0, 3 );
+					$fallback_products = $fallback_ids ? get_posts( [
+						'post_type'      => 'seoflix_product',
+						'post_status'    => 'publish',
+						'post__in'       => $fallback_ids,
+						'orderby'        => 'post__in',
+						'posts_per_page' => 3,
+					] ) : [];
+					?>
+					<?php if ( $fallback_products ) : ?>
+						<div class="sx-video-page__products sx-video-page__products--fallback">
+							<span class="sx-affiliate-notice">Liens affiliés</span>
+							<h2>Mais ces outils pourraient t'intéresser</h2>
+							<div class="sx-product-list">
+								<?php foreach ( $fallback_products as $p ) {
+									seoflix_render_product_card( $p, [ 'show_pricing' => false, 'compact' => true ] );
+								} ?>
+							</div>
+							<p style="margin-top: var(--sx-space-3);"><a class="sx-btn sx-btn--ghost" href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_product' ) ); ?>">Voir tous les outils →</a></p>
+						</div>
+					<?php else : ?>
+						<div class="sx-video-page__products sx-video-page__products--empty">
+							<h2>Aucun produit référencé pour cette vidéo</h2>
+							<p>Découvre tous les outils SEO recommandés sur Seoflix.</p>
+							<p><a class="sx-btn sx-btn--ghost" href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_product' ) ); ?>">Voir le catalogue</a></p>
+						</div>
+					<?php endif; ?>
 				<?php endif; ?>
 			</aside>
 		</div>

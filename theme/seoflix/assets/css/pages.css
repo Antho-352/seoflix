@@ -132,11 +132,17 @@
 .sx-video-page__products--empty {
 	text-align: center;
 	color: var(--sx-color-text-muted);
+	padding-top: var(--sx-space-4);
 }
 
 .sx-video-page__products--empty p {
 	margin-bottom: var(--sx-space-3);
 	font-size: 0.9rem;
+}
+
+.sx-video-page__products--empty h2,
+.sx-video-page__products--fallback h2 {
+	margin-top: var(--sx-space-2);
 }
 
 .sx-product-list {
