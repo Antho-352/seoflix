@@ -290,10 +290,20 @@ TXT;
 		check_admin_referer( 'seoflix_restore_htaccess' );
 
 		$file = isset( $_POST['file'] ) ? sanitize_file_name( wp_unslash( $_POST['file'] ) ) : '';
-		if ( ! preg_match( '/^htaccess-\d{4}-\d{2}-\d{2}-\d{6}\.bak$/', $file ) ) {
+		if ( ! preg_match( '/^htaccess-\d{4}-\d{2}-\d{2}-\d{6}\.bak$/', $file )
+			|| strpos( $file, '..' ) !== false
+			|| strpos( $file, '/' ) !== false
+			|| strpos( $file, '\\' ) !== false ) {
 			wp_die( 'Nom de fichier invalide.' );
 		}
-		$bak_path = self::backup_dir() . '/' . $file;
+		$bak_dir  = self::backup_dir();
+		$bak_path = $bak_dir . '/' . $file;
+		// Vérifie que le path résolu reste dans backup_dir (anti path-traversal)
+		$real_bak = realpath( $bak_path );
+		$real_dir = realpath( $bak_dir );
+		if ( ! $real_bak || ! $real_dir || strpos( $real_bak, $real_dir ) !== 0 ) {
+			wp_die( 'Chemin invalide.' );
+		}
 		if ( ! file_exists( $bak_path ) ) {
 			wp_die( 'Backup introuvable.' );
 		}

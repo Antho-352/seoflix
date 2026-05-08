@@ -164,6 +164,12 @@ final class Product_Logo {
 		require_once ABSPATH . 'wp-admin/includes/media.php';
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 
+		// SSRF protection : bloque les hosts/IPs internes
+		$check = self::is_safe_remote_url( $url );
+		if ( is_wp_error( $check ) ) {
+			return $check;
+		}
+
 		$tmp = download_url( $url, 15 );
 		if ( is_wp_error( $tmp ) ) {
 			return $tmp;
@@ -199,6 +205,20 @@ final class Product_Logo {
 			'tmp_name' => $tmp,
 		];
 
+		// XXE protection : refuser les SVG contenant des entités DTD
+		if ( $ext === 'svg' ) {
+			$svg = (string) file_get_contents( $tmp );
+			if ( preg_match( '/<!ENTITY|<!DOCTYPE|SYSTEM\s+["\']/i', $svg ) ) {
+				@unlink( $tmp );
+				return new \WP_Error( 'unsafe_svg', 'SVG contient des entités DTD interdites (XXE protection).' );
+			}
+			// Strip aussi les <script> et on* attributes par précaution
+			if ( preg_match( '/<script|on\w+\s*=/i', $svg ) ) {
+				@unlink( $tmp );
+				return new \WP_Error( 'unsafe_svg', 'SVG contient du JavaScript inline.' );
+			}
+		}
+
 		// Refus des SVG/ICO par wp_handle_sideload : on les copie manuellement dans uploads
 		if ( in_array( $ext, [ 'svg', 'ico' ], true ) ) {
 			$uploads = wp_upload_dir();
@@ -227,6 +247,48 @@ final class Product_Logo {
 			return $attach_id;
 		}
 		return $attach_id;
+	}
+
+	/**
+	 * Bloque les URLs pointant vers des hôtes/IPs internes (SSRF protection).
+	 */
+	private static function is_safe_remote_url( string $url ) {
+		$parsed = wp_parse_url( $url );
+		if ( ! $parsed || empty( $parsed['scheme'] ) || empty( $parsed['host'] ) ) {
+			return new \WP_Error( 'invalid_url', 'URL invalide.' );
+		}
+		if ( ! in_array( strtolower( $parsed['scheme'] ), [ 'http', 'https' ], true ) ) {
+			return new \WP_Error( 'bad_scheme', 'Seules les URLs http/https sont autorisées.' );
+		}
+
+		$host = strtolower( $parsed['host'] );
+
+		// Blacklist hostnames sensibles
+		$blocked_hosts = [ 'localhost', 'metadata.google.internal' ];
+		if ( in_array( $host, $blocked_hosts, true ) ) {
+			return new \WP_Error( 'blocked_host', 'Host interdit : ' . $host );
+		}
+
+		// Si c'est une IP, vérifier qu'elle n'est pas privée/loopback
+		if ( filter_var( $host, FILTER_VALIDATE_IP ) ) {
+			if ( ! filter_var( $host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+				return new \WP_Error( 'private_ip', 'IP privée/réservée interdite : ' . $host );
+			}
+			return true;
+		}
+
+		// Si hostname, résolution DNS et vérification que les IPs résolues ne sont pas privées
+		$ips = @gethostbynamel( $host );
+		if ( ! $ips ) {
+			// IPv6 ou pas de résolution : on laisse passer (download_url échouera proprement)
+			return true;
+		}
+		foreach ( $ips as $ip ) {
+			if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+				return new \WP_Error( 'private_ip', 'Host résout sur une IP privée : ' . $ip );
+			}
+		}
+		return true;
 	}
 
 	/* ====== Bulk action sur la liste des produits ====== */

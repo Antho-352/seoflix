@@ -53,6 +53,16 @@ final class Admin_Settings {
 			'sanitize_callback' => 'sanitize_email',
 			'default'           => '',
 		] );
+		register_setting( self::OPTION_GROUP, \Seoflix\Contact::OPTION_TURNSTILE_SITE, [
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => '',
+		] );
+		register_setting( self::OPTION_GROUP, \Seoflix\Contact::OPTION_TURNSTILE_SECRET, [
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => '',
+		] );
 	}
 
 	public static function render(): void {
@@ -182,8 +192,22 @@ final class Admin_Settings {
 								<p class="description">Adresse qui reçoit les messages de <code>/contact/</code> et les notifications d'inscription. Si vide, fallback sur <code><?php echo esc_html( get_option( 'admin_email' ) ); ?></code>. L'envoi passe par <strong>FluentSMTP</strong> si le plugin est actif.</p>
 							</td>
 						</tr>
+						<tr>
+							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Contact::OPTION_TURNSTILE_SITE ); ?>">Cloudflare Turnstile — Site Key</label></th>
+							<td>
+								<input type="text" id="<?php echo esc_attr( \Seoflix\Contact::OPTION_TURNSTILE_SITE ); ?>" name="<?php echo esc_attr( \Seoflix\Contact::OPTION_TURNSTILE_SITE ); ?>" value="<?php echo esc_attr( (string) get_option( \Seoflix\Contact::OPTION_TURNSTILE_SITE, '' ) ); ?>" class="regular-text code" placeholder="0x4AAAAAAA...">
+								<p class="description">Crée gratuitement une clé sur <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" rel="noopener">Cloudflare Turnstile</a> (anti-bot privacy-friendly, pas de CAPTCHA visuel). Laisse vide pour désactiver.</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Contact::OPTION_TURNSTILE_SECRET ); ?>">Cloudflare Turnstile — Secret Key</label></th>
+							<td>
+								<input type="password" id="<?php echo esc_attr( \Seoflix\Contact::OPTION_TURNSTILE_SECRET ); ?>" name="<?php echo esc_attr( \Seoflix\Contact::OPTION_TURNSTILE_SECRET ); ?>" value="<?php echo esc_attr( (string) get_option( \Seoflix\Contact::OPTION_TURNSTILE_SECRET, '' ) ); ?>" class="regular-text code" autocomplete="off">
+								<p class="description">Donnée par Cloudflare en même temps que la Site Key. Utilisée côté serveur pour valider le token.</p>
+							</td>
+						</tr>
 					</table>
-					<?php submit_button( 'Enregistrer l\'e-mail destinataire' ); ?>
+					<?php submit_button( 'Enregistrer' ); ?>
 				</form>
 			</div>
 

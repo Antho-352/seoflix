@@ -17,6 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Security {
 
+	public const LOGIN_LOCK_PREFIX  = 'seoflix_login_lock_';
+	public const LOGIN_FAILS_PREFIX = 'seoflix_login_fails_';
+
 	public static function init(): void {
 		add_action( 'send_headers', [ self::class, 'send_security_headers' ] );
 
@@ -32,6 +35,18 @@ final class Security {
 
 		// Bloquer l'énumération via ?author=N
 		add_action( 'template_redirect', [ self::class, 'block_author_enumeration' ] );
+
+		// Anti-bruteforce login : 5 échecs/IP/15min puis lock 30min
+		add_filter( 'authenticate',    [ self::class, 'check_login_lock' ], 5, 1 );
+		add_action( 'wp_login_failed', [ self::class, 'on_login_failed' ] );
+		add_action( 'wp_login',        [ self::class, 'on_login_success' ] );
+
+		// DISALLOW_FILE_EDIT : empêche l'édition de fichiers via le dashboard
+		// (à mettre idéalement dans wp-config.php, mais on le force ici en runtime
+		//  comme defense-in-depth si le user oublie de le mettre dans wp-config)
+		if ( ! defined( 'DISALLOW_FILE_EDIT' ) ) {
+			define( 'DISALLOW_FILE_EDIT', true );
+		}
 	}
 
 	public static function send_security_headers(): void {
@@ -46,24 +61,90 @@ final class Security {
 		header( 'Permissions-Policy: interest-cohort=(), browsing-topics=()' );
 		// X-Frame-Options : empêcher l'embed dans un iframe externe (clickjacking)
 		header( 'X-Frame-Options: SAMEORIGIN' );
+		// HSTS : force HTTPS sur 1 an + sous-domaines + preload
+		header( 'Strict-Transport-Security: max-age=31536000; includeSubDomains; preload' );
+		// Cross-Origin Opener Policy : isole le contexte JS de la page
+		header( 'Cross-Origin-Opener-Policy: same-origin-allow-popups' );
 	}
 
 	private static function build_csp(): string {
 		$directives = [
 			"default-src 'self'",
-			"script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+			"script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://challenges.cloudflare.com",
 			"style-src 'self' 'unsafe-inline'",
-			"img-src 'self' data: https://i.ytimg.com https://yt3.googleusercontent.com https://yt3.ggpht.com https://secure.gravatar.com https://*.gravatar.com https://0.gravatar.com https://1.gravatar.com https://2.gravatar.com",
+			"img-src 'self' data: https://i.ytimg.com https://yt3.googleusercontent.com https://yt3.ggpht.com https://*.gravatar.com",
 			"font-src 'self' data:",
-			"frame-src https://www.youtube-nocookie.com https://www.youtube.com",
+			"frame-src https://www.youtube-nocookie.com https://www.youtube.com https://challenges.cloudflare.com",
 			"frame-ancestors 'self'",
-			"connect-src 'self' https://cloudflareinsights.com",
+			"connect-src 'self' https://cloudflareinsights.com https://challenges.cloudflare.com",
 			"worker-src 'self' blob:",
 			"base-uri 'self'",
 			"form-action 'self'",
 			"object-src 'none'",
 		];
 		return implode( '; ', $directives );
+	}
+
+	/* ======================================================================
+	 *  Anti-bruteforce login
+	 * ====================================================================== */
+
+	public static function check_login_lock( $user ) {
+		// Si déjà une erreur amont, on laisse passer
+		if ( is_wp_error( $user ) ) {
+			return $user;
+		}
+		$ip = self::client_ip();
+		if ( ! $ip ) {
+			return $user;
+		}
+		$lock = get_transient( self::LOGIN_LOCK_PREFIX . md5( $ip ) );
+		if ( $lock ) {
+			return new \WP_Error(
+				'seoflix_locked',
+				'Trop d\'échecs récents depuis cette IP. Réessaye dans 30 minutes.'
+			);
+		}
+		return $user;
+	}
+
+	public static function on_login_failed( string $username ): void {
+		$ip = self::client_ip();
+		if ( ! $ip ) {
+			return;
+		}
+		$key   = self::LOGIN_FAILS_PREFIX . md5( $ip );
+		$fails = (int) get_transient( $key );
+		$fails++;
+		set_transient( $key, $fails, 15 * MINUTE_IN_SECONDS );
+
+		if ( $fails >= 5 ) {
+			set_transient( self::LOGIN_LOCK_PREFIX . md5( $ip ), 1, 30 * MINUTE_IN_SECONDS );
+		}
+	}
+
+	public static function on_login_success(): void {
+		$ip = self::client_ip();
+		if ( ! $ip ) {
+			return;
+		}
+		delete_transient( self::LOGIN_FAILS_PREFIX . md5( $ip ) );
+		delete_transient( self::LOGIN_LOCK_PREFIX . md5( $ip ) );
+	}
+
+	/**
+	 * Récupère l'IP client réelle, en tenant compte de Cloudflare et reverse-proxy.
+	 */
+	public static function client_ip(): string {
+		// Cloudflare envoie l'IP réelle dans CF-Connecting-IP
+		if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
+			return trim( (string) $_SERVER['HTTP_CF_CONNECTING_IP'] );
+		}
+		if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+			$forwarded = explode( ',', (string) $_SERVER['HTTP_X_FORWARDED_FOR'] );
+			return trim( $forwarded[0] );
+		}
+		return isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : '';
 	}
 
 	public static function remove_xpingback( array $headers ): array {

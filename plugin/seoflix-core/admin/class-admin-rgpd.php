@@ -333,7 +333,8 @@ final class Admin_Rgpd {
 					'display_name'    => $user->display_name,
 					'registered_at'   => $user->user_registered,
 					'roles'           => $user->roles,
-					'meta'            => array_map( fn( $v ) => maybe_unserialize( $v[0] ?? '' ), get_user_meta( $user->ID ) ),
+					// Garde les valeurs sérialisées telles quelles (évite unserialize attack si export ré-importé plus tard)
+				'meta'            => array_map( static fn( $v ) => $v[0] ?? '', get_user_meta( $user->ID ) ),
 				];
 			}
 		}

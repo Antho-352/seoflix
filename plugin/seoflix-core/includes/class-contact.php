@@ -17,9 +17,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Contact {
 
-	public const CPT             = 'seoflix_message';
-	public const NONCE           = 'seoflix_contact';
-	public const OPTION_RECIPIENT = 'seoflix_contact_recipient';
+	public const CPT                 = 'seoflix_message';
+	public const NONCE               = 'seoflix_contact';
+	public const OPTION_RECIPIENT    = 'seoflix_contact_recipient';
+	public const OPTION_TURNSTILE_SITE   = 'seoflix_turnstile_site_key';
+	public const OPTION_TURNSTILE_SECRET = 'seoflix_turnstile_secret_key';
 
 	public static function init(): void {
 		add_action( 'init',                            [ self::class, 'register_cpt' ] );
@@ -78,11 +80,19 @@ final class Contact {
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sx-form">
 				<input type="hidden" name="action" value="seoflix_contact_submit">
 				<?php wp_nonce_field( self::NONCE, '_seoflix_contact_nonce' ); ?>
+				<input type="hidden" name="_t" value="<?php echo esc_attr( (string) time() ); ?>">
 
-				<!-- Honeypot anti-spam -->
+				<!-- Honeypot anti-spam (champ caché que les bots remplissent) -->
 				<div style="position:absolute; left:-9999px;" aria-hidden="true">
 					<label>Ne pas remplir<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
 				</div>
+				<?php
+				$turnstile_site = (string) get_option( self::OPTION_TURNSTILE_SITE, '' );
+				if ( $turnstile_site ) :
+					?>
+					<div class="cf-turnstile" data-sitekey="<?php echo esc_attr( $turnstile_site ); ?>" data-theme="dark"></div>
+					<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+				<?php endif; ?>
 
 				<label class="sx-form__label">
 					<span>Nom <em>*</em></span>
@@ -130,17 +140,31 @@ final class Contact {
 			exit;
 		}
 
-		// Rate limit : 1 envoi / 30s / IP (bypass pour les admins connectés, utile pour tester)
-		$ip       = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : '';
-		$rate_key = 'seoflix_contact_rate_' . md5( $ip );
-		$is_admin = current_user_can( 'manage_options' );
-		if ( ! $is_admin && get_transient( $rate_key ) ) {
-			self::redirect_error( $page_url, 'Trop de tentatives. Réessaye dans 30 secondes.' );
+		// Honeypot temporel : un humain ne remplit pas le form en moins de 3 secondes
+		$ts = isset( $_POST['_t'] ) ? (int) $_POST['_t'] : 0;
+		if ( $ts && ( time() - $ts ) < 3 ) {
+			// Silencieux, comme le honeypot champ
+			wp_safe_redirect( add_query_arg( 'seoflix_contact', 'sent', $page_url ) );
+			exit;
 		}
 
-		$name    = isset( $_POST['name'] )    ? sanitize_text_field( wp_unslash( $_POST['name'] ) )    : '';
-		$email   = isset( $_POST['email'] )   ? sanitize_email( wp_unslash( $_POST['email'] ) )        : '';
-		$subject = isset( $_POST['subject'] ) ? sanitize_text_field( wp_unslash( $_POST['subject'] ) ) : '';
+		// Rate limit avec backoff exponentiel : 30s → 60s → 120s → 300s
+		$ip          = \Seoflix\Security::client_ip();
+		$rate_key    = 'seoflix_contact_rate_' . md5( $ip );
+		$attempt_key = 'seoflix_contact_attempts_' . md5( $ip );
+		$is_admin    = current_user_can( 'manage_options' );
+		if ( ! $is_admin && get_transient( $rate_key ) ) {
+			$attempts = (int) get_transient( $attempt_key );
+			$delay    = min( 300, 30 * ( 2 ** $attempts ) );
+			self::redirect_error( $page_url, sprintf( 'Trop de tentatives. Réessaye dans %d secondes.', $delay ) );
+		}
+
+		// Sanitization + protection email-header injection (CRLF strip systématique)
+		$crlf_strip = static fn( $s ) => str_replace( [ "\r", "\n", "\0" ], '', (string) $s );
+
+		$name    = $crlf_strip( isset( $_POST['name'] )    ? sanitize_text_field( wp_unslash( $_POST['name'] ) )    : '' );
+		$email   = $crlf_strip( isset( $_POST['email'] )   ? sanitize_email( wp_unslash( $_POST['email'] ) )        : '' );
+		$subject = $crlf_strip( isset( $_POST['subject'] ) ? sanitize_text_field( wp_unslash( $_POST['subject'] ) ) : '' );
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 		$rgpd    = ! empty( $_POST['rgpd_ok'] );
 
@@ -157,7 +181,29 @@ final class Contact {
 			self::redirect_error( $page_url, 'Message trop court (min 10 caractères).' );
 		}
 
-		// Stockage en CPT
+		// Validation Cloudflare Turnstile (si configuré)
+		$turnstile_secret = (string) get_option( self::OPTION_TURNSTILE_SECRET, '' );
+		if ( $turnstile_secret ) {
+			$token = isset( $_POST['cf-turnstile-response'] ) ? sanitize_text_field( wp_unslash( $_POST['cf-turnstile-response'] ) ) : '';
+			if ( ! $token || ! self::verify_turnstile( $token, $turnstile_secret, $ip ) ) {
+				self::redirect_error( $page_url, 'Échec de la vérification anti-bot. Recharge la page.' );
+			}
+		}
+
+		// Détection messages dupliqués (anti-spam aggressive)
+		$msg_hash = md5( mb_strtolower( $message ) );
+		$dup_key  = 'seoflix_contact_dup_' . $msg_hash;
+		if ( ! $is_admin && get_transient( $dup_key ) ) {
+			// On simule le succès pour ne pas signaler aux bots qu'on les a détectés
+			wp_safe_redirect( add_query_arg( 'seoflix_contact', 'sent', $page_url ) );
+			exit;
+		}
+		set_transient( $dup_key, 1, HOUR_IN_SECONDS );
+
+		// Stockage en CPT — anti log-injection : strip CRLF sur les valeurs $_SERVER
+		$ua_raw      = isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( (string) $_SERVER['HTTP_USER_AGENT'], 0, 255 ) : '';
+		$referer_raw = isset( $_SERVER['HTTP_REFERER'] )    ? substr( (string) wp_get_referer(), 0, 255 ) : '';
+
 		$post_id = wp_insert_post( [
 			'post_type'    => self::CPT,
 			'post_title'   => sprintf( '[%s] %s', $name, $subject ),
@@ -168,8 +214,8 @@ final class Contact {
 				'_seoflix_contact_email'   => $email,
 				'_seoflix_contact_subject' => $subject,
 				'_seoflix_contact_ip_hash' => $ip ? hash( 'sha256', $ip . wp_salt() ) : '',
-				'_seoflix_contact_ua'      => isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( (string) $_SERVER['HTTP_USER_AGENT'], 0, 255 ) : '',
-				'_seoflix_contact_referer' => isset( $_SERVER['HTTP_REFERER'] ) ? substr( (string) wp_get_referer(), 0, 255 ) : '',
+				'_seoflix_contact_ua'      => sanitize_text_field( $crlf_strip( $ua_raw ) ),
+				'_seoflix_contact_referer' => esc_url_raw( $crlf_strip( $referer_raw ) ),
 			],
 		], true );
 
@@ -178,7 +224,10 @@ final class Contact {
 		}
 
 		if ( ! $is_admin ) {
-			set_transient( $rate_key, 1, 30 );
+			$attempts = (int) get_transient( $attempt_key );
+			$delay    = min( 300, 30 * ( 2 ** $attempts ) );
+			set_transient( $rate_key, 1, $delay );
+			set_transient( $attempt_key, $attempts + 1, DAY_IN_SECONDS );
 		}
 
 		// Stocke les mails à envoyer après la redirection (évite le freeze côté UX
@@ -253,5 +302,24 @@ final class Contact {
 	private static function redirect_error( string $url, string $message ): void {
 		wp_safe_redirect( add_query_arg( 'seoflix_contact_error', rawurlencode( $message ), $url ) );
 		exit;
+	}
+
+	/**
+	 * Vérifie un token Cloudflare Turnstile côté serveur.
+	 */
+	private static function verify_turnstile( string $token, string $secret, string $ip ): bool {
+		$response = wp_remote_post( 'https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+			'timeout' => 8,
+			'body'    => [
+				'secret'   => $secret,
+				'response' => $token,
+				'remoteip' => $ip,
+			],
+		] );
+		if ( is_wp_error( $response ) ) {
+			return false;
+		}
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		return ! empty( $body['success'] );
 	}
 }
