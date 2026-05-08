@@ -15,7 +15,7 @@ if ( ! get_option( 'users_can_register' ) ) {
 
 get_header();
 
-$register_post = admin_url( 'admin-post.php' );
+$register_post = \Seoflix\Custom_Auth::frontend_action_url( 'register' );
 $turnstile     = (string) get_option( \Seoflix\Contact::OPTION_TURNSTILE_SITE, '' );
 
 $check_email = isset( $_GET['check'] ) && $_GET['check'] === 'email';
@@ -55,8 +55,7 @@ $error_text = $error_messages[ $error_code ] ?? '';
 			<p style="text-align:center; font-size:0.9rem; color:var(--sx-color-text-muted); margin-top: 1.5rem;">
 				Pas reçu ? <a href="#" onclick="document.getElementById('sx-resend').classList.toggle('is-open');return false;" style="color:var(--sx-color-accent); font-weight:600;">Renvoyer l'e-mail</a>
 			</p>
-			<form id="sx-resend" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:none; margin-top:1rem;" class="sx-form">
-				<input type="hidden" name="action" value="seoflix_resend">
+			<form id="sx-resend" method="post" action="<?php echo esc_url( \Seoflix\Custom_Auth::frontend_action_url( 'resend' ) ); ?>" style="display:none; margin-top:1rem;" class="sx-form">
 				<?php wp_nonce_field( 'seoflix_resend', '_seoflix_resend_nonce' ); ?>
 				<label class="sx-form__label">
 					<span>E-mail utilisé à l'inscription</span>
@@ -78,7 +77,6 @@ $error_text = $error_messages[ $error_code ] ?? '';
 		<?php endif; ?>
 
 		<form method="post" action="<?php echo esc_url( $register_post ); ?>" class="sx-form sx-form--auth">
-			<input type="hidden" name="action" value="seoflix_register">
 			<input type="hidden" name="_t" value="<?php echo esc_attr( (string) time() ); ?>">
 			<?php wp_nonce_field( 'seoflix_register', '_seoflix_register_nonce' ); ?>
 

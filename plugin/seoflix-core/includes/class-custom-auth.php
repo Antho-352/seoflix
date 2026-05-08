@@ -38,13 +38,14 @@ final class Custom_Auth {
 	public const META_RESEND_LOCK   = '_seoflix_resend_lock';
 	public const QV_ACTIVATE        = 'seoflix_activate';
 	public const QV_SETPWD          = 'seoflix_setpwd';
+	public const QV_AUTH_ACTION     = 'seoflix_auth_action';
 
 	public static function init(): void {
 		if ( ! FeatureFlags::user_accounts_enabled() ) {
 			return;
 		}
 
-		// Handlers (loggés ET non-loggés)
+		// Handlers via admin-post.php (ancienne route, gardée pour compat)
 		add_action( 'admin_post_nopriv_seoflix_register', [ self::class, 'handle_register' ] );
 		add_action( 'admin_post_seoflix_register',         [ self::class, 'handle_register' ] );
 		add_action( 'admin_post_nopriv_seoflix_login',     [ self::class, 'handle_login' ] );
@@ -54,7 +55,11 @@ final class Custom_Auth {
 		add_action( 'admin_post_nopriv_seoflix_resend',    [ self::class, 'handle_resend_activation' ] );
 		add_action( 'admin_post_nopriv_seoflix_setpwd',    [ self::class, 'handle_setpwd' ] );
 
-		// Rewrite /activer/{token}/ + /definir-mot-de-passe/{token}/
+		// NOUVEAU : route frontend /sx-auth/{action}/ qui contourne WPS Hide Login
+		// (les plugins type WPS Hide Login interceptent /wp-admin/* y compris admin-post.php)
+		add_action( 'parse_request',     [ self::class, 'route_frontend_action' ], 1 );
+
+		// Rewrite /activer/{token}/ + /definir-mot-de-passe/{token}/ + /sx-auth/{action}/
 		add_action( 'init',              [ self::class, 'register_rewrites' ] );
 		add_filter( 'query_vars',        [ self::class, 'register_query_vars' ] );
 		add_action( 'template_redirect', [ self::class, 'handle_activate' ] );
@@ -66,13 +71,42 @@ final class Custom_Auth {
 
 	public static function register_rewrites(): void {
 		add_rewrite_rule( '^activer/([a-f0-9]{32,64})/?$',                'index.php?' . self::QV_ACTIVATE . '=$matches[1]', 'top' );
-		add_rewrite_rule( '^definir-mot-de-passe/([a-f0-9]{32,64})/?$',   'index.php?' . self::QV_SETPWD . '=$matches[1]',  'top' );
+		add_rewrite_rule( '^definir-mot-de-passe/([a-f0-9]{32,64})/?$',   'index.php?' . self::QV_SETPWD . '=$matches[1]',   'top' );
+		// Endpoint frontend qui ne passe PAS par /wp-admin/ → bypass WPS Hide Login
+		add_rewrite_rule( '^sx-auth/([a-z_]+)/?$',                        'index.php?' . self::QV_AUTH_ACTION . '=$matches[1]', 'top' );
 	}
 
 	public static function register_query_vars( array $vars ): array {
 		$vars[] = self::QV_ACTIVATE;
 		$vars[] = self::QV_SETPWD;
+		$vars[] = self::QV_AUTH_ACTION;
 		return $vars;
+	}
+
+	/**
+	 * Route les requêtes /sx-auth/{action}/ vers les bons handlers.
+	 * Tourne sur parse_request priorité 1 (avant que WP fasse le main query).
+	 */
+	public static function route_frontend_action( \WP $wp ): void {
+		$action = $wp->query_vars[ self::QV_AUTH_ACTION ] ?? '';
+		if ( ! $action || $_SERVER['REQUEST_METHOD'] !== 'POST' ) {
+			return;
+		}
+		$handlers = [
+			'register' => [ self::class, 'handle_register' ],
+			'login'    => [ self::class, 'handle_login' ],
+			'lostpass' => [ self::class, 'handle_lostpass' ],
+			'resend'   => [ self::class, 'handle_resend_activation' ],
+			'setpwd'   => [ self::class, 'handle_setpwd' ],
+		];
+		if ( isset( $handlers[ $action ] ) ) {
+			call_user_func( $handlers[ $action ] );
+			exit;
+		}
+	}
+
+	public static function frontend_action_url( string $action ): string {
+		return home_url( '/sx-auth/' . $action . '/' );
 	}
 
 	public static function load_setpwd_template( $template ) {

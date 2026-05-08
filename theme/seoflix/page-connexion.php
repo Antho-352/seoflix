@@ -10,7 +10,7 @@ if ( is_user_logged_in() ) {
 
 get_header();
 
-$login_post   = admin_url( 'admin-post.php' );
+$login_post   = \Seoflix\Custom_Auth::frontend_action_url( 'login' );
 $redirect_to  = isset( $_GET['redirect_to'] ) ? esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ) : home_url( '/mon-parcours/' );
 $registered   = isset( $_GET['registered'] );
 $reset        = isset( $_GET['reset'] );
@@ -59,7 +59,6 @@ $activated_error = $activated_messages[ $activated ] ?? '';
 		<?php endif; ?>
 
 		<form method="post" action="<?php echo esc_url( $login_post ); ?>" class="sx-form sx-form--auth">
-			<input type="hidden" name="action" value="seoflix_login">
 			<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>">
 			<?php wp_nonce_field( 'seoflix_login', '_seoflix_login_nonce' ); ?>
 

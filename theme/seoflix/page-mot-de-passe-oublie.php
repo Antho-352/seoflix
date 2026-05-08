@@ -10,7 +10,7 @@ if ( is_user_logged_in() ) {
 
 get_header();
 
-$lostpass_post = admin_url( 'admin-post.php' );
+$lostpass_post = \Seoflix\Custom_Auth::frontend_action_url( 'lostpass' );
 $turnstile     = (string) get_option( \Seoflix\Contact::OPTION_TURNSTILE_SITE, '' );
 
 $checkemail = isset( $_GET['checkemail'] );
@@ -40,7 +40,6 @@ $error_text = $error_messages[ $error_code ] ?? '';
 
 		<?php if ( ! $checkemail ) : ?>
 			<form method="post" action="<?php echo esc_url( $lostpass_post ); ?>" class="sx-form sx-form--auth">
-				<input type="hidden" name="action" value="seoflix_lostpass">
 				<?php wp_nonce_field( 'seoflix_lostpass', '_seoflix_lostpass_nonce' ); ?>
 				<label class="sx-form__label">
 					<span>E-mail ou identifiant</span>

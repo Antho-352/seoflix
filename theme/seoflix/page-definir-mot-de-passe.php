@@ -51,8 +51,7 @@ $error_text = $error_messages[ $error_code ] ?? '';
 			<div class="sx-notice sx-notice--err"><?php echo esc_html( $error_text ); ?></div>
 		<?php endif; ?>
 
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sx-form sx-form--auth">
-			<input type="hidden" name="action" value="seoflix_setpwd">
+		<form method="post" action="<?php echo esc_url( \Seoflix\Custom_Auth::frontend_action_url( 'setpwd' ) ); ?>" class="sx-form sx-form--auth">
 			<input type="hidden" name="token" value="<?php echo esc_attr( $token ); ?>">
 			<?php wp_nonce_field( 'seoflix_setpwd', '_seoflix_setpwd_nonce' ); ?>
 
