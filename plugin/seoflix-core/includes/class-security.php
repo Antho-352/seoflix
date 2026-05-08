@@ -98,12 +98,22 @@ final class Security {
 		if ( ! $ip ) {
 			return $user;
 		}
-		$lock = get_transient( self::LOGIN_LOCK_PREFIX . md5( $ip ) );
-		if ( $lock ) {
+		// Lock global IP (anti scan)
+		if ( get_transient( self::LOGIN_LOCK_PREFIX . md5( $ip ) ) ) {
 			return new \WP_Error(
 				'seoflix_locked',
 				'Trop d\'échecs récents depuis cette IP. Réessaye dans 30 minutes.'
 			);
+		}
+		// Lock par couple username+IP (3 fails)
+		if ( $user instanceof \WP_User ) {
+			$key = self::LOGIN_LOCK_PREFIX . md5( $user->user_login . '::' . $ip );
+			if ( get_transient( $key ) ) {
+				return new \WP_Error(
+					'seoflix_locked',
+					'Trop d\'échecs sur ce compte depuis ton IP. Réessaye dans 30 minutes.'
+				);
+			}
 		}
 		return $user;
 	}
@@ -113,13 +123,25 @@ final class Security {
 		if ( ! $ip ) {
 			return;
 		}
-		$key   = self::LOGIN_FAILS_PREFIX . md5( $ip );
-		$fails = (int) get_transient( $key );
-		$fails++;
-		set_transient( $key, $fails, 15 * MINUTE_IN_SECONDS );
 
-		if ( $fails >= 5 ) {
+		// Compteur global IP : 5 fails → lock 30min (anti-scan multi-comptes)
+		$ip_key   = self::LOGIN_FAILS_PREFIX . md5( $ip );
+		$ip_fails = (int) get_transient( $ip_key );
+		$ip_fails++;
+		set_transient( $ip_key, $ip_fails, 15 * MINUTE_IN_SECONDS );
+		if ( $ip_fails >= 5 ) {
 			set_transient( self::LOGIN_LOCK_PREFIX . md5( $ip ), 1, 30 * MINUTE_IN_SECONDS );
+		}
+
+		// Compteur username+IP : 3 fails → lock 30min (anti-bruteforce ciblé)
+		if ( $username ) {
+			$user_ip_key   = self::LOGIN_FAILS_PREFIX . md5( $username . '::' . $ip );
+			$user_ip_fails = (int) get_transient( $user_ip_key );
+			$user_ip_fails++;
+			set_transient( $user_ip_key, $user_ip_fails, 15 * MINUTE_IN_SECONDS );
+			if ( $user_ip_fails >= 3 ) {
+				set_transient( self::LOGIN_LOCK_PREFIX . md5( $username . '::' . $ip ), 1, 30 * MINUTE_IN_SECONDS );
+			}
 		}
 	}
 
@@ -130,6 +152,7 @@ final class Security {
 		}
 		delete_transient( self::LOGIN_FAILS_PREFIX . md5( $ip ) );
 		delete_transient( self::LOGIN_LOCK_PREFIX . md5( $ip ) );
+		// Note: les compteurs username+IP s'auto-expirent en 15min, pas critique de les nettoyer
 	}
 
 	/**

@@ -25,6 +25,7 @@ $error_messages = [
 	'session_expired'  => 'Session expirée, recharge la page.',
 	'seoflix_locked'   => 'Trop d\'échecs récents depuis ton IP. Réessaye dans 30 minutes.',
 	'turnstile'        => 'Vérification anti-bot échouée. Recharge la page.',
+	'seoflix_pending'  => 'Compte non activé. Vérifie ta boîte mail (et tes spams) — un lien d\'activation t\'a été envoyé.',
 ];
 $error_text = $error_messages[ $error_code ] ?? '';
 

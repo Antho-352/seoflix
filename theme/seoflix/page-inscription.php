@@ -26,8 +26,7 @@ $error_messages = [
 	'session_expired'  => 'Session expirée, recharge la page.',
 	'invalid_email'    => 'E-mail invalide.',
 	'invalid_username' => 'Identifiant invalide. 3 à 30 caractères, lettres, chiffres, _ et - uniquement.',
-	'username_exists'  => 'Cet identifiant est déjà pris.',
-	'email_exists'     => 'Un compte existe déjà avec cet e-mail.',
+	'taken'            => 'Cet identifiant ou cet e-mail est déjà associé à un compte. Si c\'est toi, va sur la page Connexion.',
 	'rgpd_required'    => 'Tu dois accepter les conditions.',
 	'rate_limit'       => 'Trop d\'inscriptions depuis cette adresse. Réessaye dans 1 heure.',
 	'turnstile'        => 'Vérification anti-bot échouée. Recharge la page.',
@@ -37,26 +36,42 @@ $error_text = $error_messages[ $error_code ] ?? '';
 ?>
 
 <div class="sx-container sx-page sx-auth-page">
-	<div class="sx-auth-card">
-		<h1>Créer un compte</h1>
-		<p class="sx-auth-card__lead">Suis ta progression sur les parcours d'apprentissage. Gratuit, sans pub.</p>
-
-		<?php if ( $check_email ) : ?>
-			<div class="sx-notice sx-notice--ok">
-				<strong>Vérifie ta boîte mail.</strong> On vient d'envoyer un lien d'activation à l'adresse fournie. Clique dessus pour finaliser ton compte (regarde aussi tes spams).
+	<?php if ( $check_email ) : ?>
+		<div class="sx-auth-card sx-auth-card--success">
+			<div style="text-align:center; font-size:3rem; margin-bottom:0.5rem;">📧</div>
+			<h1 style="text-align:center;">Vérifie ta boîte mail</h1>
+			<p class="sx-auth-card__lead" style="text-align:center;">
+				On vient d'envoyer un <strong>lien d'activation</strong> à l'adresse fournie.
+				Clique dessus pour choisir ton mot de passe et accéder à ton compte.
+			</p>
+			<div class="sx-notice sx-notice--ok" style="margin-top: 1.5rem;">
+				<strong>Important :</strong>
+				<ul style="margin: 0.5rem 0 0 1.2rem; padding: 0;">
+					<li>Le lien est valable <strong>7 jours</strong></li>
+					<li>Pense à vérifier tes <strong>spams</strong> si tu ne vois rien dans la boîte de réception</li>
+					<li>Tu ne pourras pas te connecter tant que ton compte n'est pas activé</li>
+				</ul>
 			</div>
-			<p style="text-align:center; font-size:0.9rem; color:var(--sx-color-text-muted);">
-				Pas reçu ? <a href="#" onclick="document.getElementById('sx-resend').classList.toggle('is-open');return false;">Renvoyer l'e-mail</a>
+			<p style="text-align:center; font-size:0.9rem; color:var(--sx-color-text-muted); margin-top: 1.5rem;">
+				Pas reçu ? <a href="#" onclick="document.getElementById('sx-resend').classList.toggle('is-open');return false;" style="color:var(--sx-color-accent); font-weight:600;">Renvoyer l'e-mail</a>
 			</p>
 			<form id="sx-resend" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:none; margin-top:1rem;" class="sx-form">
 				<input type="hidden" name="action" value="seoflix_resend">
+				<?php wp_nonce_field( 'seoflix_resend', '_seoflix_resend_nonce' ); ?>
 				<label class="sx-form__label">
 					<span>E-mail utilisé à l'inscription</span>
 					<input type="email" name="user_email" required>
 				</label>
-				<button type="submit" class="sx-btn sx-btn--ghost sx-btn--full">Renvoyer</button>
+				<button type="submit" class="sx-btn sx-btn--ghost sx-btn--full">Renvoyer le lien</button>
 			</form>
-		<?php else : ?>
+		</div>
+	<?php else : ?>
+	<div class="sx-auth-card">
+		<h1>Créer un compte</h1>
+		<p class="sx-auth-card__lead">Suis ta progression sur les parcours d'apprentissage. Gratuit, sans pub.</p>
+		<div class="sx-notice" style="background: rgba(255, 200, 0, 0.1); border-left: 3px solid #ffc800; color: #ffc800; padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.85rem; margin-bottom: 1.5rem;">
+			<strong>Étape 1/2 :</strong> tu vas recevoir un e-mail pour activer ton compte et choisir ton mot de passe.
+		</div>
 
 		<?php if ( $error_text ) : ?>
 			<div class="sx-notice sx-notice--err"><?php echo esc_html( $error_text ); ?></div>
@@ -100,8 +115,8 @@ $error_text = $error_messages[ $error_code ] ?? '';
 		<div class="sx-auth-links">
 			Déjà inscrit ? <a href="<?php echo esc_url( home_url( '/connexion/' ) ); ?>">Se connecter</a>
 		</div>
-		<?php endif; ?>
 	</div>
+	<?php endif; ?>
 </div>
 
 <?php get_footer();

@@ -185,11 +185,9 @@ final class Custom_Auth {
 		if ( ! $rgpd_ok ) {
 			self::redirect_error( $back, 'rgpd_required' );
 		}
-		if ( username_exists( $user_login ) ) {
-			self::redirect_error( $back, 'username_exists' );
-		}
-		if ( email_exists( $user_email ) ) {
-			self::redirect_error( $back, 'email_exists' );
+		// Anti-énumération : message générique si username OU email déjà pris
+		if ( username_exists( $user_login ) || email_exists( $user_email ) ) {
+			self::redirect_error( $back, 'taken' );
 		}
 
 		// Validation Turnstile
@@ -241,14 +239,15 @@ final class Custom_Auth {
 			. home_url();
 		wp_mail( $user_email, $user_subject, $user_body );
 
-		// Notification admin
+		// Notification admin (anti email-header injection : strip CRLF dans tout user input)
+		$strip_crlf    = static fn( $v ) => preg_replace( '/[\r\n\t\0]/', '', (string) $v );
 		$admin_to      = (string) get_option( Contact::OPTION_RECIPIENT, '' ) ?: get_option( 'admin_email' );
-		$admin_subject = sprintf( '[%s] Nouvelle inscription : %s', $site_name, $user_email );
-		$admin_body    = "Nouvel utilisateur inscrit sur {$site_name}.\n\n"
-			. "Login : {$user_login}\n"
-			. "E-mail : {$user_email}\n"
+		$admin_subject = sprintf( '[%s] Nouvelle inscription : %s', $strip_crlf( $site_name ), $strip_crlf( $user_email ) );
+		$admin_body    = "Nouvel utilisateur inscrit sur " . $strip_crlf( $site_name ) . ".\n\n"
+			. "Login : " . $strip_crlf( $user_login ) . "\n"
+			. "E-mail : " . $strip_crlf( $user_email ) . "\n"
 			. "Date : " . current_time( 'd/m/Y H:i' ) . "\n"
-			. "IP : " . $ip . "\n"
+			. "IP : " . $strip_crlf( $ip ) . "\n"
 			. "Statut : en attente d'activation par e-mail";
 		wp_mail( $admin_to, $admin_subject, $admin_body );
 
@@ -432,15 +431,34 @@ final class Custom_Auth {
 	}
 
 	public static function handle_resend_activation(): void {
-		$back  = home_url( '/connexion/' );
+		$back        = home_url( '/connexion/' );
+		$success_url = add_query_arg( 'check', 'email', home_url( '/inscription/' ) );
+
+		// CSRF
+		if ( ! isset( $_POST['_seoflix_resend_nonce'] ) || ! wp_verify_nonce( $_POST['_seoflix_resend_nonce'], 'seoflix_resend' ) ) {
+			self::redirect_error( $back, 'session_expired', 'login' );
+		}
+
+		// Rate-limit IP : 5 renvois / heure / IP, pour bloquer un attaquant
+		// qui parcourrait une liste d'e-mails pour spam-bomber les utilisateurs
+		$ip          = Security::client_ip();
+		$ip_rate_key = 'seoflix_resend_ip_' . md5( $ip );
+		$ip_count    = (int) get_transient( $ip_rate_key );
+		if ( $ip_count >= 5 ) {
+			// On simule le succès (pas la peine d'avertir l'attaquant)
+			wp_safe_redirect( $success_url );
+			exit;
+		}
+		set_transient( $ip_rate_key, $ip_count + 1, HOUR_IN_SECONDS );
+
 		$email = isset( $_POST['user_email'] ) ? sanitize_email( wp_unslash( $_POST['user_email'] ) ) : '';
 		if ( ! is_email( $email ) ) {
-			self::redirect_error( $back, 'invalid_email', 'login' );
+			// Toujours simule succès (anti enum)
+			wp_safe_redirect( $success_url );
+			exit;
 		}
 
 		$user = get_user_by( 'email', $email );
-		// On simule TOUJOURS le succès (anti enum)
-		$success_url = add_query_arg( 'check', 'email', home_url( '/inscription/' ) );
 
 		if ( $user instanceof \WP_User ) {
 			$pending = get_user_meta( $user->ID, self::META_PENDING, true );
@@ -476,15 +494,29 @@ final class Custom_Auth {
 		exit;
 	}
 
+	/**
+	 * Vérifie un token Turnstile côté serveur. Fail-closed : si l'API Cloudflare est
+	 * inaccessible, on refuse la soumission (better safe than sorry).
+	 */
 	private static function verify_turnstile( string $token, string $secret, string $ip ): bool {
 		$response = wp_remote_post( 'https://challenges.cloudflare.com/turnstile/v0/siteverify', [
 			'timeout' => 8,
 			'body'    => [ 'secret' => $secret, 'response' => $token, 'remoteip' => $ip ],
 		] );
 		if ( is_wp_error( $response ) ) {
+			error_log( 'Seoflix Turnstile: HTTP error - ' . $response->get_error_message() );
+			return false;
+		}
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		if ( $code !== 200 ) {
+			error_log( 'Seoflix Turnstile: HTTP ' . $code );
 			return false;
 		}
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( ! is_array( $body ) ) {
+			error_log( 'Seoflix Turnstile: invalid JSON response' );
+			return false;
+		}
 		return ! empty( $body['success'] );
 	}
 }
