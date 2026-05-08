@@ -56,6 +56,46 @@ add_action( 'wp_enqueue_scripts', static function () {
 	wp_enqueue_style( 'seoflix-layout',     get_theme_file_uri( 'assets/css/layout.css' ),     [ 'seoflix-reset' ], $ver );
 	wp_enqueue_style( 'seoflix-components', get_theme_file_uri( 'assets/css/components.css' ), [ 'seoflix-layout' ], $ver );
 	wp_enqueue_style( 'seoflix-pages',      get_theme_file_uri( 'assets/css/pages.css' ),      [ 'seoflix-components' ], $ver );
+
+	// JS user actions (favoris + watched) — uniquement si user loggé et V2 actif
+	if ( is_user_logged_in() && function_exists( '\\Seoflix\\seoflix_user_accounts_enabled' ) && \Seoflix\seoflix_user_accounts_enabled() ) {
+		$inline_js = <<<'JS'
+		document.addEventListener('click', function(e) {
+			const btn = e.target.closest('.sx-action');
+			if (!btn) return;
+			const wrap = btn.closest('.sx-video-page__actions');
+			if (!wrap) return;
+			const action = btn.dataset.action;
+			const videoId = wrap.dataset.videoId;
+			const nonce = wrap.dataset.nonce;
+			const ajaxUrl = wrap.dataset.ajax;
+			btn.disabled = true;
+			const fd = new FormData();
+			fd.append('action', action === 'favorite' ? 'seoflix_toggle_favorite' : 'seoflix_mark_watched');
+			fd.append('_ajax_nonce', nonce);
+			fd.append('video_id', videoId);
+			if (action === 'watched') { fd.append('completed', '1'); }
+			fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+				.then(r => r.json())
+				.then(json => {
+					if (!json.success) throw new Error(json.data || 'Erreur');
+					btn.classList.toggle('is-on');
+					const label = btn.querySelector('.sx-action__label');
+					if (action === 'favorite') {
+						label.textContent = btn.classList.contains('is-on') ? 'Retirer des favoris' : 'Ajouter aux favoris';
+					} else {
+						label.textContent = btn.classList.contains('is-on') ? 'Vue' : 'Marquer comme vue';
+					}
+					btn.setAttribute('aria-pressed', btn.classList.contains('is-on') ? 'true' : 'false');
+				})
+				.catch(err => alert(err.message))
+				.finally(() => { btn.disabled = false; });
+		});
+		JS;
+		wp_register_script( 'seoflix-user-actions', '', [], $ver, true );
+		wp_enqueue_script( 'seoflix-user-actions' );
+		wp_add_inline_script( 'seoflix-user-actions', $inline_js );
+	}
 } );
 
 /* ============================================================

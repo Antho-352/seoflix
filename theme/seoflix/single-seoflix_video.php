@@ -59,6 +59,32 @@ while ( have_posts() ) :
 					?>
 				</div>
 			<?php endif; ?>
+
+			<?php
+			if ( class_exists( '\Seoflix\FeatureFlags' ) && \Seoflix\FeatureFlags::user_accounts_enabled() ) :
+				$current_uid = get_current_user_id();
+				if ( $current_uid ) :
+					$is_fav     = \Seoflix\User_Accounts::is_video_favorited( $current_uid, $video_id );
+					$is_watched = \Seoflix\User_Accounts::is_video_watched( $current_uid, $video_id );
+					$nonce      = wp_create_nonce( 'seoflix_user_action' );
+					?>
+					<div class="sx-video-page__actions" data-video-id="<?php echo (int) $video_id; ?>" data-nonce="<?php echo esc_attr( $nonce ); ?>" data-ajax="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+						<button type="button" class="sx-action sx-action--fav <?php echo $is_fav ? 'is-on' : ''; ?>" data-action="favorite" aria-pressed="<?php echo $is_fav ? 'true' : 'false'; ?>">
+							<span class="sx-action__icon">♥</span>
+							<span class="sx-action__label"><?php echo $is_fav ? 'Retirer des favoris' : 'Ajouter aux favoris'; ?></span>
+						</button>
+						<button type="button" class="sx-action sx-action--watched <?php echo $is_watched ? 'is-on' : ''; ?>" data-action="watched" aria-pressed="<?php echo $is_watched ? 'true' : 'false'; ?>">
+							<span class="sx-action__icon">✓</span>
+							<span class="sx-action__label"><?php echo $is_watched ? 'Vue' : 'Marquer comme vue'; ?></span>
+						</button>
+					</div>
+				<?php else : ?>
+					<p class="sx-video-page__signup-cta">
+						<a href="<?php echo esc_url( wp_login_url( get_permalink() ) ); ?>">Connecte-toi</a> pour suivre ta progression et ajouter aux favoris.
+					</p>
+				<?php endif;
+			endif;
+			?>
 		</header>
 
 		<div class="sx-video-page__top">

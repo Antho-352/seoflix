@@ -34,6 +34,8 @@ final class Plugin {
 		Cron::init();
 		Contact::init();
 		SEO::init();
+		Path_Order::init();
+		User_Accounts::init();
 
 		// Re-seed des termes si la version a bumpé (ajout du topic « youtube » par exemple).
 		add_action( 'init', [ Activator::class, 'ensure_terms_seeded' ], 20 );
@@ -61,5 +63,7 @@ final class Plugin {
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-contact.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-seo.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-homepage.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-path-order.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-user-accounts.php';
 	}
 }
