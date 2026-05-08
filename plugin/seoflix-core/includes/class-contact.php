@@ -60,16 +60,19 @@ final class Contact {
 
 		ob_start();
 		?>
-		<div class="sx-contact-form">
+		<div class="sx-contact-form" id="sx-contact-form">
 			<?php if ( $success ) : ?>
-				<div class="sx-contact-form__notice sx-contact-form__notice--ok">
+				<div class="sx-contact-form__notice sx-contact-form__notice--ok" id="sx-contact-notice">
 					<strong>Message envoyé.</strong> Une copie de confirmation t'a été envoyée. Réponse sous 48h ouvrées.
 				</div>
 			<?php endif; ?>
 			<?php if ( $error ) : ?>
-				<div class="sx-contact-form__notice sx-contact-form__notice--err">
+				<div class="sx-contact-form__notice sx-contact-form__notice--err" id="sx-contact-notice">
 					<strong>Erreur :</strong> <?php echo esc_html( $error ); ?>
 				</div>
+			<?php endif; ?>
+			<?php if ( $success || $error ) : ?>
+				<script>document.getElementById('sx-contact-notice')?.scrollIntoView({behavior:'smooth',block:'center'});</script>
 			<?php endif; ?>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sx-form">
@@ -127,11 +130,12 @@ final class Contact {
 			exit;
 		}
 
-		// Rate limit : 1 envoi / 60s / IP
+		// Rate limit : 1 envoi / 30s / IP (bypass pour les admins connectés, utile pour tester)
 		$ip       = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : '';
 		$rate_key = 'seoflix_contact_rate_' . md5( $ip );
-		if ( get_transient( $rate_key ) ) {
-			self::redirect_error( $page_url, 'Trop de tentatives. Réessaye dans 1 minute.' );
+		$is_admin = current_user_can( 'manage_options' );
+		if ( ! $is_admin && get_transient( $rate_key ) ) {
+			self::redirect_error( $page_url, 'Trop de tentatives. Réessaye dans 30 secondes.' );
 		}
 
 		$name    = isset( $_POST['name'] )    ? sanitize_text_field( wp_unslash( $_POST['name'] ) )    : '';
@@ -173,42 +177,60 @@ final class Contact {
 			self::redirect_error( $page_url, 'Erreur serveur, réessaye plus tard.' );
 		}
 
-		set_transient( $rate_key, 1, MINUTE_IN_SECONDS );
+		if ( ! $is_admin ) {
+			set_transient( $rate_key, 1, 30 );
+		}
 
-		// Envoi 1 : à l'admin
-		$admin_to      = self::get_recipient();
-		$site_name     = get_bloginfo( 'name' );
-		$admin_subject = sprintf( '[%s] Nouveau message : %s', $site_name, $subject );
-		$admin_body    = "Nouveau message reçu depuis le formulaire de contact.\n\n"
-			. "De : {$name} <{$email}>\n"
-			. "Sujet : {$subject}\n"
-			. "Date : " . current_time( 'd/m/Y H:i' ) . "\n\n"
-			. "Message :\n" . str_repeat( '-', 60 ) . "\n"
-			. $message . "\n"
-			. str_repeat( '-', 60 ) . "\n\n"
-			. "Voir dans l'admin : " . admin_url( 'post.php?post=' . $post_id . '&action=edit' ) . "\n";
-
-		$admin_headers = [
-			'Reply-To: ' . sprintf( '%s <%s>', $name, $email ),
+		// Stocke les mails à envoyer après la redirection (évite le freeze côté UX
+		// si SMTP timeout ou FluentSMTP pas encore configuré)
+		$site_name = get_bloginfo( 'name' );
+		$mails = [
+			[
+				'to'      => self::get_recipient(),
+				'subject' => sprintf( '[%s] Nouveau message : %s', $site_name, $subject ),
+				'body'    => "Nouveau message reçu depuis le formulaire de contact.\n\n"
+					. "De : {$name} <{$email}>\n"
+					. "Sujet : {$subject}\n"
+					. "Date : " . current_time( 'd/m/Y H:i' ) . "\n\n"
+					. "Message :\n" . str_repeat( '-', 60 ) . "\n"
+					. $message . "\n"
+					. str_repeat( '-', 60 ) . "\n\n"
+					. "Voir dans l'admin : " . admin_url( 'post.php?post=' . $post_id . '&action=edit' ) . "\n",
+				'headers' => [ 'Reply-To: ' . sprintf( '%s <%s>', $name, $email ) ],
+			],
+			[
+				'to'      => $email,
+				'subject' => sprintf( "[%s] Confirmation de réception", $site_name ),
+				'body'    => "Bonjour {$name},\n\n"
+					. "J'ai bien reçu ton message et te répondrai sous 48h ouvrées.\n\n"
+					. "Pour mémoire, voici ton message :\n\n"
+					. "Sujet : {$subject}\n"
+					. str_repeat( '-', 60 ) . "\n"
+					. $message . "\n"
+					. str_repeat( '-', 60 ) . "\n\n"
+					. "Si tu n'es pas à l'origine de ce message, ignore simplement cet e-mail.\n\n"
+					. "À bientôt,\n"
+					. "Anthony — {$site_name}\n"
+					. home_url(),
+				'headers' => [],
+			],
 		];
-		wp_mail( $admin_to, $admin_subject, $admin_body, $admin_headers );
 
-		// Envoi 2 : auto-reply à la personne
-		$user_subject = sprintf( "[%s] Confirmation de réception", $site_name );
-		$user_body    = "Bonjour {$name},\n\n"
-			. "J'ai bien reçu ton message et te répondrai sous 48h ouvrées.\n\n"
-			. "Pour mémoire, voici ton message :\n\n"
-			. "Sujet : {$subject}\n"
-			. str_repeat( '-', 60 ) . "\n"
-			. $message . "\n"
-			. str_repeat( '-', 60 ) . "\n\n"
-			. "Si tu n'es pas à l'origine de ce message, ignore simplement cet e-mail.\n\n"
-			. "À bientôt,\n"
-			. "Anthony — {$site_name}\n"
-			. home_url();
-		wp_mail( $email, $user_subject, $user_body );
-
+		// Redirige immédiatement pour ne PAS faire attendre l'utilisateur
+		// le temps que SMTP/sendmail réponde.
 		wp_safe_redirect( add_query_arg( 'seoflix_contact', 'sent', $page_url ) );
+
+		// Si dispo (PHP-FPM), termine la réponse HTTP avant l'envoi des mails
+		if ( function_exists( 'fastcgi_finish_request' ) ) {
+			fastcgi_finish_request();
+		} elseif ( function_exists( 'litespeed_finish_request' ) ) {
+			litespeed_finish_request();
+		}
+
+		// Envoi des mails (peut prendre quelques secondes selon le SMTP)
+		foreach ( $mails as $m ) {
+			wp_mail( $m['to'], $m['subject'], $m['body'], $m['headers'] );
+		}
 		exit;
 	}
 

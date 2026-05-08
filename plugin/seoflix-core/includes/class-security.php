@@ -51,13 +51,14 @@ final class Security {
 	private static function build_csp(): string {
 		$directives = [
 			"default-src 'self'",
-			"script-src 'self' 'unsafe-inline'",
+			"script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
 			"style-src 'self' 'unsafe-inline'",
-			"img-src 'self' data: https://i.ytimg.com https://yt3.googleusercontent.com https://yt3.ggpht.com",
+			"img-src 'self' data: https://i.ytimg.com https://yt3.googleusercontent.com https://yt3.ggpht.com https://secure.gravatar.com https://*.gravatar.com https://0.gravatar.com https://1.gravatar.com https://2.gravatar.com",
 			"font-src 'self' data:",
 			"frame-src https://www.youtube-nocookie.com https://www.youtube.com",
 			"frame-ancestors 'self'",
-			"connect-src 'self'",
+			"connect-src 'self' https://cloudflareinsights.com",
+			"worker-src 'self' blob:",
 			"base-uri 'self'",
 			"form-action 'self'",
 			"object-src 'none'",

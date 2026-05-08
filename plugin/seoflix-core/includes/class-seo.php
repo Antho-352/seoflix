@@ -402,6 +402,10 @@ final class SEO {
 		if ( ! $og_image ) {
 			$og_image = (string) get_option( self::OPTION_OG_IMAGE, '' );
 		}
+		if ( ! $og_image ) {
+			// Fallback : image OG fournie par le thème
+			$og_image = get_template_directory_uri() . '/assets/images/og-default.png';
+		}
 
 		echo '<meta property="og:type" content="' . esc_attr( $type ) . '">' . "\n";
 		echo '<meta property="og:title" content="' . esc_attr( $title ) . '">' . "\n";
