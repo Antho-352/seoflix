@@ -54,16 +54,18 @@ Hybride classic + theme.json. Pas de Tailwind, vanilla CSS uniquement.
 User n'a pas de CLI sur son serveur, tout passe par upload zip dans WP admin.
 
 ```bash
-# Plugin
-cd plugin/seoflix-core && zip -r ../../dist/seoflix-core.zip . -x "*.DS_Store"
+# Plugin — zipper AVEC le dossier parent (sinon WP ne détecte pas que c'est le même plugin et crée un duplicata)
+cd plugin && zip -rq ../dist/seoflix-core.zip seoflix-core -x "*.DS_Store" -x "*.git*"
 
-# Thème
-cd theme/seoflix && zip -r ../../dist/seoflix-theme.zip . -x "*.DS_Store"
+# Thème — idem
+cd theme && zip -rq ../dist/seoflix-theme.zip seoflix -x "*.DS_Store" -x "*.git*"
 ```
 
-⚠️ **Toujours `cd` dans le dossier source** avant de zipper pour avoir les fichiers à la racine du zip (sinon WP refuse).
+⚠️ **Le zip DOIT contenir le dossier parent** (`seoflix-core/...` ou `seoflix/...`). Si on zip files-at-root, WP voit ça comme un nouveau plugin/thème et n'offre pas le bouton "Remplacer l'existant" → duplicatas dans `/wp-content/plugins/` ou `/wp-content/themes/`.
 
 ⚠️ **Filenames fixes** (`seoflix-core.zip`, `seoflix-theme.zip`), jamais de timestamp — le user veut écraser, pas accumuler.
+
+Vérification rapide que la structure est correcte : `unzip -l dist/seoflix-core.zip | head -3` doit afficher `seoflix-core/` en premier.
 
 ## Protections quota YouTube API
 
