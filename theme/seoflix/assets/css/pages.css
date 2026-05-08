@@ -236,6 +236,26 @@
 	margin-bottom: var(--sx-space-8);
 }
 
+.sx-product-page__logo {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--sx-color-bg);
+	border-radius: var(--sx-radius-md);
+	padding: var(--sx-space-6);
+	margin-bottom: var(--sx-space-6);
+	min-height: 140px;
+}
+
+.sx-product-page__logo img {
+	max-width: 200px;
+	max-height: 120px;
+	width: auto;
+	height: auto;
+	object-fit: contain;
+	display: block;
+}
+
 .sx-product-page__category {
 	color: var(--sx-color-accent);
 	font-size: 0.85rem;

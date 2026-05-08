@@ -23,6 +23,11 @@ while ( have_posts() ) :
 	<article class="sx-container sx-page sx-product-page">
 
 		<header class="sx-product-page__header">
+			<?php if ( has_post_thumbnail( $product_id ) ) : ?>
+				<div class="sx-product-page__logo">
+					<?php echo get_the_post_thumbnail( $product_id, 'medium', [ 'alt' => esc_attr( get_the_title() ) ] ); ?>
+				</div>
+			<?php endif; ?>
 			<?php if ( $cat_name ) : ?>
 				<div class="sx-product-page__category"><?php echo esc_html( $cat_name ); ?></div>
 			<?php endif; ?>
