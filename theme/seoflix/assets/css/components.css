@@ -976,3 +976,41 @@ a.sx-badge:hover {
 	justify-content: center;
 	flex-wrap: wrap;
 }
+
+/* Toggle eye sur les champs password */
+.sx-input-pwd {
+	position: relative;
+	display: block;
+}
+
+.sx-input-pwd input {
+	width: 100%;
+	padding-right: 44px !important;
+	box-sizing: border-box;
+}
+
+.sx-input-pwd__toggle {
+	position: absolute;
+	right: 6px;
+	top: 50%;
+	transform: translateY(-50%);
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	color: var(--sx-color-text-muted);
+	padding: 6px 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 4px;
+	transition: color var(--sx-transition);
+}
+
+.sx-input-pwd__toggle:hover {
+	color: var(--sx-color-text);
+}
+
+.sx-input-pwd__toggle:focus-visible {
+	outline: 2px solid var(--sx-color-accent);
+	outline-offset: 2px;
+}

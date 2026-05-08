@@ -57,6 +57,29 @@ add_action( 'wp_enqueue_scripts', static function () {
 	wp_enqueue_style( 'seoflix-components', get_theme_file_uri( 'assets/css/components.css' ), [ 'seoflix-layout' ], $ver );
 	wp_enqueue_style( 'seoflix-pages',      get_theme_file_uri( 'assets/css/pages.css' ),      [ 'seoflix-components' ], $ver );
 
+	// Toggle eye sur les champs password (toutes les pages auth)
+	$toggle_js = <<<'JS'
+	document.addEventListener('click', function(e) {
+		const btn = e.target.closest('.sx-input-pwd__toggle');
+		if (!btn) return;
+		const wrap = btn.closest('.sx-input-pwd');
+		const input = wrap && wrap.querySelector('input');
+		if (!input) return;
+		const isPwd = input.type === 'password';
+		input.type = isPwd ? 'text' : 'password';
+		const show = btn.querySelector('.sx-eye--show');
+		const hide = btn.querySelector('.sx-eye--hide');
+		if (show && hide) {
+			show.style.display = isPwd ? 'none' : '';
+			hide.style.display = isPwd ? '' : 'none';
+		}
+		btn.setAttribute('aria-label', isPwd ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+	});
+	JS;
+	wp_register_script( 'seoflix-pwd-toggle', '', [], $ver, true );
+	wp_enqueue_script( 'seoflix-pwd-toggle' );
+	wp_add_inline_script( 'seoflix-pwd-toggle', $toggle_js );
+
 	// JS user actions (favoris + watched) — uniquement si user loggé et V2 actif
 	if ( is_user_logged_in() && function_exists( '\\Seoflix\\seoflix_user_accounts_enabled' ) && \Seoflix\seoflix_user_accounts_enabled() ) {
 		$ajax_url = esc_js( admin_url( 'admin-ajax.php' ) );
