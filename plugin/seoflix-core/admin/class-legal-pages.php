@@ -17,7 +17,8 @@ final class Legal_Pages {
 	private const NONCE = 'seoflix_create_legal_pages';
 
 	public static function init(): void {
-		add_action( 'admin_post_seoflix_create_legal_pages', [ self::class, 'handle_create' ] );
+		add_action( 'admin_post_seoflix_create_legal_pages',     [ self::class, 'handle_create' ] );
+		add_action( 'admin_post_seoflix_regenerate_legal_pages', [ self::class, 'handle_regenerate' ] );
 		add_action( 'admin_notices', [ self::class, 'admin_notice' ] );
 	}
 
@@ -74,6 +75,16 @@ final class Legal_Pages {
 	}
 
 	public static function admin_notice(): void {
+		if ( isset( $_GET['seoflix_legal_regenerated'] ) ) {
+			$updated = (int) $_GET['seoflix_legal_regenerated'];
+			$created = (int) ( $_GET['seoflix_legal_created'] ?? 0 );
+			printf(
+				'<div class="notice notice-success is-dismissible"><p><strong>%d</strong> page(s) régénérée(s)%s. Vérifie le contenu mis à jour.</p></div>',
+				$updated,
+				$created > 0 ? sprintf( ', <strong>%d</strong> nouvelle(s) page(s) créée(s)', $created ) : ''
+			);
+			return;
+		}
 		if ( ! isset( $_GET['seoflix_legal_created'] ) ) {
 			return;
 		}
@@ -93,8 +104,51 @@ final class Legal_Pages {
 			<?php wp_nonce_field( self::NONCE ); ?>
 			<button type="submit" class="button">Créer les 3 pages légales</button>
 		</form>
-		<p class="description">Crée <code>/affiliation</code>, <code>/mentions-legales</code> et <code>/confidentialite</code> avec un contenu modèle. Idempotent — n'écrase pas une page déjà existante.</p>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline; margin-left: 0.5rem;" onsubmit="return confirm('Forcer la régénération va ÉCRASER le contenu actuel des 3 pages avec la dernière version du modèle. Tes éditions manuelles seront perdues. Continuer ?');">
+			<input type="hidden" name="action" value="seoflix_regenerate_legal_pages">
+			<?php wp_nonce_field( self::NONCE ); ?>
+			<button type="submit" class="button">Régénérer le contenu</button>
+		</form>
+		<p class="description">Crée <code>/affiliation</code>, <code>/mentions-legales</code> et <code>/confidentialite</code> avec un contenu modèle. Le bouton « Créer » est idempotent (n'écrase pas une page existante). Le bouton « Régénérer » force la mise à jour avec la dernière version du modèle (ex: après mise à jour du plugin).</p>
 		<?php
+	}
+
+	public static function handle_regenerate(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Accès refusé.' );
+		}
+		check_admin_referer( self::NONCE );
+
+		$updated = 0;
+		$created = 0;
+		foreach ( self::pages_definition() as $slug => $data ) {
+			$existing = get_page_by_path( $slug, OBJECT, 'page' );
+			if ( $existing ) {
+				wp_update_post( [
+					'ID'           => $existing->ID,
+					'post_content' => $data['content'],
+					'post_title'   => $data['title'],
+				] );
+				$updated++;
+			} else {
+				wp_insert_post( [
+					'post_type'    => 'page',
+					'post_title'   => $data['title'],
+					'post_name'    => $slug,
+					'post_content' => $data['content'],
+					'post_status'  => 'publish',
+				] );
+				$created++;
+			}
+		}
+
+		$redirect = add_query_arg( [
+			'page'                       => 'seoflix-settings',
+			'seoflix_legal_regenerated'  => $updated,
+			'seoflix_legal_created'      => $created,
+		], admin_url( 'admin.php' ) );
+		wp_safe_redirect( $redirect );
+		exit;
 	}
 
 	/* ====== Contenus ====== */
@@ -159,38 +213,64 @@ HTML;
 <!-- wp:heading --><h2>Données collectées</h2><!-- /wp:heading -->
 <!-- wp:paragraph --><p>Seoflix collecte le minimum de données nécessaires à son fonctionnement :</p><!-- /wp:paragraph -->
 <!-- wp:list --><ul>
-<li><strong>Statistiques de visite</strong> : pages consultées, durée, source (referer). Ces données sont agrégées et anonymisées.</li>
-<li><strong>Clics sur liens d'affiliation</strong> : nombre de clics par produit, page source du clic, hash anonymisé de l'IP (SHA-256 + sel) pour empêcher les abus, user-agent. Aucune adresse IP en clair n'est conservée.</li>
+<li><strong>Logs serveur</strong> (Apache) : adresse IP, date/heure, page consultée, user-agent. Conservés pendant <strong>30 jours maximum</strong>, puis purgés automatiquement par l'hébergeur.</li>
+<li><strong>Clics sur liens d'affiliation</strong> : produit cliqué, page source du clic, hash anonymisé de l'IP (SHA-256 + sel propre au site) pour empêcher les abus, user-agent. <strong>Aucune adresse IP en clair n'est conservée</strong> dans la base de Seoflix : seul le hash irréversible l'est.</li>
+<li><strong>Commentaires</strong> (si activés) : pseudonyme, e-mail, contenu, IP, user-agent. Stockés tant que le commentaire est publié ou modéré.</li>
 </ul><!-- /wp:list -->
-<!-- wp:paragraph --><p>Aucune donnée personnelle nominative n'est collectée tant que tu n'as pas créé de compte (les comptes utilisateurs ne sont pas activés en V1).</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Aucune donnée personnelle nominative n'est collectée tant que tu n'as pas créé de compte. Les comptes utilisateurs ne sont pas activés en V1 — il est donc impossible de t'inscrire.</p><!-- /wp:paragraph -->
+
+<!-- wp:heading --><h2>Finalités</h2><!-- /wp:heading -->
+<!-- wp:list --><ul>
+<li>Logs serveur : sécurité (détection d'attaques, fail2ban) et debug technique</li>
+<li>Clics affiliés (hashés) : statistiques agrégées sur les produits qui intéressent les visiteurs, prévention des fraudes</li>
+<li>Commentaires : modération anti-spam (Akismet le cas échéant)</li>
+</ul><!-- /wp:list -->
 
 <!-- wp:heading --><h2>Cookies</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Seoflix utilise uniquement des cookies fonctionnels strictement nécessaires (session WP). Aucun cookie publicitaire ni de tracking tiers n'est déposé par Seoflix.</p><!-- /wp:paragraph -->
-<!-- wp:paragraph --><p>Le lecteur vidéo YouTube intégré utilise le mode <code>youtube-nocookie.com</code> qui ne dépose des cookies qu'au moment où tu démarres la lecture d'une vidéo. Les cookies déposés à ce moment sont gérés par YouTube/Google.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Seoflix utilise uniquement des cookies fonctionnels strictement nécessaires (session WordPress pour l'administration). Aucun cookie publicitaire ni de tracking tiers n'est déposé par Seoflix.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Le lecteur vidéo YouTube intégré utilise le mode <code>youtube-nocookie.com</code> qui ne dépose des cookies qu'au moment où tu démarres la lecture d'une vidéo. Les cookies déposés à ce moment sont gérés par YouTube/Google et soumis à leur propre politique de confidentialité.</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Tes droits (RGPD)</h2><!-- /wp:heading -->
 <!-- wp:paragraph --><p>Conformément au Règlement Général sur la Protection des Données (RGPD), tu disposes des droits suivants :</p><!-- /wp:paragraph -->
 <!-- wp:list --><ul>
-<li>Droit d'accès aux données te concernant</li>
-<li>Droit de rectification</li>
-<li>Droit à l'effacement</li>
-<li>Droit à la limitation du traitement</li>
-<li>Droit à la portabilité</li>
-<li>Droit d'opposition</li>
+<li><strong>Droit d'accès</strong> : obtenir une copie des données te concernant</li>
+<li><strong>Droit de rectification</strong> : corriger une donnée inexacte</li>
+<li><strong>Droit à l'effacement</strong> (« droit à l'oubli ») : faire supprimer tes données</li>
+<li><strong>Droit à la limitation</strong> : geler le traitement de tes données</li>
+<li><strong>Droit à la portabilité</strong> : recevoir tes données dans un format lisible</li>
+<li><strong>Droit d'opposition</strong> : t'opposer à un traitement</li>
 </ul><!-- /wp:list -->
-<!-- wp:paragraph --><p>Pour exercer ces droits, contacte-nous à <a href="mailto:contact@seoflix.fr">contact@seoflix.fr</a>.</p><!-- /wp:paragraph -->
+
+<!-- wp:heading --><h2>Comment exercer ces droits</h2><!-- /wp:heading -->
+<!-- wp:paragraph --><p>Pour exercer l'un de ces droits, envoie un e-mail à <a href="mailto:contact@seoflix.fr">contact@seoflix.fr</a> en précisant :</p><!-- /wp:paragraph -->
+<!-- wp:list --><ul>
+<li>Le droit que tu souhaites exercer</li>
+<li>Une preuve d'identité (copie de pièce d'identité partiellement masquée — seul ton nom et ta photo doivent rester lisibles)</li>
+<li>L'adresse IP que tu utilises ou as utilisée pour visiter Seoflix (utile pour identifier d'éventuels clics affiliés)</li>
+</ul><!-- /wp:list -->
+<!-- wp:paragraph --><p><strong>Délai de réponse</strong> : 1 mois à compter de la réception de la demande, prolongeable de 2 mois supplémentaires en cas de demande complexe (tu seras informé de la prolongation et de ses motifs dans le mois suivant la demande).</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>L'exercice de ces droits est gratuit, sauf si la demande est manifestement infondée ou excessive.</p><!-- /wp:paragraph -->
+
+<!-- wp:heading --><h2>Recours auprès de la CNIL</h2><!-- /wp:heading -->
+<!-- wp:paragraph --><p>Si tu estimes, après avoir contacté Seoflix, que tes droits Informatique et Libertés ne sont pas respectés, tu peux adresser une réclamation à la <strong>Commission Nationale de l'Informatique et des Libertés (CNIL)</strong> :</p><!-- /wp:paragraph -->
+<!-- wp:list --><ul>
+<li>En ligne : <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener">cnil.fr/fr/plaintes</a></li>
+<li>Par courrier : 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07</li>
+</ul><!-- /wp:list -->
 
 <!-- wp:heading --><h2>Durée de conservation</h2><!-- /wp:heading -->
 <!-- wp:list --><ul>
-<li>Logs de clics affiliés : 24 mois</li>
-<li>Statistiques de visite agrégées : indéfiniment (anonymes)</li>
+<li><strong>Logs serveur Apache</strong> : 30 jours puis purge automatique</li>
+<li><strong>Clics affiliés (hashés)</strong> : 24 mois</li>
+<li><strong>Commentaires</strong> : tant qu'ils sont publiés ou en modération</li>
+<li><strong>Statistiques de visite agrégées</strong> : indéfiniment (anonymes, non rattachables à une personne)</li>
 </ul><!-- /wp:list -->
 
 <!-- wp:heading --><h2>Sécurité</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Les données sont hébergées sur un serveur dédié en France. Le site est servi en HTTPS. Les mots de passe administrateurs sont stockés hashés (bcrypt natif WordPress).</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Les données sont hébergées sur un serveur dédié en France (OVH/Kimsufi). Le site est servi exclusivement en HTTPS. Les mots de passe administrateurs sont stockés hashés (bcrypt natif WordPress, jamais en clair).</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Contact</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Pour toute question relative à la confidentialité : <a href="mailto:contact@seoflix.fr">contact@seoflix.fr</a>.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Pour toute question relative à la confidentialité ou au traitement de tes données : <a href="mailto:contact@seoflix.fr">contact@seoflix.fr</a>.</p><!-- /wp:paragraph -->
 HTML;
 	}
 }
