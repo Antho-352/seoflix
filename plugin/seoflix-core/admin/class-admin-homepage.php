@@ -97,7 +97,7 @@ final class Admin_Homepage {
 
 				<div class="seoflix-card">
 					<h2>Sections</h2>
-					<p>Glisse l'ordre via la colonne <strong>Ordre</strong> (chiffre — plus petit = plus haut sur la page). Décoche <strong>Visible</strong> pour cacher une section.</p>
+					<p>Colonne <strong>Ordre</strong> = position de la section sur la page (plus petit = plus haut). Décoche <strong>Visible</strong> pour cacher une section.</p>
 					<table class="widefat striped">
 						<thead>
 							<tr>
@@ -106,7 +106,6 @@ final class Admin_Homepage {
 								<th>Type</th>
 								<th>Titre H2 (laisser vide = défaut)</th>
 								<th style="width:120px;">Limite</th>
-								<th style="width:120px;">Topics (count)</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -132,21 +131,77 @@ final class Admin_Homepage {
 											—
 										<?php endif; ?>
 									</td>
-									<td>
-										<?php if ( $type === Homepage::TYPE_TOPICS ) : ?>
-											<input type="number" name="sections[<?php echo (int) $idx; ?>][topics_count]" value="<?php echo esc_attr( (string) ( $s['topics_count'] ?? 6 ) ); ?>" min="1" max="20" class="small-text">
-										<?php else : ?>
-											—
-										<?php endif; ?>
-									</td>
 								</tr>
 							<?php endforeach; ?>
 						</tbody>
 					</table>
 					<p class="description">
-						<strong>Topics (auto)</strong> : génère automatiquement N rangées, une par sujet (top par nombre de vidéos). « Limite » = nombre de vidéos par rangée. « Topics (count) » = nombre de sujets affichés.
+						<strong>Topics</strong> : la section affiche N rangées (une par sujet). Chaque sujet est paramétrable individuellement dans le bloc « Sujets affichés » ci-dessous (cocher/décocher + numéro d'ordre).
 					</p>
 				</div>
+
+				<?php
+				// Trouve la section TYPE_TOPICS pour gérer la liste des topics affichés
+				$topics_section_idx = null;
+				foreach ( $cfg['sections'] as $idx => $s ) {
+					if ( ( $s['type'] ?? '' ) === Homepage::TYPE_TOPICS ) {
+						$topics_section_idx = $idx;
+						break;
+					}
+				}
+				$all_topics = get_terms( [
+					'taxonomy'   => 'seoflix_topic',
+					'hide_empty' => false,
+					'orderby'    => 'name',
+					'order'      => 'ASC',
+				] );
+				$saved_topics = ( $topics_section_idx !== null && isset( $cfg['sections'][ $topics_section_idx ]['topics_manual'] ) )
+					? (array) $cfg['sections'][ $topics_section_idx ]['topics_manual']
+					: [];
+				$saved_map = []; // slug => order
+				foreach ( $saved_topics as $i => $slug ) {
+					$saved_map[ $slug ] = $i + 1;
+				}
+				?>
+
+				<?php if ( $topics_section_idx !== null && ! is_wp_error( $all_topics ) ) : ?>
+					<div class="seoflix-card">
+						<h2>Sujets affichés (et ordre)</h2>
+						<p>Coche les sujets à afficher dans la section <em>Topics</em>. Le numéro d'ordre détermine la position du sujet (1 = en haut). Si aucun sujet n'est coché, fallback automatique sur les sujets les plus fournis.</p>
+						<table class="widefat striped">
+							<thead>
+								<tr>
+									<th style="width:80px;">Ordre</th>
+									<th style="width:60px;">Afficher</th>
+									<th>Sujet</th>
+									<th>Slug</th>
+									<th style="width:100px;">Vidéos</th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach ( $all_topics as $t ) :
+									$is_on = isset( $saved_map[ $t->slug ] );
+									$ord   = $saved_map[ $t->slug ] ?? '';
+									?>
+									<tr>
+										<td>
+											<input type="number" name="topics_manual_orders[<?php echo esc_attr( $t->slug ); ?>]" value="<?php echo esc_attr( (string) $ord ); ?>" min="1" max="99" class="small-text" style="width:70px;" placeholder="—">
+										</td>
+										<td>
+											<input type="checkbox" name="topics_manual_active[<?php echo esc_attr( $t->slug ); ?>]" value="1" <?php checked( $is_on ); ?>>
+										</td>
+										<td><strong><?php echo esc_html( $t->name ); ?></strong></td>
+										<td><code><?php echo esc_html( $t->slug ); ?></code></td>
+										<td><?php echo (int) $t->count; ?></td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+						<p class="description">
+							Astuce : tu peux laisser TOUS les ordres vides et juste cocher → l'ordre alphabétique sera utilisé. Ou laisser tout décoché → fallback sur le top N automatique (limite définie par la section Topics).
+						</p>
+					</div>
+				<?php endif; ?>
 
 				<p>
 					<?php submit_button( 'Enregistrer', 'primary', 'submit', false ); ?>
@@ -177,6 +232,33 @@ final class Admin_Homepage {
 			'show_stats'     => ! empty( $hero_in['show_stats'] ),
 		];
 
+		// Liste manuelle des topics (slug ordonnés selon orders saisies)
+		$topics_manual_active = isset( $_POST['topics_manual_active'] ) && is_array( $_POST['topics_manual_active'] )
+			? wp_unslash( $_POST['topics_manual_active'] )
+			: [];
+		$topics_manual_orders = isset( $_POST['topics_manual_orders'] ) && is_array( $_POST['topics_manual_orders'] )
+			? wp_unslash( $_POST['topics_manual_orders'] )
+			: [];
+		$topics_manual = [];
+		foreach ( $topics_manual_active as $slug => $on ) {
+			$slug = sanitize_key( $slug );
+			if ( ! $slug ) {
+				continue;
+			}
+			$ord = isset( $topics_manual_orders[ $slug ] ) ? (int) $topics_manual_orders[ $slug ] : 0;
+			$topics_manual[ $slug ] = $ord;
+		}
+		// Tri : ordre asc, puis fallback sur l'ordre alphabétique
+		uksort( $topics_manual, static function ( $a, $b ) use ( $topics_manual ) {
+			$oa = $topics_manual[ $a ] ?: 999;
+			$ob = $topics_manual[ $b ] ?: 999;
+			if ( $oa === $ob ) {
+				return strcmp( $a, $b );
+			}
+			return $oa - $ob;
+		} );
+		$topics_manual_slugs = array_keys( $topics_manual );
+
 		$sections_in = isset( $_POST['sections'] ) && is_array( $_POST['sections'] ) ? wp_unslash( $_POST['sections'] ) : [];
 		$sections    = [];
 		foreach ( $sections_in as $s ) {
@@ -195,6 +277,10 @@ final class Admin_Homepage {
 			}
 			if ( isset( $s['topics_count'] ) ) {
 				$row['topics_count'] = max( 1, min( 20, (int) $s['topics_count'] ) );
+			}
+			// Pour la section topics, attache la liste manuelle si elle existe
+			if ( $type === Homepage::TYPE_TOPICS && $topics_manual_slugs ) {
+				$row['topics_manual'] = $topics_manual_slugs;
 			}
 			$sections[] = $row;
 		}

@@ -116,29 +116,47 @@ $render_newsletter = static function () use ( &$rows_rendered, &$newsletter_done
 				break;
 
 			case \Seoflix\Homepage::TYPE_TOPICS:
-				$topics_count = (int) ( $section['topics_count'] ?? 6 );
-				$topics = get_terms( [
-					'taxonomy'   => 'seoflix_topic',
-					'hide_empty' => true,
-					'orderby'    => 'count',
-					'order'      => 'DESC',
-					'number'     => $topics_count,
-				] );
-				if ( ! is_wp_error( $topics ) ) {
-					foreach ( $topics as $topic ) {
-						$videos = get_posts( [
-							'post_type'      => 'seoflix_video',
-							'post_status'    => 'publish',
-							'posts_per_page' => $limit,
-							'tax_query'      => [
-								[ 'taxonomy' => 'seoflix_topic', 'field' => 'term_id', 'terms' => $topic->term_id ],
-							],
-							'orderby'        => 'rand',
-						] );
-						seoflix_render_video_row( $topic->name, $videos, get_term_link( $topic ) );
-						$rows_rendered++;
-						$render_newsletter();
+				$manual_slugs = isset( $section['topics_manual'] ) && is_array( $section['topics_manual'] )
+					? array_filter( array_map( 'sanitize_key', $section['topics_manual'] ) )
+					: [];
+
+				if ( $manual_slugs ) {
+					// Mode manuel : ordre exact défini par l'admin
+					$topics = [];
+					foreach ( $manual_slugs as $slug ) {
+						$term = get_term_by( 'slug', $slug, 'seoflix_topic' );
+						if ( $term && ! is_wp_error( $term ) ) {
+							$topics[] = $term;
+						}
 					}
+				} else {
+					// Mode auto : top N par nombre de vidéos
+					$topics_count = (int) ( $section['topics_count'] ?? 6 );
+					$topics = get_terms( [
+						'taxonomy'   => 'seoflix_topic',
+						'hide_empty' => true,
+						'orderby'    => 'count',
+						'order'      => 'DESC',
+						'number'     => $topics_count,
+					] );
+					if ( is_wp_error( $topics ) ) {
+						$topics = [];
+					}
+				}
+
+				foreach ( $topics as $topic ) {
+					$videos = get_posts( [
+						'post_type'      => 'seoflix_video',
+						'post_status'    => 'publish',
+						'posts_per_page' => $limit,
+						'tax_query'      => [
+							[ 'taxonomy' => 'seoflix_topic', 'field' => 'term_id', 'terms' => $topic->term_id ],
+						],
+						'orderby'        => 'rand',
+					] );
+					seoflix_render_video_row( $topic->name, $videos, get_term_link( $topic ) );
+					$rows_rendered++;
+					$render_newsletter();
 				}
 				break;
 
