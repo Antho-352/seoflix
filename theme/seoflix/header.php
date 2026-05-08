@@ -49,9 +49,10 @@
 		<?php if ( function_exists( '\\Seoflix\\seoflix_user_accounts_enabled' ) && \Seoflix\seoflix_user_accounts_enabled() ) : ?>
 			<div class="sx-user-cta sx-user-cta--desktop">
 				<?php if ( is_user_logged_in() ) : ?>
-					<a href="<?php echo esc_url( home_url( '/mon-parcours/' ) ); ?>" class="sx-user-cta__link">Mon parcours</a>
+					<a href="<?php echo esc_url( home_url( '/mon-parcours/' ) ); ?>" class="sx-user-cta__link sx-user-cta__link--ghost">Mon parcours</a>
 				<?php else : ?>
-					<a href="<?php echo esc_url( wp_login_url() ); ?>" class="sx-user-cta__link">Connexion</a>
+					<a href="<?php echo esc_url( wp_login_url() ); ?>" class="sx-user-cta__link sx-user-cta__link--ghost">Connexion</a>
+					<a href="<?php echo esc_url( wp_registration_url() ); ?>" class="sx-user-cta__link sx-user-cta__link--accent">Inscription</a>
 				<?php endif; ?>
 			</div>
 		<?php endif; ?>

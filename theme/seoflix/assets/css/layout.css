@@ -73,9 +73,11 @@
 	display: flex;
 	gap: var(--sx-space-4);
 	align-items: center;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 	justify-content: center;
 	flex: 1;
+	min-width: 0;
+	overflow: hidden;
 }
 
 .sx-nav a {
@@ -115,13 +117,21 @@
 	color: var(--sx-color-text-muted);
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1380px) {
 	.sx-nav { gap: var(--sx-space-3); }
 	.sx-search-form input { width: 140px; }
 }
 
+@media (max-width: 1180px) {
+	.sx-nav { gap: 0.85rem; }
+	.sx-nav a { font-size: 0.78rem; }
+	.sx-search-form input { width: 120px; }
+	.sx-user-cta__link { padding: 0.25rem 0.55rem; font-size: 0.75rem; }
+}
+
 @media (max-width: 1024px) {
-	.sx-nav a { font-size: 0.8rem; }
+	.sx-search-form { display: none; }
+	.sx-nav a { font-size: 0.78rem; }
 }
 
 /* Footer */
@@ -276,11 +286,12 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--sx-space-5);
-	padding: var(--sx-space-5);
+	padding: var(--sx-space-6) var(--sx-space-6);
 	overflow-y: auto;
 	transform: translateX(100%);
 	transition: transform var(--sx-transition);
 	box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+	box-sizing: border-box;
 }
 
 .sx-drawer.is-open .sx-drawer__panel {
@@ -314,16 +325,17 @@
 
 .sx-nav--drawer {
 	flex-direction: column;
-	align-items: flex-start;
+	align-items: stretch;
 	gap: 0;
 	flex: 0;
 }
 
 .sx-nav--drawer a {
 	font-size: 1rem;
-	padding: 0.75rem 0;
+	padding: 0.85rem 0.5rem;
 	width: 100%;
 	border-bottom: 1px solid var(--sx-color-border);
+	display: block;
 }
 
 .sx-nav--drawer a:hover {
@@ -360,19 +372,41 @@
 	}
 }
 
-.sx-user-cta__link {
-	color: var(--sx-color-text);
-	font-size: 0.85rem;
-	font-weight: 600;
-	padding: 0.3rem 0.8rem;
-	border: 1px solid var(--sx-color-border);
-	border-radius: 999px;
-	white-space: nowrap;
+.sx-user-cta {
+	display: flex;
+	gap: 0.4rem;
+	flex-shrink: 0;
 }
 
-.sx-user-cta__link:hover {
+.sx-user-cta__link {
+	color: var(--sx-color-text);
+	font-size: 0.8rem;
+	font-weight: 600;
+	padding: 0.3rem 0.7rem;
+	border-radius: 999px;
+	white-space: nowrap;
+	line-height: 1.4;
+}
+
+.sx-user-cta__link--ghost {
+	border: 1px solid var(--sx-color-border);
+}
+
+.sx-user-cta__link--ghost:hover {
 	border-color: var(--sx-color-accent);
 	color: var(--sx-color-accent);
+}
+
+.sx-user-cta__link--accent {
+	background: var(--sx-color-accent);
+	color: #fff;
+	border: 1px solid var(--sx-color-accent);
+}
+
+.sx-user-cta__link--accent:hover {
+	background: #d62534;
+	border-color: #d62534;
+	color: #fff;
 }
 
 @media (max-width: 900px) {

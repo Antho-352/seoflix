@@ -770,3 +770,88 @@ a.sx-badge:hover {
 
 .sx-video-page__signup-cta { margin-top: var(--sx-space-3); color: var(--sx-color-text-muted); font-size: 0.9rem; }
 .sx-video-page__signup-cta a { color: var(--sx-color-accent); font-weight: 600; }
+
+/* ===================================================================
+ *  AUTH PAGES (connexion / inscription / mdp oublié)
+ * =================================================================== */
+
+.sx-auth-page {
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	min-height: 70vh;
+	padding-top: var(--sx-space-12);
+}
+
+.sx-auth-card {
+	width: 100%;
+	max-width: 440px;
+	background: var(--sx-color-surface);
+	border: 1px solid var(--sx-color-border);
+	border-radius: var(--sx-radius-md);
+	padding: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.sx-auth-card h1 {
+	font-size: 1.75rem;
+	margin: 0 0 var(--sx-space-2);
+}
+
+.sx-auth-card__lead {
+	color: var(--sx-color-text-muted);
+	font-size: 0.95rem;
+	margin: 0 0 var(--sx-space-5);
+}
+
+.sx-form--auth {
+	gap: var(--sx-space-4);
+}
+
+.sx-form__hint {
+	color: var(--sx-color-text-muted);
+	font-size: 0.8rem;
+	margin-top: 4px;
+}
+
+.sx-btn--full {
+	width: 100%;
+	justify-content: center;
+}
+
+.sx-notice {
+	padding: var(--sx-space-3) var(--sx-space-4);
+	border-radius: var(--sx-radius-sm);
+	margin-bottom: var(--sx-space-4);
+	font-size: 0.9rem;
+	line-height: 1.5;
+}
+
+.sx-notice--ok {
+	background: rgba(46, 184, 92, 0.15);
+	border-left: 3px solid #2eb85c;
+	color: #5dde94;
+}
+
+.sx-notice--err {
+	background: rgba(255, 45, 63, 0.15);
+	border-left: 3px solid var(--sx-color-accent);
+	color: #ff7280;
+}
+
+.sx-auth-links {
+	margin-top: var(--sx-space-5);
+	padding-top: var(--sx-space-4);
+	border-top: 1px solid var(--sx-color-border);
+	font-size: 0.9rem;
+	color: var(--sx-color-text-muted);
+	text-align: center;
+}
+
+.sx-auth-links a {
+	color: var(--sx-color-accent);
+	font-weight: 500;
+}
+
+.sx-auth-links .sx-sep {
+	margin: 0 0.5rem;
+}
