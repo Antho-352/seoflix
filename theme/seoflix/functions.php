@@ -59,39 +59,68 @@ add_action( 'wp_enqueue_scripts', static function () {
 
 	// JS user actions (favoris + watched) — uniquement si user loggé et V2 actif
 	if ( is_user_logged_in() && function_exists( '\\Seoflix\\seoflix_user_accounts_enabled' ) && \Seoflix\seoflix_user_accounts_enabled() ) {
-		$inline_js = <<<'JS'
-		document.addEventListener('click', function(e) {
-			const btn = e.target.closest('.sx-action');
-			if (!btn) return;
-			const wrap = btn.closest('.sx-video-page__actions');
-			if (!wrap) return;
-			const action = btn.dataset.action;
-			const videoId = wrap.dataset.videoId;
-			const nonce = wrap.dataset.nonce;
-			const ajaxUrl = wrap.dataset.ajax;
-			btn.disabled = true;
-			const fd = new FormData();
-			fd.append('action', action === 'favorite' ? 'seoflix_toggle_favorite' : 'seoflix_mark_watched');
-			fd.append('_ajax_nonce', nonce);
-			fd.append('video_id', videoId);
-			if (action === 'watched') { fd.append('completed', '1'); }
-			fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
-				.then(r => r.json())
-				.then(json => {
-					if (!json.success) throw new Error(json.data || 'Erreur');
-					btn.classList.toggle('is-on');
-					const label = btn.querySelector('.sx-action__label');
-					if (action === 'favorite') {
-						label.textContent = btn.classList.contains('is-on') ? 'Retirer des favoris' : 'Ajouter aux favoris';
-					} else {
-						label.textContent = btn.classList.contains('is-on') ? 'Vue' : 'Marquer comme vue';
-					}
-					btn.setAttribute('aria-pressed', btn.classList.contains('is-on') ? 'true' : 'false');
-				})
-				.catch(err => alert(err.message))
-				.finally(() => { btn.disabled = false; });
-		});
-		JS;
+		$ajax_url = esc_js( admin_url( 'admin-ajax.php' ) );
+		$inline_js = "
+		(function(){
+			const AJAX_URL = '{$ajax_url}';
+			document.addEventListener('click', function(e) {
+				// Cas 1 : bouton coeur sur card vidéo (homepage, archives)
+				const fav = e.target.closest('.sx-card-video__fav');
+				if (fav) {
+					e.preventDefault();
+					e.stopPropagation();
+					if (fav.disabled) return;
+					fav.disabled = true;
+					const fd = new FormData();
+					fd.append('action', 'seoflix_toggle_favorite');
+					fd.append('_ajax_nonce', fav.dataset.nonce);
+					fd.append('video_id', fav.dataset.videoId);
+					fetch(AJAX_URL, { method: 'POST', body: fd, credentials: 'same-origin' })
+						.then(r => r.json())
+						.then(json => {
+							if (!json.success) throw new Error(json.data || 'Erreur');
+							fav.classList.toggle('is-on');
+							const on = fav.classList.contains('is-on');
+							fav.setAttribute('aria-pressed', on ? 'true' : 'false');
+							const label = on ? 'Retirer des favoris' : 'Ajouter aux favoris';
+							fav.setAttribute('aria-label', label);
+							fav.setAttribute('title', label);
+						})
+						.catch(err => console.warn(err))
+						.finally(() => { fav.disabled = false; });
+					return;
+				}
+				// Cas 2 : boutons sous le player (single video)
+				const btn = e.target.closest('.sx-action');
+				if (!btn) return;
+				const wrap = btn.closest('.sx-video-page__actions');
+				if (!wrap) return;
+				const action = btn.dataset.action;
+				btn.disabled = true;
+				const fd = new FormData();
+				fd.append('action', action === 'favorite' ? 'seoflix_toggle_favorite' : 'seoflix_mark_watched');
+				fd.append('_ajax_nonce', wrap.dataset.nonce);
+				fd.append('video_id', wrap.dataset.videoId);
+				if (action === 'watched') { fd.append('completed', '1'); }
+				fetch(wrap.dataset.ajax || AJAX_URL, { method: 'POST', body: fd, credentials: 'same-origin' })
+					.then(r => r.json())
+					.then(json => {
+						if (!json.success) throw new Error(json.data || 'Erreur');
+						btn.classList.toggle('is-on');
+						const on = btn.classList.contains('is-on');
+						const label = btn.querySelector('.sx-action__label');
+						if (action === 'favorite') {
+							label.textContent = on ? 'Retirer des favoris' : 'Ajouter aux favoris';
+						} else {
+							label.textContent = on ? 'Vue' : 'Marquer comme vue';
+						}
+						btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+					})
+					.catch(err => alert(err.message))
+					.finally(() => { btn.disabled = false; });
+			});
+		})();
+		";
 		wp_register_script( 'seoflix-user-actions', '', [], $ver, true );
 		wp_enqueue_script( 'seoflix-user-actions' );
 		wp_add_inline_script( 'seoflix-user-actions', $inline_js );
@@ -442,6 +471,16 @@ function seoflix_render_video_card( WP_Post $video ): void {
 	$duration = seoflix_video_duration_formatted( $video->ID );
 	$views    = seoflix_format_count( seoflix_video_view_count( $video->ID ) );
 	$channel  = seoflix_video_channel( $video->ID );
+
+	// Bouton favori (V2 + user loggé)
+	$show_fav = false;
+	$is_fav   = false;
+	$fav_nonce = '';
+	if ( class_exists( '\\Seoflix\\FeatureFlags' ) && \Seoflix\FeatureFlags::user_accounts_enabled() && is_user_logged_in() ) {
+		$show_fav = true;
+		$is_fav   = \Seoflix\User_Accounts::is_video_favorited( get_current_user_id(), $video->ID );
+		$fav_nonce = wp_create_nonce( 'seoflix_user_action' );
+	}
 	?>
 	<article class="sx-card-video">
 		<a href="<?php echo esc_url( get_permalink( $video ) ); ?>" class="sx-card-video__link">
@@ -465,6 +504,19 @@ function seoflix_render_video_card( WP_Post $video ): void {
 				<span><?php echo esc_html( $views ); ?> vues</span>
 			</div>
 		</a>
+		<?php if ( $show_fav ) : ?>
+			<button
+				type="button"
+				class="sx-card-video__fav <?php echo $is_fav ? 'is-on' : ''; ?>"
+				data-action="favorite"
+				data-video-id="<?php echo (int) $video->ID; ?>"
+				data-nonce="<?php echo esc_attr( $fav_nonce ); ?>"
+				aria-label="<?php echo $is_fav ? 'Retirer des favoris' : 'Ajouter aux favoris'; ?>"
+				aria-pressed="<?php echo $is_fav ? 'true' : 'false'; ?>"
+				title="<?php echo $is_fav ? 'Retirer des favoris' : 'Ajouter aux favoris'; ?>">
+				<span aria-hidden="true">♥</span>
+			</button>
+		<?php endif; ?>
 	</article>
 	<?php
 }
