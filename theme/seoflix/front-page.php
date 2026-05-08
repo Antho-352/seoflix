@@ -22,6 +22,21 @@ $has_rotate    = strpos( $hero_title, '[rotate]' ) !== false;
 [$title_before, $title_after] = $has_rotate
 	? array_pad( explode( '[rotate]', $hero_title, 2 ), 2, '' )
 	: [ $hero_title, '' ];
+
+// Compteur de rangées rendues (pour insérer la newsletter au bon endroit)
+// Le bloc newsletter apparaît APRÈS la 2e rangée vidéo (ex: après Nouveautés + SEO)
+$rows_rendered     = 0;
+$newsletter_done   = false;
+$newsletter_after  = 2; // après la 2e rangée
+$render_newsletter = static function () use ( &$rows_rendered, &$newsletter_done, $newsletter_after ) {
+	if ( $newsletter_done ) {
+		return;
+	}
+	if ( $rows_rendered >= $newsletter_after && function_exists( 'seoflix_render_newsletter' ) ) {
+		seoflix_render_newsletter( 'homepage', [ 'compact' => true ] );
+		$newsletter_done = true;
+	}
+};
 ?>
 
 <section class="sx-hero">
@@ -58,9 +73,7 @@ $has_rotate    = strpos( $hero_title, '[rotate]' ) !== false;
 <div class="sx-container sx-page">
 
 	<?php
-	$section_index = 0;
 	foreach ( $sections as $section ) {
-		$section_index++;
 		$type  = $section['type'] ?? '';
 		$title = (string) ( $section['title'] ?? '' );
 		$limit = (int) ( $section['limit'] ?? 12 );
@@ -80,6 +93,8 @@ $has_rotate    = strpos( $hero_title, '[rotate]' ) !== false;
 					$videos,
 					get_post_type_archive_link( 'seoflix_video' )
 				);
+				$rows_rendered++;
+				$render_newsletter();
 				break;
 
 			case \Seoflix\Homepage::TYPE_MOST_VIEWED:
@@ -96,6 +111,8 @@ $has_rotate    = strpos( $hero_title, '[rotate]' ) !== false;
 					$videos,
 					get_post_type_archive_link( 'seoflix_video' )
 				);
+				$rows_rendered++;
+				$render_newsletter();
 				break;
 
 			case \Seoflix\Homepage::TYPE_TOPICS:
@@ -119,6 +136,8 @@ $has_rotate    = strpos( $hero_title, '[rotate]' ) !== false;
 							'orderby'        => 'rand',
 						] );
 						seoflix_render_video_row( $topic->name, $videos, get_term_link( $topic ) );
+						$rows_rendered++;
+						$render_newsletter();
 					}
 				}
 				break;
@@ -137,6 +156,8 @@ $has_rotate    = strpos( $hero_title, '[rotate]' ) !== false;
 					$channels,
 					get_post_type_archive_link( 'seoflix_channel' )
 				);
+				$rows_rendered++;
+				$render_newsletter();
 				break;
 
 			case \Seoflix\Homepage::TYPE_PATHS:
@@ -161,14 +182,17 @@ $has_rotate    = strpos( $hero_title, '[rotate]' ) !== false;
 						</div>
 					</section>
 					<?php
+					$rows_rendered++;
+					$render_newsletter();
 				endif;
 				break;
 		}
+	}
 
-		// Insère le bloc newsletter APRÈS la 2e section visible
-		if ( $section_index === 2 ) {
-			seoflix_render_newsletter( \Seoflix\Newsletter::SOURCE_HOMEPAGE, [ 'compact' => true ] );
-		}
+	// Si pour une raison ou une autre on n'a pas atteint le seuil (ex: 1 seule rangée),
+	// on injecte quand même la newsletter en bas de la home.
+	if ( ! $newsletter_done && function_exists( 'seoflix_render_newsletter' ) ) {
+		seoflix_render_newsletter( 'homepage', [ 'compact' => true ] );
 	}
 	?>
 
