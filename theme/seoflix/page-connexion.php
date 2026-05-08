@@ -10,25 +10,29 @@ if ( is_user_logged_in() ) {
 
 get_header();
 
-$login_post   = \Seoflix\Auth_Pages::login_post_url();
+$login_post   = admin_url( 'admin-post.php' );
 $redirect_to  = isset( $_GET['redirect_to'] ) ? esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ) : home_url( '/mon-parcours/' );
 $registered   = isset( $_GET['registered'] );
 $reset        = isset( $_GET['reset'] );
+$activated    = isset( $_GET['activated'] ) ? sanitize_text_field( wp_unslash( $_GET['activated'] ) ) : '';
 $has_error    = ! empty( $_GET['login'] );
 $error_code   = $has_error ? sanitize_text_field( wp_unslash( $_GET['login'] ) ) : '';
 $turnstile    = (string) get_option( \Seoflix\Contact::OPTION_TURNSTILE_SITE, '' );
 
 $error_messages = [
-	'failed'             => 'Identifiants incorrects.',
-	'empty_username'     => 'Saisis ton e-mail ou ton identifiant.',
-	'empty_password'     => 'Saisis ton mot de passe.',
-	'invalid_username'   => 'Identifiants incorrects.',
-	'incorrect_password' => 'Identifiants incorrects.',
-	'expired'            => 'Session expirée, reconnecte-toi.',
-	'seoflix_locked'     => 'Trop d\'échecs récents depuis ton IP. Réessaye dans 30 minutes.',
-	'seoflix_turnstile'  => 'Vérification anti-bot échouée. Recharge la page.',
+	'failed'           => 'Identifiants incorrects.',
+	'empty_fields'     => 'Saisis ton e-mail/identifiant et ton mot de passe.',
+	'session_expired'  => 'Session expirée, recharge la page.',
+	'seoflix_locked'   => 'Trop d\'échecs récents depuis ton IP. Réessaye dans 30 minutes.',
+	'turnstile'        => 'Vérification anti-bot échouée. Recharge la page.',
 ];
 $error_text = $error_messages[ $error_code ] ?? '';
+
+$activated_messages = [
+	'invalid' => 'Lien d\'activation invalide.',
+	'expired' => 'Lien d\'activation expiré. Demande un nouveau lien.',
+];
+$activated_error = $activated_messages[ $activated ] ?? '';
 ?>
 
 <div class="sx-container sx-page sx-auth-page">
@@ -46,12 +50,17 @@ $error_text = $error_messages[ $error_code ] ?? '';
 				Mot de passe réinitialisé. Connecte-toi avec le nouveau.
 			</div>
 		<?php endif; ?>
+		<?php if ( $activated_error ) : ?>
+			<div class="sx-notice sx-notice--err"><?php echo esc_html( $activated_error ); ?></div>
+		<?php endif; ?>
 		<?php if ( $error_text ) : ?>
 			<div class="sx-notice sx-notice--err"><?php echo esc_html( $error_text ); ?></div>
 		<?php endif; ?>
 
 		<form method="post" action="<?php echo esc_url( $login_post ); ?>" class="sx-form sx-form--auth">
+			<input type="hidden" name="action" value="seoflix_login">
 			<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>">
+			<?php wp_nonce_field( 'seoflix_login', '_seoflix_login_nonce' ); ?>
 
 			<label class="sx-form__label">
 				<span>E-mail ou identifiant</span>

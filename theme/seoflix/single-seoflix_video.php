@@ -64,7 +64,27 @@ while ( have_posts() ) :
 
 		<div class="sx-video-page__top">
 			<div class="sx-video-page__player-col">
-				<?php if ( $yid ) : ?>
+				<?php
+				$lock_videos      = (bool) get_option( 'seoflix_lock_videos_to_users', false );
+				$accounts_enabled = class_exists( '\Seoflix\FeatureFlags' ) && \Seoflix\FeatureFlags::user_accounts_enabled();
+				$show_locked      = $lock_videos && $accounts_enabled && ! is_user_logged_in();
+				?>
+				<?php if ( $show_locked ) : ?>
+					<div class="sx-player-locked">
+						<div class="sx-player-locked__inner">
+							<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+								<rect x="4" y="11" width="16" height="10" rx="2"/>
+								<path d="M8 11V7a4 4 0 1 1 8 0v4"/>
+							</svg>
+							<h2>Connecte-toi pour regarder</h2>
+							<p>Crée un compte gratuit pour accéder à toutes les vidéos et suivre ta progression sur les parcours d'apprentissage.</p>
+							<div class="sx-player-locked__cta">
+								<a class="sx-btn" href="<?php echo esc_url( wp_registration_url() ); ?>">Créer un compte gratuit</a>
+								<a class="sx-btn sx-btn--ghost" href="<?php echo esc_url( wp_login_url( get_permalink() ) ); ?>">Se connecter</a>
+							</div>
+						</div>
+					</div>
+				<?php elseif ( $yid ) : ?>
 					<div class="sx-player">
 						<iframe
 							src="https://www.youtube-nocookie.com/embed/<?php echo esc_attr( $yid ); ?>?rel=0&modestbranding=1"

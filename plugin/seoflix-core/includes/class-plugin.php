@@ -37,6 +37,7 @@ final class Plugin {
 		Path_Order::init();
 		User_Accounts::init();
 		Auth_Pages::init();
+		Custom_Auth::init();
 
 		// Re-seed des termes si la version a bumpé (ajout du topic « youtube » par exemple).
 		add_action( 'init', [ Activator::class, 'ensure_terms_seeded' ], 20 );
@@ -67,5 +68,6 @@ final class Plugin {
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-path-order.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-user-accounts.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-auth-pages.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-custom-auth.php';
 	}
 }

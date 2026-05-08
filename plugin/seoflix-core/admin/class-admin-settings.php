@@ -55,6 +55,11 @@ final class Admin_Settings {
 			'sanitize_callback' => static fn( $v ) => (bool) $v,
 			'default'           => true,
 		] );
+		register_setting( self::GROUP_BEHAVIOR, 'seoflix_lock_videos_to_users', [
+			'type'              => 'boolean',
+			'sanitize_callback' => static fn( $v ) => (bool) $v,
+			'default'           => false,
+		] );
 
 		// Contact
 		register_setting( self::GROUP_CONTACT, \Seoflix\Contact::OPTION_RECIPIENT, [
@@ -85,6 +90,7 @@ final class Admin_Settings {
 		$accounts_on  = (bool) get_option( 'seoflix_user_accounts_enabled', false );
 		$auto_publish = (bool) get_option( 'seoflix_auto_publish_ai', false );
 		$cron_on      = (bool) get_option( 'seoflix_ingestion_cron_enabled', true );
+		$lock_videos  = (bool) get_option( 'seoflix_lock_videos_to_users', false );
 
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-youtube-api.php';
 		$today_usage = \Seoflix\YouTube_API::get_today_usage();
@@ -151,6 +157,16 @@ final class Admin_Settings {
 									Publier automatiquement les vidéos importées sans validation manuelle
 								</label>
 								<p class="description">Désactivé par défaut. Si activé, les vidéos importées passent directement en statut « publié » sans review.</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">Verrouiller les vidéos</th>
+							<td>
+								<label>
+									<input type="checkbox" name="seoflix_lock_videos_to_users" value="1" <?php checked( $lock_videos ); ?>>
+									Réserver le visionnage aux utilisateurs connectés
+								</label>
+								<p class="description">Si activé (et que les comptes utilisateurs sont activés), les visiteurs non connectés voient le titre, les badges et les produits liés mais le player vidéo est remplacé par un encart « Connecte-toi pour regarder ». Lead-gen friendly.</p>
 							</td>
 						</tr>
 						<tr>

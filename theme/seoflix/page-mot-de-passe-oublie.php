@@ -10,7 +10,7 @@ if ( is_user_logged_in() ) {
 
 get_header();
 
-$lostpass_post = \Seoflix\Auth_Pages::login_post_url() . '?action=lostpassword';
+$lostpass_post = admin_url( 'admin-post.php' );
 $turnstile     = (string) get_option( \Seoflix\Contact::OPTION_TURNSTILE_SITE, '' );
 
 $checkemail = isset( $_GET['checkemail'] );
@@ -18,10 +18,8 @@ $has_error  = ! empty( $_GET['login'] );
 $error_code = $has_error ? sanitize_text_field( wp_unslash( $_GET['login'] ) ) : '';
 
 $error_messages = [
-	'invalid_email'         => 'Aucun compte trouvé avec cet e-mail.',
-	'empty_username'        => 'Saisis ton e-mail.',
-	'invalidkey'            => 'Lien invalide ou expiré.',
-	'expiredkey'            => 'Lien expiré, redemande-en un.',
+	'empty_username'  => 'Saisis ton e-mail.',
+	'session_expired' => 'Session expirée, recharge la page.',
 ];
 $error_text = $error_messages[ $error_code ] ?? '';
 ?>
@@ -42,9 +40,11 @@ $error_text = $error_messages[ $error_code ] ?? '';
 
 		<?php if ( ! $checkemail ) : ?>
 			<form method="post" action="<?php echo esc_url( $lostpass_post ); ?>" class="sx-form sx-form--auth">
+				<input type="hidden" name="action" value="seoflix_lostpass">
+				<?php wp_nonce_field( 'seoflix_lostpass', '_seoflix_lostpass_nonce' ); ?>
 				<label class="sx-form__label">
-					<span>E-mail</span>
-					<input type="email" name="user_login" required autocomplete="email" autofocus>
+					<span>E-mail ou identifiant</span>
+					<input type="text" name="user_login" required autocomplete="email" autofocus>
 				</label>
 
 				<?php if ( $turnstile ) : ?>
