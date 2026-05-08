@@ -570,8 +570,8 @@ function seoflix_render_newsletter( string $source = 'homepage', array $opts = [
 function seoflix_render_video_card( WP_Post $video ): void {
 	$thumb    = seoflix_video_thumbnail_url( $video->ID );
 	$duration = seoflix_video_duration_formatted( $video->ID );
-	$views    = seoflix_format_count( seoflix_video_view_count( $video->ID ) );
 	$channel  = seoflix_video_channel( $video->ID );
+	$pub      = (string) get_post_meta( $video->ID, '_seoflix_published_at', true );
 
 	// Bouton favori (V2 + user loggé)
 	$show_fav = false;
@@ -600,9 +600,13 @@ function seoflix_render_video_card( WP_Post $video ): void {
 			<div class="sx-card-video__meta">
 				<?php if ( $channel ) : ?>
 					<span class="sx-card-video__channel"><?php echo esc_html( $channel->post_title ); ?></span>
+				<?php endif; ?>
+				<?php if ( $channel && $pub ) : ?>
 					<span class="sx-sep">·</span>
 				<?php endif; ?>
-				<span><?php echo esc_html( $views ); ?> vues</span>
+				<?php if ( $pub ) : ?>
+					<span><?php echo esc_html( wp_date( 'M Y', strtotime( $pub ) ) ); ?></span>
+				<?php endif; ?>
 			</div>
 		</a>
 		<?php if ( $show_fav ) : ?>

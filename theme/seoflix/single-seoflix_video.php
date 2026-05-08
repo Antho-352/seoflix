@@ -13,7 +13,6 @@ while ( have_posts() ) :
 	$topics   = seoflix_video_topics( $video_id );
 	$formats  = wp_get_object_terms( $video_id, 'seoflix_format' );
 	$duration = seoflix_video_duration_formatted( $video_id );
-	$views    = seoflix_format_count( seoflix_video_view_count( $video_id ) );
 	$pub      = (string) get_post_meta( $video_id, '_seoflix_published_at', true );
 	?>
 	<article class="sx-container sx-page sx-video-page">
@@ -34,11 +33,11 @@ while ( have_posts() ) :
 				<?php endif; ?>
 				<?php if ( $duration ) : ?>
 					<span><?php echo esc_html( $duration ); ?></span>
+				<?php endif; ?>
+				<?php if ( $duration && $pub ) : ?>
 					<span class="sx-sep">·</span>
 				<?php endif; ?>
-				<span><?php echo esc_html( $views ); ?> vues</span>
 				<?php if ( $pub ) : ?>
-					<span class="sx-sep">·</span>
 					<span><?php echo esc_html( wp_date( 'j F Y', strtotime( $pub ) ) ); ?></span>
 				<?php endif; ?>
 			</div>
