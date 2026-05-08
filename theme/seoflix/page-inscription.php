@@ -18,8 +18,9 @@ get_header();
 $register_post = \Seoflix\Custom_Auth::frontend_action_url( 'register' );
 $turnstile     = (string) get_option( \Seoflix\Contact::OPTION_TURNSTILE_SITE, '' );
 
-$has_error  = ! empty( $_GET['registration'] );
-$error_code = $has_error ? sanitize_text_field( wp_unslash( $_GET['registration'] ) ) : '';
+$check_email = isset( $_GET['check'] ) && $_GET['check'] === 'email';
+$has_error   = ! empty( $_GET['registration'] );
+$error_code  = $has_error ? sanitize_text_field( wp_unslash( $_GET['registration'] ) ) : '';
 
 $error_messages = [
 	'session_expired'  => 'Session expirée, recharge la page.',
@@ -37,6 +38,26 @@ $error_text = $error_messages[ $error_code ] ?? '';
 ?>
 
 <div class="sx-container sx-page sx-auth-page">
+	<?php if ( $check_email ) : ?>
+		<div class="sx-auth-card">
+			<div style="text-align:center; font-size:3rem; margin-bottom:0.5rem;">📧</div>
+			<h1 style="text-align:center;">Vérifie ta boîte mail</h1>
+			<p class="sx-auth-card__lead" style="text-align:center;">
+				On vient de t'envoyer un <strong>lien d'activation</strong>. Clique dessus pour valider ton compte et te connecter.
+			</p>
+			<div class="sx-notice sx-notice--ok" style="margin-top: 1.5rem;">
+				<strong>Important :</strong>
+				<ul style="margin: 0.5rem 0 0 1.2rem; padding: 0;">
+					<li>Le lien est valable <strong>7 jours</strong></li>
+					<li>Pense à vérifier tes <strong>spams</strong></li>
+					<li>Tu ne pourras pas te connecter tant que ton compte n'est pas activé</li>
+				</ul>
+			</div>
+			<div class="sx-auth-links">
+				<a href="<?php echo esc_url( home_url( '/' ) ); ?>">← Retour à l'accueil</a>
+			</div>
+		</div>
+	<?php else : ?>
 	<div class="sx-auth-card">
 		<h1>Créer un compte</h1>
 		<p class="sx-auth-card__lead">Suis ta progression sur les parcours d'apprentissage. Gratuit, sans pub.</p>
@@ -93,6 +114,7 @@ $error_text = $error_messages[ $error_code ] ?? '';
 			Déjà inscrit ? <a href="<?php echo esc_url( home_url( '/connexion/' ) ); ?>">Se connecter</a>
 		</div>
 	</div>
+	<?php endif; ?>
 </div>
 
 <?php get_footer();

@@ -96,7 +96,7 @@ $paths     = get_terms( [ 'taxonomy' => 'seoflix_path', 'hide_empty' => false ] 
 	else : ?>
 		<section class="sx-card" style="margin-top: 2rem;">
 			<h2>Aucun favori pour le moment</h2>
-			<p>Clique sur le ❤ d'une vidéo pour l'ajouter à tes favoris et la retrouver ici.</p>
+			<p>Clique sur le coeur <span style="color:var(--sx-color-accent); font-weight:bold;">&#10084;</span> d'une vidéo pour l'ajouter à tes favoris et la retrouver ici.</p>
 			<p><a class="sx-btn" href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_video' ) ); ?>">Explorer les vidéos →</a></p>
 		</section>
 	<?php endif; ?>

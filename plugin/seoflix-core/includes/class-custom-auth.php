@@ -243,7 +243,7 @@ final class Custom_Auth {
 			self::redirect_error( $back, 'pwd_mismatch' );
 		}
 
-		// Création du compte
+		// Création du compte avec le mot de passe choisi, MAIS marqué pending_activation
 		$user_id = wp_create_user( $user_login, $password, $user_email );
 		if ( is_wp_error( $user_id ) ) {
 			self::redirect_error( $back, 'create_failed' );
@@ -252,14 +252,15 @@ final class Custom_Auth {
 		$user = new \WP_User( $user_id );
 		$user->set_role( User_Accounts::ROLE );
 
+		// Token d'activation : 7 jours pour valider l'e-mail
+		$activation_token = bin2hex( random_bytes( 32 ) );
+		update_user_meta( $user_id, self::META_PENDING, $activation_token );
+		update_user_meta( $user_id, self::META_PENDING . '_expires', time() + ( 7 * DAY_IN_SECONDS ) );
+
 		set_transient( $rate_key, $rate_count + 1, HOUR_IN_SECONDS );
 
-		// Auto-login direct (pas de double opt-in)
-		wp_set_current_user( $user_id );
-		wp_set_auth_cookie( $user_id, true, is_ssl() );
-
-		// Redirige vers le dashboard
-		wp_safe_redirect( home_url( '/mon-parcours/?welcome=1' ) );
+		// Redirige vers la page "vérifie ta boîte mail"
+		wp_safe_redirect( home_url( '/inscription/?check=email' ) );
 
 		if ( function_exists( 'fastcgi_finish_request' ) ) {
 			fastcgi_finish_request();
@@ -267,19 +268,30 @@ final class Custom_Auth {
 			litespeed_finish_request();
 		}
 
-		// E-mail de bienvenue (non bloquant — si SMTP foire, l'inscription a déjà réussi)
+		// E-mail d'activation (en background)
+		$activate_url = home_url( '/activer/' . $activation_token . '/' );
 		$site_name    = get_bloginfo( 'name' );
-		$user_subject = sprintf( '[%s] Bienvenue !', $site_name );
+		$user_subject = sprintf( '[%s] Confirme ton inscription', $site_name );
 		$user_body    = "Salut,\n\n"
-			. "Bienvenue sur {$site_name} ! Ton compte a bien été créé.\n\n"
-			. "Tu peux te connecter à tout moment ici :\n"
-			. home_url( '/connexion/' ) . "\n\n"
-			. "Et accéder à ton tableau de bord :\n"
-			. home_url( '/mon-parcours/' ) . "\n\n"
+			. "Merci de t'être inscrit sur {$site_name}.\n\n"
+			. "Pour activer ton compte et pouvoir te connecter, clique sur le lien ci-dessous (valable 7 jours) :\n\n"
+			. $activate_url . "\n\n"
+			. "Si tu n'es pas à l'origine de cette inscription, ignore simplement cet e-mail — ton compte ne sera pas activé.\n\n"
 			. "À bientôt,\n"
 			. $site_name . "\n"
 			. home_url();
 		wp_mail( $user_email, $user_subject, $user_body );
+
+		// Notification admin
+		$strip_crlf    = static fn( $v ) => preg_replace( '/[\r\n\t\0]/', '', (string) $v );
+		$admin_to      = (string) get_option( Contact::OPTION_RECIPIENT, '' ) ?: get_option( 'admin_email' );
+		$admin_subject = sprintf( '[%s] Nouvelle inscription : %s', $strip_crlf( $site_name ), $strip_crlf( $user_email ) );
+		$admin_body    = "Nouvel utilisateur inscrit sur " . $strip_crlf( $site_name ) . ".\n\n"
+			. "Login : " . $strip_crlf( $user_login ) . "\n"
+			. "E-mail : " . $strip_crlf( $user_email ) . "\n"
+			. "IP : " . $strip_crlf( $ip ) . "\n"
+			. "Statut : en attente d'activation par e-mail";
+		wp_mail( $admin_to, $admin_subject, $admin_body );
 
 		// Notification admin (anti email-header injection : strip CRLF dans tout user input)
 		$strip_crlf    = static fn( $v ) => preg_replace( '/[\r\n\t\0]/', '', (string) $v );
@@ -325,17 +337,15 @@ final class Custom_Auth {
 			exit;
 		}
 
-		// Activation : suppression de la meta pending
+		// Activation : suppression de la meta pending → user peut maintenant se connecter
 		delete_user_meta( $user_id, self::META_PENDING );
 		delete_user_meta( $user_id, self::META_PENDING . '_expires' );
 
-		// Génère un token de set-password (utilisable par /set-password/)
-		$set_pwd_token = bin2hex( random_bytes( 32 ) );
-		update_user_meta( $user_id, '_seoflix_setpwd_token', $set_pwd_token );
-		update_user_meta( $user_id, '_seoflix_setpwd_expires', time() + HOUR_IN_SECONDS );
+		// Auto-login (le user a déjà set son password à l'inscription)
+		wp_set_current_user( $user_id );
+		wp_set_auth_cookie( $user_id, true, is_ssl() );
 
-		// Redirige vers la page de définition du mot de passe
-		wp_safe_redirect( home_url( '/definir-mot-de-passe/' . $set_pwd_token . '/' ) );
+		wp_safe_redirect( home_url( '/mon-parcours/?welcome=1' ) );
 		exit;
 	}
 
