@@ -28,7 +28,9 @@ final class Contact {
 		add_shortcode( 'seoflix_contact_form',         [ self::class, 'render_shortcode' ] );
 		add_action( 'admin_post_nopriv_seoflix_contact_submit', [ self::class, 'handle_submit' ] );
 		add_action( 'admin_post_seoflix_contact_submit',        [ self::class, 'handle_submit' ] );
-		add_action( 'user_register',                   [ self::class, 'on_user_register' ] );
+		// NB : on_user_register désactivé car Custom_Auth::handle_register envoie déjà
+		// la notification admin. Garder ce hook produirait un doublon.
+		// add_action( 'user_register', [ self::class, 'on_user_register' ] );
 	}
 
 	public static function register_cpt(): void {

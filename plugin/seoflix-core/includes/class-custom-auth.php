@@ -243,6 +243,12 @@ final class Custom_Auth {
 			self::redirect_error( $back, 'pwd_mismatch' );
 		}
 
+		// Désactive l'envoi automatique des e-mails WP (on envoie nos propres custom)
+		add_filter( 'wp_new_user_notification_email_admin', '__return_false', 99 );
+		add_filter( 'wp_new_user_notification_email',       '__return_false', 99 );
+		add_filter( 'send_password_change_email',           '__return_false', 99 );
+		add_filter( 'send_email_change_email',              '__return_false', 99 );
+
 		// Création du compte avec le mot de passe choisi, MAIS marqué pending_activation
 		$user_id = wp_create_user( $user_login, $password, $user_email );
 		if ( is_wp_error( $user_id ) ) {
