@@ -147,7 +147,10 @@
 
 .sx-product-list .sx-card-product {
 	margin-bottom: 0;
-	padding: var(--sx-space-3) var(--sx-space-4);
+	/* Garde --sx-space-4 sur les 4 côtés : sinon les marges négatives de
+	 * .sx-card-product__image (calc(-1 * var(--sx-space-4))) ne matchent plus
+	 * le padding parent et l'image bave hors du card → décalage visuel. */
+	padding: var(--sx-space-4);
 }
 
 .sx-product-list .sx-card-product__name {
