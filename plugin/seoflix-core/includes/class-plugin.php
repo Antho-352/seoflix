@@ -60,5 +60,6 @@ final class Plugin {
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-cron.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-contact.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-seo.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-homepage.php';
 	}
 }
