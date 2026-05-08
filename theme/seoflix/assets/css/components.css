@@ -253,23 +253,22 @@
 }
 
 /* CARD PRODUCT — image area (source unique, NE PAS redéfinir ailleurs).
- * L'image bleed edge-to-edge du card (pas de padding interne).
+ * Image dans le flow normal du card, pas de marges négatives.
  * Le variant .sx-card-product--compact override ces règles plus bas. */
 .sx-card-product__image {
 	width: 100%;
 	aspect-ratio: 16 / 9;
-	/* margin négative = compense le padding du card pour aller flush au bord */
-	margin: calc(-1 * var(--sx-space-4)) calc(-1 * var(--sx-space-4)) var(--sx-space-3);
+	margin: 0;
 	padding: 0;
 	box-sizing: border-box;
 	display: block;
 	overflow: hidden;
 	background: var(--sx-color-bg);
+	border-radius: var(--sx-radius-sm);
+	margin-bottom: var(--sx-space-3);
 }
 
 .sx-card-product__image img {
-	/* Fill complet du container 16:9, object-fit gère le ratio sans déformer.
-	 * Logo carré → centré avec bg autour. Thumbnail 16:9 → flush plein cadre. */
 	width: 100%;
 	height: 100%;
 	object-fit: contain;
