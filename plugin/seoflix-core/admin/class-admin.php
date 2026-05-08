@@ -23,6 +23,7 @@ final class Admin {
 		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-product-logo.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-legal-pages.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-admin-rgpd.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'admin/class-admin-seo-tools.php';
 
 		Admin_Menu::init();
 		Admin_Ingestion::init();
@@ -34,6 +35,7 @@ final class Admin {
 		Product_Logo::init();
 		Legal_Pages::init();
 		Admin_Rgpd::init();
+		Admin_SEO_Tools::init();
 
 		add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_assets' ] );
 	}

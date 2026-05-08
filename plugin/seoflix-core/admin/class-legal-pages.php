@@ -36,7 +36,23 @@ final class Legal_Pages {
 				'title'   => 'Politique de confidentialité',
 				'content' => self::content_privacy(),
 			],
+			'contact' => [
+				'title'   => 'Contact',
+				'content' => self::content_contact(),
+			],
 		];
+	}
+
+	private static function content_contact(): string {
+		return <<<HTML
+<!-- wp:paragraph --><p>Une question, une suggestion, un partenariat, une demande d'ajout de chaîne ou de produit ? Utilise le formulaire ci-dessous, je réponds sous 48h ouvrées.</p><!-- /wp:paragraph -->
+
+<!-- wp:shortcode -->
+[seoflix_contact_form]
+<!-- /wp:shortcode -->
+
+<!-- wp:paragraph --><p>Pour les demandes RGPD (accès, effacement de tes données), précise-le dans le sujet du message — voir aussi la <a href="/confidentialite/">politique de confidentialité</a>.</p><!-- /wp:paragraph -->
+HTML;
 	}
 
 	public static function handle_create(): void {

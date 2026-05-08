@@ -53,8 +53,9 @@
 				<?php if ( is_active_sidebar( 'sx-footer-4' ) ) : ?>
 					<?php dynamic_sidebar( 'sx-footer-4' ); ?>
 				<?php else : ?>
-					<h3>Légal</h3>
+					<h3>Légal &amp; contact</h3>
 					<ul>
+						<li><a href="<?php echo esc_url( home_url( '/contact/' ) ); ?>">Contact</a></li>
 						<li><a href="<?php echo esc_url( home_url( '/affiliation/' ) ); ?>">Politique d'affiliation</a></li>
 						<li><a href="<?php echo esc_url( home_url( '/mentions-legales/' ) ); ?>">Mentions légales</a></li>
 						<li><a href="<?php echo esc_url( home_url( '/confidentialite/' ) ); ?>">Confidentialité</a></li>

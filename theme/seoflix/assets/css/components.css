@@ -526,3 +526,88 @@ a.sx-badge:hover {
 	color: var(--sx-color-text-muted);
 	margin-bottom: var(--sx-space-3);
 }
+
+/* ===================================================================
+ *  CONTACT FORM
+ * =================================================================== */
+
+.sx-contact-form {
+	max-width: 640px;
+}
+
+.sx-contact-form__notice {
+	padding: var(--sx-space-3) var(--sx-space-4);
+	border-radius: var(--sx-radius-md);
+	margin-bottom: var(--sx-space-5);
+	font-size: 0.95rem;
+}
+
+.sx-contact-form__notice--ok {
+	background: rgba(46, 184, 92, 0.15);
+	border-left: 3px solid #2eb85c;
+	color: #5dde94;
+}
+
+.sx-contact-form__notice--err {
+	background: rgba(255, 45, 63, 0.15);
+	border-left: 3px solid var(--sx-color-accent);
+	color: #ff7280;
+}
+
+.sx-form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sx-space-4);
+}
+
+.sx-form__label {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sx-space-2);
+	font-size: 0.9rem;
+	color: var(--sx-color-text);
+}
+
+.sx-form__label > span em {
+	color: var(--sx-color-accent);
+	font-style: normal;
+}
+
+.sx-form__label--check {
+	flex-direction: row;
+	align-items: flex-start;
+	gap: var(--sx-space-3);
+}
+
+.sx-form__label--check > span {
+	font-size: 0.85rem;
+	color: var(--sx-color-text-muted);
+	line-height: 1.5;
+}
+
+.sx-form__label--check input[type="checkbox"] {
+	margin-top: 4px;
+	flex-shrink: 0;
+}
+
+.sx-form input[type="text"],
+.sx-form input[type="email"],
+.sx-form textarea {
+	background: var(--sx-color-surface);
+	border: 1px solid var(--sx-color-border);
+	border-radius: var(--sx-radius-sm);
+	padding: var(--sx-space-3);
+	color: var(--sx-color-text);
+	font: inherit;
+	transition: border-color var(--sx-transition);
+}
+
+.sx-form input:focus,
+.sx-form textarea:focus {
+	outline: none;
+	border-color: var(--sx-color-accent);
+}
+
+.sx-form button[type="submit"] {
+	align-self: flex-start;
+}

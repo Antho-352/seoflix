@@ -48,6 +48,11 @@ final class Admin_Settings {
 			'sanitize_callback' => static fn( $v ) => max( 0, (int) $v ),
 			'default'           => 200,
 		] );
+		register_setting( self::OPTION_GROUP, \Seoflix\Contact::OPTION_RECIPIENT, [
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_email',
+			'default'           => '',
+		] );
 	}
 
 	public static function render(): void {
@@ -166,8 +171,25 @@ final class Admin_Settings {
 			</form>
 
 			<div class="seoflix-card">
-				<h2>Pages légales</h2>
-				<p>Génère les 3 pages légales référencées dans le footer (Mentions légales, Politique de confidentialité, Politique d'affiliation).</p>
+				<h2>Formulaire de contact</h2>
+				<form method="post" action="options.php">
+					<?php settings_fields( self::OPTION_GROUP ); ?>
+					<table class="form-table">
+						<tr>
+							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Contact::OPTION_RECIPIENT ); ?>">E-mail destinataire</label></th>
+							<td>
+								<input type="email" id="<?php echo esc_attr( \Seoflix\Contact::OPTION_RECIPIENT ); ?>" name="<?php echo esc_attr( \Seoflix\Contact::OPTION_RECIPIENT ); ?>" value="<?php echo esc_attr( (string) get_option( \Seoflix\Contact::OPTION_RECIPIENT, '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>">
+								<p class="description">Adresse qui reçoit les messages de <code>/contact/</code> et les notifications d'inscription. Si vide, fallback sur <code><?php echo esc_html( get_option( 'admin_email' ) ); ?></code>. L'envoi passe par <strong>FluentSMTP</strong> si le plugin est actif.</p>
+							</td>
+						</tr>
+					</table>
+					<?php submit_button( 'Enregistrer l\'e-mail destinataire' ); ?>
+				</form>
+			</div>
+
+			<div class="seoflix-card">
+				<h2>Pages légales &amp; contact</h2>
+				<p>Génère les 4 pages référencées dans le footer (Mentions légales, Politique de confidentialité, Politique d'affiliation, Contact).</p>
 				<?php Legal_Pages::render_button(); ?>
 			</div>
 		</div>
