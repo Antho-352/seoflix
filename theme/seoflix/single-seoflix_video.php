@@ -132,7 +132,7 @@ while ( have_posts() ) :
 						<h2>Produits &amp; services mentionnés</h2>
 						<div class="sx-product-list">
 							<?php foreach ( $products as $p ) {
-								seoflix_render_product_card( $p, [ 'show_pricing' => false, 'compact' => true ] );
+								seoflix_render_product_card( $p, [ 'show_pricing' => false, 'compact' => true, 'affiliate_link' => true ] );
 							} ?>
 						</div>
 					</div>
@@ -153,7 +153,7 @@ while ( have_posts() ) :
 							<h2>Mais ces outils pourraient t'intéresser</h2>
 							<div class="sx-product-list">
 								<?php foreach ( $fallback_products as $p ) {
-									seoflix_render_product_card( $p, [ 'show_pricing' => false, 'compact' => true ] );
+									seoflix_render_product_card( $p, [ 'show_pricing' => false, 'compact' => true, 'affiliate_link' => true ] );
 								} ?>
 							</div>
 							<p style="margin-top: var(--sx-space-3);"><a class="sx-btn sx-btn--ghost" href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_product' ) ); ?>">Voir tous les outils →</a></p>

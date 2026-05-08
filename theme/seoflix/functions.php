@@ -648,6 +648,10 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 	$opts = wp_parse_args( $opts, [
 		'show_pricing' => true,
 		'compact'      => false,
+		// Si true et que le produit a un lien d'affiliation, le card pointe
+		// directement sur /go/{slug}/ au lieu de la page produit interne.
+		// Si pas d'affilié, fallback sur la page produit.
+		'affiliate_link' => false,
 	] );
 
 	$thumb_id  = get_post_thumbnail_id( $product->ID );
@@ -664,12 +668,20 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 		default    => '',
 	};
 
+	$has_aff = (bool) seoflix_product_affiliate_url( $product->ID );
+	$link_url = ( $opts['affiliate_link'] && $has_aff )
+		? seoflix_product_go_url( $product->ID )
+		: get_permalink( $product );
+	$link_attrs = ( $opts['affiliate_link'] && $has_aff )
+		? ' rel="sponsored nofollow noopener" target="_blank"'
+		: '';
+
 	$classes = [ 'sx-card-product' ];
 	if ( $opts['compact'] )  { $classes[] = 'sx-card-product--compact'; }
 	if ( $thumb_url )        { $classes[] = 'sx-card-product--has-image'; }
 	?>
 	<article class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
-		<a href="<?php echo esc_url( get_permalink( $product ) ); ?>" class="sx-card-product__link">
+		<a href="<?php echo esc_url( $link_url ); ?>"<?php echo $link_attrs; ?> class="sx-card-product__link">
 			<?php if ( $thumb_url ) : ?>
 				<div class="sx-card-product__image">
 					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="<?php echo esc_attr( get_the_title( $product ) ); ?>" loading="lazy">

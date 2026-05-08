@@ -16,9 +16,10 @@ while ( have_posts() ) :
 		'paid'     => 'Payant',
 		default    => '',
 	};
-	$go_url       = seoflix_product_go_url( $product_id );
-	$official_url = seoflix_product_official_url( $product_id );
-	$videos       = seoflix_product_videos( $product_id, 12 );
+	$affiliate_url = seoflix_product_affiliate_url( $product_id );
+	$go_url        = seoflix_product_go_url( $product_id );
+	$official_url  = seoflix_product_official_url( $product_id );
+	$videos        = seoflix_product_videos( $product_id, 12 );
 	?>
 	<article class="sx-container sx-page sx-product-page">
 
@@ -39,13 +40,16 @@ while ( have_posts() ) :
 			<?php endif; ?>
 
 			<div class="sx-product-page__cta-row">
-				<a class="sx-btn" href="<?php echo esc_url( $go_url ); ?>" rel="sponsored nofollow noopener">Découvrir <?php echo esc_html( get_the_title() ); ?> ↗</a>
-				<?php if ( $official_url ) : ?>
-					<a class="sx-btn sx-btn--ghost" href="<?php echo esc_url( $official_url ); ?>" target="_blank" rel="nofollow noopener">Site officiel ↗</a>
+				<?php if ( $affiliate_url ) : ?>
+					<a class="sx-btn" href="<?php echo esc_url( $go_url ); ?>" rel="sponsored nofollow noopener" target="_blank">Découvrir <?php echo esc_html( get_the_title() ); ?> ↗</a>
+				<?php elseif ( $official_url ) : ?>
+					<a class="sx-btn" href="<?php echo esc_url( $official_url ); ?>" target="_blank" rel="nofollow noopener">Site officiel ↗</a>
 				<?php endif; ?>
 			</div>
 
-			<span class="sx-affiliate-notice" style="margin-top: var(--sx-space-4);">Le bouton « Découvrir » contient un lien d'affiliation. <a href="<?php echo esc_url( home_url( '/affiliation/' ) ); ?>">En savoir plus</a>.</span>
+			<?php if ( $affiliate_url ) : ?>
+				<span class="sx-affiliate-notice" style="margin-top: var(--sx-space-4);">Le bouton « Découvrir » contient un lien d'affiliation. <a href="<?php echo esc_url( home_url( '/affiliation/' ) ); ?>">En savoir plus</a>.</span>
+			<?php endif; ?>
 		</header>
 
 		<div class="sx-product-page__description">
