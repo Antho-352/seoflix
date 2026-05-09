@@ -60,6 +60,7 @@ final class SEO {
 		$opts = [
 			self::OPTION_TITLE_TEMPLATE_HOME => '%site% — %tagline%',
 			self::OPTION_TITLE_TEMPLATE      => '%title% | %site%',
+			'seoflix_seo_title_template_video' => '%title% — %channel% | %site%',
 			self::OPTION_DESC_HOME           => '',
 			self::OPTION_OG_IMAGE            => '',
 			self::OPTION_ORG_NAME            => '',
@@ -84,11 +85,11 @@ final class SEO {
 		foreach ( $post_types as $pt ) {
 			add_meta_box(
 				'seoflix_seo',
-				'SEO',
+				'🎯 SEO (title, description, robots, canonical)',
 				[ self::class, 'render_post_metabox' ],
 				$pt,
 				'normal',
-				'low'
+				'high'
 			);
 		}
 	}
@@ -290,6 +291,20 @@ final class SEO {
 			$post  = get_queried_object();
 			$title = (string) get_post_meta( $post->ID, self::META_TITLE, true );
 			if ( $title ) return $title;
+
+			// Default template ; pour les vidéos on a un template dédié plus riche
+			// avec la chaîne : "Titre — Chaîne | Seoflix" (signal différencié vs YouTube).
+			if ( $post->post_type === CPT::VIDEO ) {
+				$tpl = (string) get_option( 'seoflix_seo_title_template_video', '%title% — %channel% | %site%' );
+				$channel_id = (int) get_post_meta( $post->ID, Meta_Keys::VIDEO_CHANNEL_ID, true );
+				$channel    = $channel_id ? get_post( $channel_id ) : null;
+				return self::apply_template( $tpl, [
+					'%title%'   => get_the_title( $post ),
+					'%channel%' => $channel ? $channel->post_title : '',
+					'%site%'    => get_bloginfo( 'name' ),
+				] );
+			}
+
 			$tpl = (string) get_option( self::OPTION_TITLE_TEMPLATE, '%title% | %site%' );
 			return self::apply_template( $tpl, [ '%title%' => get_the_title( $post ), '%site%' => get_bloginfo( 'name' ) ] );
 		}
@@ -555,6 +570,13 @@ final class SEO {
 							<td>
 								<input type="text" id="<?php echo esc_attr( self::OPTION_TITLE_TEMPLATE ); ?>" name="<?php echo esc_attr( self::OPTION_TITLE_TEMPLATE ); ?>" value="<?php echo esc_attr( get_option( self::OPTION_TITLE_TEMPLATE, '%title% | %site%' ) ); ?>" class="large-text">
 								<p class="description">Variables : <code>%title%</code>, <code>%site%</code>. Surchargeable par page via la métabox SEO de chaque contenu.</p>
+							</td>
+						</tr>
+						<tr>
+							<th><label for="seoflix_seo_title_template_video">Vidéos (single)</label></th>
+							<td>
+								<input type="text" id="seoflix_seo_title_template_video" name="seoflix_seo_title_template_video" value="<?php echo esc_attr( get_option( 'seoflix_seo_title_template_video', '%title% — %channel% | %site%' ) ); ?>" class="large-text">
+								<p class="description">Spécifique aux pages vidéos. Variables : <code>%title%</code>, <code>%channel%</code>, <code>%site%</code>. Le suffixe <code>— %channel% | %site%</code> donne un signal de différenciation vs YouTube côté SERP. Surchargeable par vidéo via sa métabox SEO.</p>
 							</td>
 						</tr>
 						<tr>
