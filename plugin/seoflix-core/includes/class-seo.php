@@ -522,15 +522,19 @@ final class SEO {
 
 	private static function build_organization(): array {
 		$logo  = (string) get_option( self::OPTION_OG_IMAGE, '' );
+		if ( ! $logo ) {
+			$logo = get_template_directory_uri() . '/assets/images/og-default.png';
+		}
 		$block = [
 			'@context' => 'https://schema.org',
 			'@type'    => 'Organization',
 			'name'     => get_option( self::OPTION_ORG_NAME, '' ) ?: get_bloginfo( 'name' ),
 			'url'      => home_url( '/' ),
+			'logo'     => [
+				'@type' => 'ImageObject',
+				'url'   => $logo,
+			],
 		];
-		if ( $logo ) {
-			$block['logo'] = $logo;
-		}
 		$tw = (string) get_option( self::OPTION_TWITTER_HANDLE, '' );
 		if ( $tw ) {
 			$block['sameAs'] = [ 'https://twitter.com/' . ltrim( $tw, '@' ) ];
@@ -547,11 +551,16 @@ final class SEO {
 		$block = [
 			'@context'     => 'https://schema.org',
 			'@type'        => 'VideoObject',
-			'name'         => get_the_title( $post ),
-			'description'  => self::current_seo_description() ?: wp_trim_words( $post->post_content, 30 ),
-			'thumbnailUrl' => $thumb ?: ( $yt_id ? "https://i.ytimg.com/vi/{$yt_id}/hqdefault.jpg" : '' ),
+			'name'         => self::clean_text( get_the_title( $post ) ),
+			'description'  => self::clean_text( self::current_seo_description() ?: wp_trim_words( $post->post_content, 30 ) ),
 			'uploadDate'   => $pub ?: get_the_date( 'c', $post ),
 		];
+
+		// Thumbnail : on n'émet la clé que si on a une URL valide
+		$thumb_final = $thumb ?: ( $yt_id ? "https://i.ytimg.com/vi/{$yt_id}/hqdefault.jpg" : '' );
+		if ( $thumb_final ) {
+			$block['thumbnailUrl'] = $thumb_final;
+		}
 
 		if ( $duration > 0 ) {
 			$block['duration'] = self::seconds_to_iso8601( $duration );
@@ -590,13 +599,19 @@ final class SEO {
 		$block = [
 			'@context'    => 'https://schema.org',
 			'@type'       => 'Product',
-			'name'        => get_the_title( $post ),
-			'description' => self::current_seo_description() ?: wp_trim_words( $post->post_content, 30 ),
+			'name'        => self::clean_text( get_the_title( $post ) ),
+			'description' => self::clean_text( self::current_seo_description() ?: wp_trim_words( $post->post_content, 30 ) ),
 			'url'         => get_permalink( $post ),
 		];
-		if ( $thumb_url ) {
-			$block['image'] = $thumb_url;
+		// Image : fallback sur l'image OG par défaut si pas de featured image
+		// (sinon Google rejette le Product → pas de rich result)
+		if ( ! $thumb_url ) {
+			$thumb_url = (string) get_option( self::OPTION_OG_IMAGE, '' );
 		}
+		if ( ! $thumb_url ) {
+			$thumb_url = get_template_directory_uri() . '/assets/images/og-default.png';
+		}
+		$block['image'] = $thumb_url;
 
 		// Catégorie
 		$cats = wp_get_object_terms( $post->ID, 'seoflix_product_category', [ 'number' => 1 ] );
@@ -639,8 +654,8 @@ final class SEO {
 		$block = [
 			'@context'    => 'https://schema.org',
 			'@type'       => 'Person',
-			'name'        => get_the_title( $channel ),
-			'description' => self::current_seo_description() ?: wp_trim_words( $channel->post_content, 30 ),
+			'name'        => self::clean_text( get_the_title( $channel ) ),
+			'description' => self::clean_text( self::current_seo_description() ?: wp_trim_words( $channel->post_content, 30 ) ),
 			'url'         => get_permalink( $channel ),
 		];
 		if ( $thumb ) {
@@ -664,21 +679,38 @@ final class SEO {
 			'orderby'        => [ 'meta_value_num' => 'ASC', 'date' => 'ASC' ],
 		] );
 
+		$count = count( $videos );
+		$plural = $count > 1 ? 's' : '';
+		$desc  = $term->description ?: sprintf(
+			"Parcours d'apprentissage : %s. %d vidéo%s curatée%s sur %s.",
+			$term->name, $count, $plural, $plural, get_bloginfo( 'name' )
+		);
+
 		$block = [
 			'@context'    => 'https://schema.org',
 			'@type'       => 'Course',
-			'name'        => $term->name,
-			'description' => $term->description ?: ( 'Parcours d\'apprentissage : ' . $term->name . '. ' . count( $videos ) . ' vidéos curatées sur ' . get_bloginfo( 'name' ) . '.' ),
+			'name'        => self::clean_text( $term->name ),
+			'description' => self::clean_text( $desc ),
 			'url'         => get_term_link( $term ),
 			'provider'    => self::build_publisher_short(),
 			'inLanguage'  => 'fr',
 		];
 
-		// Google requiert hasCourseInstance ou offers pour Course rich result
+		// Workload : somme des durées réelles (au lieu de 1h estimé/vidéo)
+		$total_seconds = 0;
+		foreach ( $videos as $v ) {
+			$total_seconds += (int) get_post_meta( $v->ID, Meta_Keys::VIDEO_DURATION, true );
+		}
+		$workload = $total_seconds > 0 ? self::seconds_to_iso8601( $total_seconds ) : 'PT1H';
+
 		$block['hasCourseInstance'] = [
-			'@type'              => 'CourseInstance',
-			'courseMode'         => 'online',
-			'courseWorkload'     => 'PT' . max( 1, count( $videos ) ) . 'H', // estimation 1h/vidéo
+			'@type'        => 'CourseInstance',
+			'courseMode'   => 'online',
+			'courseWorkload' => $workload,
+			'location'     => [
+				'@type' => 'VirtualLocation',
+				'url'   => get_term_link( $term ),
+			],
 		];
 		$block['offers'] = [
 			'@type'         => 'Offer',
@@ -687,6 +719,24 @@ final class SEO {
 			'availability'  => 'https://schema.org/InStock',
 			'category'      => 'Free',
 		];
+
+		// hasPart : la liste des vidéos du parcours pour signaler le contenu réel
+		if ( $count > 0 ) {
+			$has_part = [];
+			$pos = 1;
+			foreach ( $videos as $v ) {
+				$has_part[] = [
+					'@type'    => 'CreativeWork',
+					'name'     => self::clean_text( get_the_title( $v ) ),
+					'url'      => get_permalink( $v ),
+					'position' => $pos++,
+				];
+				if ( $pos > 30 ) {
+					break;
+				}
+			}
+			$block['hasPart'] = $has_part;
+		}
 
 		return $block;
 	}
@@ -699,11 +749,14 @@ final class SEO {
 		$items = [];
 		$pos   = 1;
 		foreach ( $wp_query->posts as $p ) {
+			if ( ! ( $p instanceof \WP_Post ) ) {
+				continue;
+			}
 			$items[] = [
 				'@type'    => 'ListItem',
 				'position' => $pos++,
 				'url'      => get_permalink( $p ),
-				'name'     => get_the_title( $p ),
+				'name'     => self::clean_text( get_the_title( $p ) ),
 			];
 			if ( $pos > 30 ) {
 				break; // on cap pour éviter des payloads énormes
@@ -788,10 +841,26 @@ final class SEO {
 	}
 
 	private static function seconds_to_iso8601( int $sec ): string {
+		if ( $sec <= 0 ) {
+			return 'PT0S';
+		}
 		$h = intdiv( $sec, 3600 );
 		$m = intdiv( $sec % 3600, 60 );
 		$s = $sec % 60;
-		return 'PT' . ( $h ? $h . 'H' : '' ) . ( $m ? $m . 'M' : '' ) . ( $s ? $s . 'S' : '' ) ?: 'PT0S';
+		$out = 'PT' . ( $h ? $h . 'H' : '' ) . ( $m ? $m . 'M' : '' ) . ( $s ? $s . 'S' : '' );
+		// Edge case (durée tombe pile sur 0 secs après modulo) → fallback PT0S
+		return $out === 'PT' ? 'PT0S' : $out;
+	}
+
+	/**
+	 * Décode entités HTML + strip tags pour avoir du texte propre dans JSON-LD.
+	 * Évite les "l&rsquo;outil" qui apparaissent en SERP.
+	 */
+	private static function clean_text( string $text ): string {
+		$text = wp_strip_all_tags( $text );
+		$text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$text = trim( preg_replace( '/\s+/', ' ', $text ) );
+		return $text;
 	}
 
 	/* ======================================================================
