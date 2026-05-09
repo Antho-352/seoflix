@@ -25,7 +25,7 @@ while ( have_posts() ) :
 					$avatar = seoflix_channel_thumbnail_url( $channel->ID ); ?>
 					<a href="<?php echo esc_url( get_permalink( $channel ) ); ?>" class="sx-video-page__channel-link">
 						<?php if ( $avatar ) : ?>
-							<img src="<?php echo esc_url( $avatar ); ?>" alt="" class="sx-video-page__channel-avatar" loading="lazy">
+							<img src="<?php echo esc_url( $avatar ); ?>" alt="" width="32" height="32" class="sx-video-page__channel-avatar" loading="lazy">
 						<?php endif; ?>
 						<?php echo esc_html( $channel->post_title ); ?>
 					</a>

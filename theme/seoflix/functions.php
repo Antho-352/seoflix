@@ -381,13 +381,23 @@ function seoflix_video_youtube_id( int $post_id ): string {
 	return (string) get_post_meta( $post_id, '_seoflix_youtube_id', true );
 }
 
-function seoflix_video_thumbnail_url( int $post_id ): string {
-	$url = get_post_meta( $post_id, '_seoflix_thumbnail_url', true );
-	if ( $url ) {
-		return $url;
-	}
+/**
+ * @param string $size 'mqdefault' (320×180, default), 'hqdefault' (480×360),
+ *                     'sddefault' (640×480), 'maxresdefault' (1280×720)
+ */
+function seoflix_video_thumbnail_url( int $post_id, string $size = 'mqdefault' ): string {
 	$yid = seoflix_video_youtube_id( $post_id );
-	return $yid ? "https://i.ytimg.com/vi/{$yid}/maxresdefault.jpg" : '';
+	if ( $yid ) {
+		// On préfère TOUJOURS reconstruire l'URL canonique YouTube avec la bonne taille
+		// plutôt que d'utiliser le _seoflix_thumbnail_url stocké (souvent maxres = trop lourd).
+		$allowed = [ 'default', 'mqdefault', 'hqdefault', 'sddefault', 'maxresdefault' ];
+		if ( ! in_array( $size, $allowed, true ) ) {
+			$size = 'mqdefault';
+		}
+		return "https://i.ytimg.com/vi/{$yid}/{$size}.jpg";
+	}
+	// Fallback sur l'URL stockée si pas d'ID YouTube (rare)
+	return (string) get_post_meta( $post_id, '_seoflix_thumbnail_url', true );
 }
 
 function seoflix_video_duration_seconds( int $post_id ): int {
@@ -567,11 +577,14 @@ function seoflix_render_newsletter( string $source = 'homepage', array $opts = [
 	<?php
 }
 
-function seoflix_render_video_card( WP_Post $video ): void {
-	$thumb    = seoflix_video_thumbnail_url( $video->ID );
+function seoflix_render_video_card( WP_Post $video, array $opts = [] ): void {
+	$opts     = wp_parse_args( $opts, [ 'priority' => false ] );
+	$thumb    = seoflix_video_thumbnail_url( $video->ID, 'mqdefault' );
 	$duration = seoflix_video_duration_formatted( $video->ID );
 	$channel  = seoflix_video_channel( $video->ID );
 	$pub      = (string) get_post_meta( $video->ID, '_seoflix_published_at', true );
+	$loading  = $opts['priority'] ? 'eager' : 'lazy';
+	$fetchpri = $opts['priority'] ? 'high'  : 'auto';
 
 	// Bouton favori (V2 + user loggé)
 	$show_fav = false;
@@ -587,7 +600,7 @@ function seoflix_render_video_card( WP_Post $video ): void {
 		<a href="<?php echo esc_url( get_permalink( $video ) ); ?>" class="sx-card-video__link">
 			<div class="sx-card-video__thumb-wrap">
 				<?php if ( $thumb ) : ?>
-					<img src="<?php echo esc_url( $thumb ); ?>" alt="" loading="lazy" class="sx-card-video__thumb">
+					<img src="<?php echo esc_url( $thumb ); ?>" alt="" width="320" height="180" loading="<?php echo esc_attr( $loading ); ?>" fetchpriority="<?php echo esc_attr( $fetchpri ); ?>" class="sx-card-video__thumb">
 				<?php else : ?>
 					<div class="sx-card-video__thumb sx-card-video__thumb--placeholder"></div>
 				<?php endif; ?>
@@ -633,7 +646,7 @@ function seoflix_render_channel_card( WP_Post $channel ): void {
 	?>
 	<a href="<?php echo esc_url( get_permalink( $channel ) ); ?>" class="sx-card-channel">
 		<?php if ( $thumb ) : ?>
-			<img src="<?php echo esc_url( $thumb ); ?>" alt="" loading="lazy" class="sx-card-channel__avatar">
+			<img src="<?php echo esc_url( $thumb ); ?>" alt="" width="56" height="56" loading="lazy" class="sx-card-channel__avatar">
 		<?php else : ?>
 			<div class="sx-card-channel__avatar sx-card-channel__avatar--placeholder"></div>
 		<?php endif; ?>
@@ -707,9 +720,12 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 }
 
 function seoflix_render_video_row( string $title, array $videos, ?string $see_more_url = null, ?string $see_more_label = 'Tout voir' ): void {
+	static $row_count = 0;
 	if ( ! $videos ) {
 		return;
 	}
+	$is_first_row = ( $row_count === 0 );
+	$row_count++;
 	?>
 	<section class="sx-row">
 		<div class="sx-row__header">
@@ -719,7 +735,16 @@ function seoflix_render_video_row( string $title, array $videos, ?string $see_mo
 			<?php endif; ?>
 		</div>
 		<div class="sx-row__rail">
-			<?php foreach ( $videos as $v ) : seoflix_render_video_card( $v ); endforeach; ?>
+			<?php
+			$idx = 0;
+			foreach ( $videos as $v ) {
+				// Priority loading uniquement sur la 1re vidéo de la 1re rangée affichée
+				// (heuristique LCP). Les autres images chargent en lazy.
+				$priority = ( $is_first_row && $idx === 0 );
+				seoflix_render_video_card( $v, [ 'priority' => $priority ] );
+				$idx++;
+			}
+			?>
 		</div>
 	</section>
 	<?php
