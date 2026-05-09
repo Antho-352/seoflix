@@ -444,82 +444,347 @@ final class SEO {
 	public static function render_jsonld(): void {
 		$blocks = [];
 
+		// === Homepage : Organization + WebSite ===
 		if ( is_front_page() || is_home() ) {
-			$blocks[] = [
-				'@context' => 'https://schema.org',
-				'@type'    => 'Organization',
-				'name'     => get_option( self::OPTION_ORG_NAME, '' ) ?: get_bloginfo( 'name' ),
-				'url'      => home_url( '/' ),
-				'logo'     => get_option( self::OPTION_OG_IMAGE, '' ),
-			];
+			$blocks[] = self::build_organization();
 			$blocks[] = [
 				'@context'        => 'https://schema.org',
 				'@type'           => 'WebSite',
 				'name'            => get_bloginfo( 'name' ),
 				'url'             => home_url( '/' ),
+				'inLanguage'      => str_replace( '_', '-', get_locale() ),
 				'potentialAction' => [
 					'@type'       => 'SearchAction',
-					'target'      => home_url( '/?s={search_term_string}' ),
+					'target'      => [
+						'@type'       => 'EntryPoint',
+						'urlTemplate' => home_url( '/?s={search_term_string}' ),
+					],
 					'query-input' => 'required name=search_term_string',
 				],
 			];
 		}
 
+		// === Single video : VideoObject ===
 		if ( is_singular( CPT::VIDEO ) ) {
-			$post     = get_queried_object();
-			$yt_id    = (string) get_post_meta( $post->ID, Meta_Keys::VIDEO_YOUTUBE_ID, true );
-			$duration = (int) get_post_meta( $post->ID, Meta_Keys::VIDEO_DURATION, true );
-			$thumb    = (string) get_post_meta( $post->ID, Meta_Keys::VIDEO_THUMBNAIL_URL, true );
-			$pub      = (string) get_post_meta( $post->ID, Meta_Keys::VIDEO_PUBLISHED_AT, true );
-			$views    = (int) get_post_meta( $post->ID, Meta_Keys::VIDEO_VIEW_COUNT, true );
-
-			$block = [
-				'@context'     => 'https://schema.org',
-				'@type'        => 'VideoObject',
-				'name'         => get_the_title( $post ),
-				'description'  => self::current_seo_description() ?: wp_trim_words( $post->post_content, 30 ),
-				'thumbnailUrl' => $thumb,
-				'uploadDate'   => $pub ?: get_the_date( 'c', $post ),
-			];
-			if ( $duration > 0 ) {
-				$block['duration'] = self::seconds_to_iso8601( $duration );
-			}
-			if ( $yt_id ) {
-				$block['embedUrl']    = 'https://www.youtube-nocookie.com/embed/' . $yt_id;
-				$block['contentUrl']  = 'https://www.youtube.com/watch?v=' . $yt_id;
-			}
-			if ( $views > 0 ) {
-				$block['interactionStatistic'] = [
-					'@type'                => 'InteractionCounter',
-					'interactionType'      => [ '@type' => 'WatchAction' ],
-					'userInteractionCount' => $views,
-				];
-			}
-			$blocks[] = $block;
+			$blocks[] = self::build_video_object( get_queried_object() );
 		}
 
-		if ( is_singular() ) {
-			// Breadcrumbs simple
-			$crumbs   = [ [ 'name' => 'Accueil', 'url' => home_url( '/' ) ] ];
-			$post     = get_queried_object();
-			$archive  = get_post_type_archive_link( $post->post_type );
-			if ( $archive ) {
-				$pto = get_post_type_object( $post->post_type );
-				$crumbs[] = [ 'name' => $pto->labels->name ?? '', 'url' => $archive ];
+		// === Single product : Product ===
+		if ( is_singular( CPT::PRODUCT ) ) {
+			$blocks[] = self::build_product( get_queried_object() );
+		}
+
+		// === Single channel : Person (créateur de contenu) ===
+		if ( is_singular( CPT::CHANNEL ) ) {
+			$blocks[] = self::build_person( get_queried_object() );
+		}
+
+		// === Parcours d'apprentissage : Course ===
+		if ( is_tax( 'seoflix_path' ) ) {
+			$blocks[] = self::build_course( get_queried_object() );
+		}
+
+		// === Archives + taxonomies (sauf path déjà traité plus haut) : ItemList ===
+		if (
+			( is_post_type_archive( CPT::VIDEO ) || is_post_type_archive( CPT::CHANNEL ) || is_post_type_archive( CPT::PRODUCT ) )
+			|| is_tax( [ 'seoflix_topic', 'seoflix_format', 'seoflix_product_category' ] )
+		) {
+			$item_list = self::build_item_list();
+			if ( $item_list ) {
+				$blocks[] = $item_list;
 			}
-			$crumbs[] = [ 'name' => get_the_title( $post ), 'url' => get_permalink( $post ) ];
-			$blocks[] = [
-				'@context'        => 'https://schema.org',
-				'@type'           => 'BreadcrumbList',
-				'itemListElement' => array_map( static function ( $c, $i ) {
-					return [ '@type' => 'ListItem', 'position' => $i + 1, 'name' => $c['name'], 'item' => $c['url'] ];
-				}, $crumbs, array_keys( $crumbs ) ),
-			];
+		}
+
+		// === Singular : BreadcrumbList ===
+		if ( is_singular() ) {
+			$blocks[] = self::build_breadcrumbs_singular( get_queried_object() );
+		}
+
+		// === Taxonomy/archive : BreadcrumbList ===
+		if ( is_tax() || is_category() || is_tag() || is_post_type_archive() ) {
+			$crumbs = self::build_breadcrumbs_archive();
+			if ( $crumbs ) {
+				$blocks[] = $crumbs;
+			}
 		}
 
 		foreach ( $blocks as $b ) {
+			if ( ! is_array( $b ) || empty( $b ) ) {
+				continue;
+			}
 			echo '<script type="application/ld+json">' . wp_json_encode( $b, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>' . "\n";
 		}
+	}
+
+	/* ======================================================================
+	 *  Schema builders
+	 * ====================================================================== */
+
+	private static function build_organization(): array {
+		$logo  = (string) get_option( self::OPTION_OG_IMAGE, '' );
+		$block = [
+			'@context' => 'https://schema.org',
+			'@type'    => 'Organization',
+			'name'     => get_option( self::OPTION_ORG_NAME, '' ) ?: get_bloginfo( 'name' ),
+			'url'      => home_url( '/' ),
+		];
+		if ( $logo ) {
+			$block['logo'] = $logo;
+		}
+		$tw = (string) get_option( self::OPTION_TWITTER_HANDLE, '' );
+		if ( $tw ) {
+			$block['sameAs'] = [ 'https://twitter.com/' . ltrim( $tw, '@' ) ];
+		}
+		return $block;
+	}
+
+	private static function build_video_object( \WP_Post $post ): array {
+		$yt_id    = (string) get_post_meta( $post->ID, Meta_Keys::VIDEO_YOUTUBE_ID, true );
+		$duration = (int) get_post_meta( $post->ID, Meta_Keys::VIDEO_DURATION, true );
+		$thumb    = (string) get_post_meta( $post->ID, Meta_Keys::VIDEO_THUMBNAIL_URL, true );
+		$pub      = (string) get_post_meta( $post->ID, Meta_Keys::VIDEO_PUBLISHED_AT, true );
+
+		$block = [
+			'@context'     => 'https://schema.org',
+			'@type'        => 'VideoObject',
+			'name'         => get_the_title( $post ),
+			'description'  => self::current_seo_description() ?: wp_trim_words( $post->post_content, 30 ),
+			'thumbnailUrl' => $thumb ?: ( $yt_id ? "https://i.ytimg.com/vi/{$yt_id}/hqdefault.jpg" : '' ),
+			'uploadDate'   => $pub ?: get_the_date( 'c', $post ),
+		];
+
+		if ( $duration > 0 ) {
+			$block['duration'] = self::seconds_to_iso8601( $duration );
+		}
+		if ( $yt_id ) {
+			$block['embedUrl']   = 'https://www.youtube-nocookie.com/embed/' . $yt_id;
+			$block['contentUrl'] = 'https://www.youtube.com/watch?v=' . $yt_id;
+		}
+
+		// Auteur = chaîne
+		$channel_id = (int) get_post_meta( $post->ID, Meta_Keys::VIDEO_CHANNEL_ID, true );
+		if ( $channel_id ) {
+			$channel = get_post( $channel_id );
+			if ( $channel ) {
+				$block['author'] = [
+					'@type' => 'Person',
+					'name'  => $channel->post_title,
+					'url'   => get_permalink( $channel ),
+				];
+			}
+		}
+
+		// Publisher = Seoflix
+		$block['publisher'] = self::build_publisher_short();
+
+		// `isPartOf` la page Seoflix qui sert d'embed
+		$block['url'] = get_permalink( $post );
+
+		return $block;
+	}
+
+	private static function build_product( \WP_Post $post ): array {
+		$thumb_id  = get_post_thumbnail_id( $post->ID );
+		$thumb_url = $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'large' ) : '';
+
+		$block = [
+			'@context'    => 'https://schema.org',
+			'@type'       => 'Product',
+			'name'        => get_the_title( $post ),
+			'description' => self::current_seo_description() ?: wp_trim_words( $post->post_content, 30 ),
+			'url'         => get_permalink( $post ),
+		];
+		if ( $thumb_url ) {
+			$block['image'] = $thumb_url;
+		}
+
+		// Catégorie
+		$cats = wp_get_object_terms( $post->ID, 'seoflix_product_category', [ 'number' => 1 ] );
+		if ( ! is_wp_error( $cats ) && $cats ) {
+			$block['category'] = $cats[0]->name;
+		}
+
+		// Pricing : on génère une Offer même si pas de prix exact (signalement type)
+		$pricing = (string) get_post_meta( $post->ID, Meta_Keys::PRODUCT_PRICING, true );
+		$aff_url = (string) get_post_meta( $post->ID, Meta_Keys::PRODUCT_AFFILIATE_URL, true );
+		$off_url = (string) get_post_meta( $post->ID, Meta_Keys::PRODUCT_OFFICIAL_URL, true );
+		$target  = $aff_url ?: $off_url;
+
+		if ( $target && in_array( $pricing, [ 'free', 'freemium', 'paid' ], true ) ) {
+			$offer = [
+				'@type'         => 'Offer',
+				'url'           => $target,
+				'availability'  => 'https://schema.org/InStock',
+				'priceCurrency' => 'EUR',
+			];
+			// Pour 'free' et 'freemium' : prix 0. Pour 'paid' : on omet le prix exact (Schema accepte une offer sans price si c'est un service tiers).
+			if ( $pricing === 'free' || $pricing === 'freemium' ) {
+				$offer['price'] = '0';
+			}
+			$block['offers'] = $offer;
+		}
+
+		$block['brand'] = [
+			'@type' => 'Brand',
+			'name'  => get_the_title( $post ),
+		];
+
+		return $block;
+	}
+
+	private static function build_person( \WP_Post $channel ): array {
+		$thumb = (string) get_post_meta( $channel->ID, Meta_Keys::CHANNEL_THUMBNAIL_URL, true );
+		$yt    = (string) get_post_meta( $channel->ID, Meta_Keys::CHANNEL_YOUTUBE_URL, true );
+
+		$block = [
+			'@context'    => 'https://schema.org',
+			'@type'       => 'Person',
+			'name'        => get_the_title( $channel ),
+			'description' => self::current_seo_description() ?: wp_trim_words( $channel->post_content, 30 ),
+			'url'         => get_permalink( $channel ),
+		];
+		if ( $thumb ) {
+			$block['image'] = $thumb;
+		}
+		if ( $yt ) {
+			$block['sameAs'] = [ $yt ];
+		}
+		return $block;
+	}
+
+	private static function build_course( \WP_Term $term ): array {
+		$videos = get_posts( [
+			'post_type'      => CPT::VIDEO,
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'tax_query'      => [
+				[ 'taxonomy' => 'seoflix_path', 'field' => 'term_id', 'terms' => $term->term_id ],
+			],
+			'meta_key'       => '_seoflix_path_order',
+			'orderby'        => [ 'meta_value_num' => 'ASC', 'date' => 'ASC' ],
+		] );
+
+		$block = [
+			'@context'    => 'https://schema.org',
+			'@type'       => 'Course',
+			'name'        => $term->name,
+			'description' => $term->description ?: ( 'Parcours d\'apprentissage : ' . $term->name . '. ' . count( $videos ) . ' vidéos curatées sur ' . get_bloginfo( 'name' ) . '.' ),
+			'url'         => get_term_link( $term ),
+			'provider'    => self::build_publisher_short(),
+			'inLanguage'  => 'fr',
+		];
+
+		// Google requiert hasCourseInstance ou offers pour Course rich result
+		$block['hasCourseInstance'] = [
+			'@type'              => 'CourseInstance',
+			'courseMode'         => 'online',
+			'courseWorkload'     => 'PT' . max( 1, count( $videos ) ) . 'H', // estimation 1h/vidéo
+		];
+		$block['offers'] = [
+			'@type'         => 'Offer',
+			'price'         => '0',
+			'priceCurrency' => 'EUR',
+			'availability'  => 'https://schema.org/InStock',
+			'category'      => 'Free',
+		];
+
+		return $block;
+	}
+
+	private static function build_item_list(): ?array {
+		global $wp_query;
+		if ( ! $wp_query->posts ) {
+			return null;
+		}
+		$items = [];
+		$pos   = 1;
+		foreach ( $wp_query->posts as $p ) {
+			$items[] = [
+				'@type'    => 'ListItem',
+				'position' => $pos++,
+				'url'      => get_permalink( $p ),
+				'name'     => get_the_title( $p ),
+			];
+			if ( $pos > 30 ) {
+				break; // on cap pour éviter des payloads énormes
+			}
+		}
+		return [
+			'@context'        => 'https://schema.org',
+			'@type'           => 'ItemList',
+			'numberOfItems'   => count( $items ),
+			'itemListElement' => $items,
+		];
+	}
+
+	private static function build_breadcrumbs_singular( \WP_Post $post ): array {
+		$crumbs = [ [ 'name' => 'Accueil', 'url' => home_url( '/' ) ] ];
+		$archive = get_post_type_archive_link( $post->post_type );
+		if ( $archive ) {
+			$pto = get_post_type_object( $post->post_type );
+			$crumbs[] = [ 'name' => $pto->labels->name ?? '', 'url' => $archive ];
+		}
+		$crumbs[] = [ 'name' => get_the_title( $post ), 'url' => get_permalink( $post ) ];
+		return self::breadcrumbs_to_schema( $crumbs );
+	}
+
+	private static function build_breadcrumbs_archive(): ?array {
+		$crumbs = [ [ 'name' => 'Accueil', 'url' => home_url( '/' ) ] ];
+		if ( is_post_type_archive() ) {
+			$pto = get_post_type_object( get_query_var( 'post_type' ) );
+			if ( ! $pto ) {
+				return null;
+			}
+			$crumbs[] = [ 'name' => $pto->labels->name, 'url' => get_post_type_archive_link( $pto->name ) ];
+		} elseif ( is_tax() || is_category() || is_tag() ) {
+			$term = get_queried_object();
+			if ( ! ( $term instanceof \WP_Term ) ) {
+				return null;
+			}
+			$tax = get_taxonomy( $term->taxonomy );
+			if ( $tax ) {
+				$crumbs[] = [ 'name' => $tax->labels->name, 'url' => '' ];
+			}
+			$crumbs[] = [ 'name' => $term->name, 'url' => get_term_link( $term ) ];
+		}
+		return self::breadcrumbs_to_schema( $crumbs );
+	}
+
+	private static function breadcrumbs_to_schema( array $crumbs ): array {
+		$items = [];
+		$pos   = 1;
+		foreach ( $crumbs as $c ) {
+			$item = [
+				'@type'    => 'ListItem',
+				'position' => $pos++,
+				'name'     => $c['name'],
+			];
+			if ( ! empty( $c['url'] ) ) {
+				$item['item'] = $c['url'];
+			}
+			$items[] = $item;
+		}
+		return [
+			'@context'        => 'https://schema.org',
+			'@type'           => 'BreadcrumbList',
+			'itemListElement' => $items,
+		];
+	}
+
+	private static function build_publisher_short(): array {
+		$logo = (string) get_option( self::OPTION_OG_IMAGE, '' );
+		$pub  = [
+			'@type' => 'Organization',
+			'name'  => get_option( self::OPTION_ORG_NAME, '' ) ?: get_bloginfo( 'name' ),
+			'url'   => home_url( '/' ),
+		];
+		if ( $logo ) {
+			$pub['logo'] = [
+				'@type' => 'ImageObject',
+				'url'   => $logo,
+			];
+		}
+		return $pub;
 	}
 
 	private static function seconds_to_iso8601( int $sec ): string {
