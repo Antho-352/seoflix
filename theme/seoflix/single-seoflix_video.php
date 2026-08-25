@@ -240,6 +240,10 @@ while ( have_posts() ) :
 			<?php endif; ?>
 		<?php endif; ?>
 
+		<?php if ( class_exists( '\Seoflix\FeatureFlags' ) && \Seoflix\FeatureFlags::video_discussions_enabled() ) : ?>
+			<?php get_template_part( 'comments-video' ); ?>
+		<?php endif; ?>
+
 		<?php
 		// Suggestions : autres vidéos de la chaîne + même sujet
 		if ( $channel ) {

@@ -15,6 +15,11 @@ final class FeatureFlags {
 		return (bool) get_option( 'seoflix_user_accounts_enabled', false );
 	}
 
+	public static function video_discussions_enabled(): bool {
+		return self::user_accounts_enabled()
+			&& (bool) get_option( 'seoflix_video_discussions_enabled', false );
+	}
+
 	public static function auto_publish_ai_enabled(): bool {
 		return (bool) get_option( 'seoflix_auto_publish_ai', false );
 	}

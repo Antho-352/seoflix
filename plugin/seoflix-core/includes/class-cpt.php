@@ -37,7 +37,7 @@ final class CPT {
 			'has_archive'         => 'videos',
 			'rewrite'             => [ 'slug' => 'video', 'with_front' => false ],
 			'show_in_menu'        => 'seoflix',
-			'supports'            => [ 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields', 'revisions' ],
+			'supports'            => [ 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields', 'revisions', 'comments' ],
 			'taxonomies'          => [ 'seoflix_topic', 'seoflix_format', 'seoflix_path' ],
 			'capability_type'     => 'post',
 			'map_meta_cap'        => true,

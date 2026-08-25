@@ -26,6 +26,7 @@ final class Plugin {
 		// Priorité 30 : les CPT/taxonomies (10) et le re-seed (20) sont prêts.
 		add_action( 'init', [ DB_Schema::class, 'maybe_upgrade' ], 30 );
 		FeatureFlags::init();
+		Video_Comments::init();
 
 		Affiliate::init();
 		Security::init();
@@ -57,6 +58,7 @@ final class Plugin {
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-taxonomies.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-db-schema.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-feature-flags.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-video-comments.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-importer.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-affiliate.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-security.php';

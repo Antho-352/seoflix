@@ -2,6 +2,7 @@
 namespace Seoflix\Admin;
 
 use Seoflix\DB_Schema;
+use Seoflix\Video_Comments;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -279,7 +280,14 @@ final class Admin_Rgpd {
 				...$where_args
 			) );
 			foreach ( $ids as $cid ) {
-				if ( wp_delete_comment( (int) $cid, true ) ) {
+				$comment = get_comment( (int) $cid );
+				if ( ! $comment ) {
+					continue;
+				}
+				$erased = $comment->comment_type === Video_Comments::COMMENT_TYPE
+					? Video_Comments::erase_comment( $comment )
+					: wp_delete_comment( (int) $cid, true );
+				if ( $erased ) {
 					$deleted_comments++;
 				}
 			}

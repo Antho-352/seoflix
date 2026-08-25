@@ -17,6 +17,31 @@ Marche à suivre quand un visiteur t'envoie une demande RGPD (accès, rectificat
 
 En V1 il n'y a pas de comptes utilisateurs, donc 99% des demandes seront vides.
 
+## Discussions privées sous les vidéos (fonction dormante)
+
+La fonctionnalité repose uniquement sur `wp_comments` et `wp_commentmeta`, avec le type dédié `seoflix_video_discussion`. Elle ne crée aucune table. Elle reste désactivée tant que l'option `seoflix_video_discussions_enabled` n'est pas activée **et** que les comptes utilisateurs ne sont pas actifs. Couper l'un des deux flags masque l'interface et bloque les lectures/écritures, sans effacer les fils existants.
+
+Données conservées pour une contribution : identifiant du commentaire et de la vidéo, identifiant utilisateur, nom affiché et e-mail reconstruits depuis le compte, texte brut, parent éventuel, dates et statut de modération. L'adresse IP, l'URL auteur et le user-agent sont volontairement vides. Ce lot n'écrit aucune ligne `wp_commentmeta`. L'exporteur natif de commentaires WordPress couvre les champs de `wp_comments` ; toute extension tierce ajoutant ses propres métadonnées doit fournir son exporteur, et l'export JSON du panneau Seoflix reste un contrôle administratif complémentaire.
+
+L'effaceur de données personnelles enregistré par Seoflix traite seulement ce type dédié, par lots bornés. Il est placé avant l'effaceur natif WordPress afin que celui-ci ne vide pas l'e-mail de correspondance avant l'application de la politique dédiée. Une question ou réponse sans enfant est supprimée. Une question ayant des réponses d'autres membres devient un **tombstone** : auteur, e-mail, URL, IP, user-agent et `user_id` sont vidés, le corps est remplacé par un texte fixe et toutes ses lignes `wp_commentmeta` sont supprimées. Cette anonymisation préserve les réponses des autres personnes sans conserver de métadonnée personnelle sur le parent. Si une purge ou une écriture échoue, l'effaceur signale des données retenues, ne marque pas le traitement comme terminé et conserve l'e-mail de correspondance pour permettre une reprise après correction. Le bouton du panneau **Seoflix → RGPD** appelle la même règle.
+
+Les contributions suivent la modération, les doublons, l'anti-flood et les notifications natifs WordPress ; aucune approbation n'est forcée. La fermeture des commentaires sur une vidéo ferme sa discussion. Traiter les éléments en attente ou signalés dans **Commentaires** avant une suppression de compte.
+
+### QA runtime obligatoire avant activation
+
+La présente documentation et les contrats source ne constituent pas une preuve runtime. Avant activation, effectuer une QA runtime sur une copie WordPress représentative et consigner les résultats :
+
+1. les deux flags désactivés, puis chaque combinaison des flags, pour confirmer le fail-closed sans suppression de données ;
+2. visiteur anonyme, membre, compte sans capacité `read` et administrateur, y compris une requête REST anonyme ;
+3. vidéo publiée ouverte/fermée, brouillon, autre type de contenu, nonce expiré et tentative via `wp-comments-post.php` ;
+4. question, réponse de niveau 1, réponse à une réponse, parent d'une autre vidéo ou non approuvé ;
+5. limites 3/1 500 caractères, Unicode, HTML/entités, shortcode/bloc Gutenberg, toutes les formes de liens et leurs obfuscations, présence de `$_FILES` ;
+6. délai anti-flood, doublon natif, contribution approuvée et en attente, notifications/modération ;
+7. exporteur natif, effaceur WordPress et panneau Seoflix sur une feuille, une racine sans réponse et une racine avec réponses (tombstone) ;
+8. rendu clavier/lecteur d'écran et absence de débordement à 320 px, puis purge des caches.
+
+Lors d'une suppression du compte, lancer d'abord l'export/effacement par e-mail, vérifier les tombstones, puis supprimer le compte depuis **Utilisateurs** sans réattribuer involontairement des contenus. Documenter les sauvegardes concernées ; après toute restauration, rejouer l'effacement. Purger ensuite les caches WordPress/CDN et vérifier la page en session connectée et déconnectée.
+
 ---
 
 ## Délai de réponse

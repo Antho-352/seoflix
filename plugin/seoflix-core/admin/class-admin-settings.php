@@ -45,6 +45,11 @@ final class Admin_Settings {
 			'sanitize_callback' => static fn( $v ) => (bool) $v,
 			'default'           => false,
 		] );
+		register_setting( self::GROUP_BEHAVIOR, 'seoflix_video_discussions_enabled', [
+			'type'              => 'boolean',
+			'sanitize_callback' => static fn( $v ) => (bool) $v,
+			'default'           => false,
+		] );
 		register_setting( self::GROUP_BEHAVIOR, 'seoflix_auto_publish_ai', [
 			'type'              => 'boolean',
 			'sanitize_callback' => static fn( $v ) => (bool) $v,
@@ -98,6 +103,7 @@ final class Admin_Settings {
 		$daily_limit  = (int) get_option( 'seoflix_yt_daily_limit', 1000 );
 		$hourly_limit = (int) get_option( 'seoflix_yt_hourly_limit', 200 );
 		$accounts_on  = (bool) get_option( 'seoflix_user_accounts_enabled', false );
+		$discussions_on = (bool) get_option( 'seoflix_video_discussions_enabled', false );
 		$auto_publish = (bool) get_option( 'seoflix_auto_publish_ai', false );
 		$cron_on      = (bool) get_option( 'seoflix_ingestion_cron_enabled', true );
 		$lock_videos  = (bool) get_option( 'seoflix_lock_videos_to_users', false );
@@ -158,6 +164,16 @@ final class Admin_Settings {
 									Activer les comptes utilisateurs (favoris, historique)
 								</label>
 								<p class="description">V1 = site 100 % public, aucun compte requis. Activer cette option ne déploie pas de fonctionnalité supplémentaire en V1 (les pages favoris/historique restent désactivées tant que les templates V2 ne sont pas livrés).</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">Discussions privées des vidéos</th>
+							<td>
+								<label>
+									<input type="checkbox" name="seoflix_video_discussions_enabled" value="1" <?php checked( $discussions_on ); ?>>
+									Activer les questions et réponses privées sous les vidéos
+								</label>
+								<p class="description"><strong>Désactivé par défaut.</strong> Les comptes utilisateurs doivent aussi être activés. N'activer qu'après la QA runtime WordPress et la validation de la procédure RGPD (export, effacement, modération, caches et sauvegardes). Couper ce réglage masque et bloque les discussions sans supprimer les données existantes.</p>
 							</td>
 						</tr>
 						<tr>
