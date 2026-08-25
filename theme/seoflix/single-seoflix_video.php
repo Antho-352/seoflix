@@ -14,6 +14,10 @@ while ( have_posts() ) :
 	$formats  = wp_get_object_terms( $video_id, 'seoflix_format' );
 	$duration = seoflix_video_duration_formatted( $video_id );
 	$pub      = (string) get_post_meta( $video_id, '_seoflix_published_at', true );
+	$source_embed_url = seoflix_source_embed_url( $yid );
+	$timestamps       = seoflix_video_timestamps( $video_id );
+	$key_concepts     = seoflix_video_key_concepts( $video_id );
+	$editorial_url    = seoflix_video_editorial_embed_url( $video_id );
 	?>
 	<article class="sx-container sx-page sx-video-page">
 
@@ -63,6 +67,8 @@ while ( have_posts() ) :
 
 		<div class="sx-video-page__top">
 			<div class="sx-video-page__player-col">
+				<section class="sx-video-source" data-sx-player="source" aria-labelledby="sx-video-source-title">
+					<h2 id="sx-video-source-title" class="sx-video-source__label">Vidéo source</h2>
 				<?php
 				$lock_videos      = (bool) get_option( 'seoflix_lock_videos_to_users', false );
 				$accounts_enabled = class_exists( '\Seoflix\FeatureFlags' ) && \Seoflix\FeatureFlags::user_accounts_enabled();
@@ -75,7 +81,7 @@ while ( have_posts() ) :
 								<rect x="4" y="11" width="16" height="10" rx="2"/>
 								<path d="M8 11V7a4 4 0 1 1 8 0v4"/>
 							</svg>
-							<h2>Connecte-toi pour regarder</h2>
+							<h3>Connecte-toi pour regarder</h3>
 							<p>Crée un compte gratuit pour accéder à toutes les vidéos et suivre ta progression sur les parcours d'apprentissage.</p>
 							<div class="sx-player-locked__cta">
 								<a class="sx-btn" href="<?php echo esc_url( wp_registration_url() ); ?>">Créer un compte gratuit</a>
@@ -83,11 +89,13 @@ while ( have_posts() ) :
 							</div>
 						</div>
 					</div>
-				<?php elseif ( $yid ) : ?>
+				<?php elseif ( $source_embed_url ) : ?>
 					<div class="sx-player">
 						<iframe
-							src="https://www.youtube-nocookie.com/embed/<?php echo esc_attr( $yid ); ?>?rel=0&modestbranding=1"
-							title="<?php echo esc_attr( get_the_title() ); ?>"
+							id="sx-source-player"
+							name="sx-source-player"
+							src="<?php echo esc_url( $source_embed_url ); ?>"
+							title="<?php echo esc_attr( sprintf( 'Vidéo source : %s', get_the_title() ) ); ?>"
 							loading="lazy"
 							referrerpolicy="strict-origin-when-cross-origin"
 							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -122,6 +130,34 @@ while ( have_posts() ) :
 					<?php endif;
 				endif;
 				?>
+
+				<?php if ( $timestamps && $source_embed_url && ! $show_locked ) : ?>
+					<section class="sx-video-passages" aria-labelledby="sx-video-passages-title">
+						<h3 id="sx-video-passages-title">Passages clés</h3>
+						<ol class="sx-video-passages__list">
+							<?php foreach ( $timestamps as $passage ) :
+								$seconds   = (int) $passage['seconds'];
+								$time_label = seoflix_video_timestamp_label( $seconds );
+								$seek_url   = seoflix_source_embed_url( $yid, $seconds, true );
+								?>
+								<li class="sx-video-passages__item">
+									<a
+										class="sx-video-passages__link"
+										href="<?php echo esc_url( $seek_url ); ?>"
+										target="sx-source-player"
+										aria-label="<?php echo esc_attr( sprintf( 'Lire « %1$s » à %2$s dans la vidéo source', $passage['label'], $time_label ) ); ?>">
+										<time datetime="<?php echo esc_attr( 'PT' . $seconds . 'S' ); ?>"><?php echo esc_html( $time_label ); ?></time>
+										<span><?php echo esc_html( $passage['label'] ); ?></span>
+									</a>
+									<?php if ( $passage['takeaway'] !== '' ) : ?>
+										<p><?php echo esc_html( $passage['takeaway'] ); ?></p>
+									<?php endif; ?>
+								</li>
+							<?php endforeach; ?>
+						</ol>
+					</section>
+				<?php endif; ?>
+				</section>
 			</div>
 
 			<aside class="sx-video-page__sidebar">
@@ -172,6 +208,37 @@ while ( have_posts() ) :
 			<h2>Ce que couvre cette vidéo</h2>
 			<?php the_content(); ?>
 		</div>
+
+		<?php if ( $key_concepts ) : ?>
+			<section class="sx-video-concepts" aria-labelledby="sx-video-concepts-title">
+				<h2 id="sx-video-concepts-title">Points à retenir</h2>
+				<ul class="sx-video-concepts__list">
+					<?php foreach ( $key_concepts as $concept ) : ?>
+						<li><?php echo esc_html( $concept['text'] ); ?></li>
+					<?php endforeach; ?>
+				</ul>
+			</section>
+		<?php endif; ?>
+
+		<?php if ( ! $show_locked && $source_embed_url ) : ?>
+			<?php if ( $editorial_url ) : ?>
+				<section class="sx-madias-capsule" data-sx-player="madias" aria-labelledby="sx-madias-capsule-title">
+					<div class="sx-madias-capsule__heading">
+						<p class="sx-madias-capsule__eyebrow">Éclairage éditorial</p>
+						<h2 id="sx-madias-capsule-title">L’essentiel par MADIAS</h2>
+					</div>
+					<div class="sx-player sx-madias-capsule__player">
+						<iframe
+							src="<?php echo esc_url( $editorial_url ); ?>"
+							title="<?php echo esc_attr( sprintf( 'L’essentiel par MADIAS : %s', get_the_title() ) ); ?>"
+							loading="lazy"
+							referrerpolicy="strict-origin-when-cross-origin"
+							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+							allowfullscreen></iframe>
+					</div>
+				</section>
+			<?php endif; ?>
+		<?php endif; ?>
 
 		<?php
 		// Suggestions : autres vidéos de la chaîne + même sujet

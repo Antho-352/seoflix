@@ -416,6 +416,102 @@ function seoflix_video_duration_formatted( int $post_id ): string {
 	return $h > 0 ? sprintf( '%dh%02d', $h, $m ) : sprintf( '%d:%02d', $m, $s );
 }
 
+/**
+ * Construit une URL d'embed sûre pour le lecteur YouTube source.
+ */
+function seoflix_source_embed_url( string $youtube_id, int $seconds = 0, bool $autoplay = false ): string {
+	$youtube_id = trim( $youtube_id );
+	if ( ! preg_match( '/^[A-Za-z0-9_-]{11}$/', $youtube_id ) ) {
+		return '';
+	}
+
+	$args = [
+		'rel'            => '0',
+		'modestbranding' => '1',
+	];
+	if ( $seconds > 0 || $autoplay ) {
+		$args['start'] = $seconds;
+	}
+	if ( $autoplay ) {
+		$args['autoplay'] = '1';
+	}
+
+	return add_query_arg( $args, 'https://www.youtube-nocookie.com/embed/' . $youtube_id );
+}
+
+/**
+ * Retourne les passages éditoriaux valides, triés et bornés à la durée stockée.
+ *
+ * @return array<int, array{id:string,seconds:int,label:string,takeaway:string}>
+ */
+function seoflix_video_timestamps( int $post_id ): array {
+	if ( ! class_exists( '\Seoflix\Meta_Keys' ) || ! class_exists( '\Seoflix\Video_Meta' ) ) {
+		return [];
+	}
+
+	$stored   = get_post_meta( $post_id, \Seoflix\Meta_Keys::VIDEO_TIMESTAMPS, true );
+	$decoded  = is_string( $stored ) ? json_decode( $stored, true ) : $stored;
+	$duration = max( 0, (int) get_post_meta( $post_id, \Seoflix\Meta_Keys::VIDEO_DURATION, true ) );
+	if ( ! is_array( $decoded ) ) {
+		return [];
+	}
+
+	return \Seoflix\Video_Meta::sanitize_timestamps( $decoded, $duration );
+}
+
+/**
+ * Retourne les points clés normalisés (chaînes historiques ou lignes structurées).
+ *
+ * @return array<int, array{id:string,text:string}>
+ */
+function seoflix_video_key_concepts( int $post_id ): array {
+	if ( ! class_exists( '\Seoflix\Meta_Keys' ) || ! class_exists( '\Seoflix\Video_Meta' ) ) {
+		return [];
+	}
+
+	$stored  = get_post_meta( $post_id, \Seoflix\Meta_Keys::VIDEO_KEY_CONCEPTS, true );
+	$decoded = is_string( $stored ) ? json_decode( $stored, true ) : $stored;
+	if ( ! is_array( $decoded ) ) {
+		return [];
+	}
+
+	return \Seoflix\Video_Meta::sanitize_key_concepts( $decoded );
+}
+
+/**
+ * Retourne uniquement l'URL d'embed MADIAS canonique validée par le plugin.
+ */
+function seoflix_video_editorial_embed_url( int $post_id ): string {
+	if ( ! class_exists( '\Seoflix\Meta_Keys' ) || ! class_exists( '\Seoflix\Video_Meta' ) ) {
+		return '';
+	}
+
+	$stored = get_post_meta( $post_id, \Seoflix\Meta_Keys::VIDEO_EDITORIAL_URL, true );
+	$url    = \Seoflix\Video_Meta::normalize_editorial_youtube_url( $stored );
+	if ( ! is_string( $url ) || ! preg_match( '#^https://www\\.youtube-nocookie\\.com/embed/[A-Za-z0-9_-]{11}$#', $url ) ) {
+		return '';
+	}
+
+	return add_query_arg(
+		[
+			'rel'            => '0',
+			'modestbranding' => '1',
+		],
+		$url
+	);
+}
+
+function seoflix_video_timestamp_label( int $seconds ): string {
+	$seconds = max( 0, $seconds );
+	$hours   = intdiv( $seconds, 3600 );
+	$minutes = intdiv( $seconds % 3600, 60 );
+	$rest    = $seconds % 60;
+
+	return $hours > 0
+		? sprintf( '%d:%02d:%02d', $hours, $minutes, $rest )
+		: sprintf( '%d:%02d', $minutes, $rest );
+}
+
 function seoflix_video_view_count( int $post_id ): int {
 	return (int) get_post_meta( $post_id, '_seoflix_view_count', true );
 }
