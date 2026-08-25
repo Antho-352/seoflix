@@ -244,7 +244,17 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 - Modify: `theme/seoflix/style.css`
 - Test: `tests/contracts/test_madias_business_finder_contracts.py`
 
-**Questions:** budget; prospection; présence visage/voix; temps; veille technique; actif vs prestation; tolérance à l’incertitude; préférence contenu/vente/technique.
+**Questions V1:**
+1. préférence : construire un actif qui peut rapporter plus tard, vendre un service dès maintenant, ou garder les deux ouverts;
+2. horizon nécessaire avant les premiers revenus : rapide, quelques mois, sans urgence;
+3. budget engageable sans difficulté : presque zéro, petit budget récurrent, investissement plus important;
+4. volonté de prospecter et gérer régulièrement des clients;
+5. exposition possible : visage, voix seulement, ou totale discrétion;
+6. temps disponible chaque semaine;
+7. appétence pour tester de nouveaux outils et suivre une veille technique;
+8. préférence entre modèle plutôt stable et borné ou potentiel plus élevé mais plus incertain.
+
+**Scoring:** table déterministe et versionnée. Elle écarte d’abord les incompatibilités fortes, classe les parcours restants, puis expose les critères décisifs. Aucun LLM et aucune prétention à mesurer une personnalité.
 
 **Result:** principal + alternative, raisons et contraintes explicites, aucun vocabulaire de garantie, activation volontaire de FOCUS au clic vers le parcours.
 
