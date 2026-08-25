@@ -98,6 +98,13 @@ class MadiasPathOrderContracts(unittest.TestCase):
         self.assertIn("DB_Schema::acquire_path_order_lock", save)
         self.assertIn("DB_Schema::release_path_order_lock", save)
         self.assertIn("finally", save)
+        self.assertIn("throw new \\RuntimeException", save)
+        self.assertIn("catch ( \\RuntimeException", save)
+        self.assertIn("wp_die", save)
+        self.assertRegex(
+            save,
+            r"false\s*===\s*update_post_meta[\s\S]*get_post_meta",
+        )
         self.assertRegex(save, r"wp_json_encode\s*\(\s*\(object\)\s*\$orders\s*\)")
         self.assertNotIn("update_post_meta( $post_id, self::META_ORDER_KEY", save)
 

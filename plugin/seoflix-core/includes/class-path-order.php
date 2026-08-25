@@ -179,35 +179,53 @@ final class Path_Order {
 			);
 		}
 
+		$save_error = '';
 		try {
-		$assigned_term_ids = wp_get_object_terms( $post_id, Taxonomies::PATH, [ 'fields' => 'ids' ] );
-		if ( is_wp_error( $assigned_term_ids ) ) {
-			return;
-		}
-
-		$submitted = isset( $_POST['seoflix_path_orders'] )
-			? wp_unslash( $_POST['seoflix_path_orders'] )
-			: [];
-		if ( ! is_array( $submitted ) ) {
-			$submitted = [];
-		}
-
-		$existing = self::get_order_map( $post_id );
-		$orders   = [];
-		foreach ( array_map( 'intval', $assigned_term_ids ) as $term_id ) {
-			if ( array_key_exists( $term_id, $submitted ) ) {
-				$value = (int) $submitted[ $term_id ];
-				if ( $value > 0 ) {
-					$orders[ $term_id ] = $value;
-				}
-			} elseif ( isset( $existing[ $term_id ] ) ) {
-				$orders[ $term_id ] = $existing[ $term_id ];
+			$assigned_term_ids = wp_get_object_terms( $post_id, Taxonomies::PATH, [ 'fields' => 'ids' ] );
+			if ( is_wp_error( $assigned_term_ids ) ) {
+				throw new \RuntimeException( $assigned_term_ids->get_error_message() );
 			}
-		}
 
-		update_post_meta( $post_id, Meta_Keys::VIDEO_PATH_ORDERS, wp_json_encode( (object) $orders ) );
+			$submitted = isset( $_POST['seoflix_path_orders'] )
+				? wp_unslash( $_POST['seoflix_path_orders'] )
+				: [];
+			if ( ! is_array( $submitted ) ) {
+				$submitted = [];
+			}
+
+			$existing = self::get_order_map( $post_id );
+			$orders   = [];
+			foreach ( array_map( 'intval', $assigned_term_ids ) as $term_id ) {
+				if ( array_key_exists( $term_id, $submitted ) ) {
+					$value = (int) $submitted[ $term_id ];
+					if ( $value > 0 ) {
+						$orders[ $term_id ] = $value;
+					}
+				} elseif ( isset( $existing[ $term_id ] ) ) {
+					$orders[ $term_id ] = $existing[ $term_id ];
+				}
+			}
+
+			$encoded = wp_json_encode( (object) $orders );
+			if ( $encoded === false ) {
+				throw new \RuntimeException( 'Impossible de sérialiser les ordres des parcours.' );
+			}
+			if ( false === update_post_meta( $post_id, Meta_Keys::VIDEO_PATH_ORDERS, $encoded )
+				&& get_post_meta( $post_id, Meta_Keys::VIDEO_PATH_ORDERS, true ) !== $encoded ) {
+				throw new \RuntimeException( 'Impossible d’enregistrer les ordres des parcours.' );
+			}
+		} catch ( \RuntimeException $error ) {
+			$save_error = $error->getMessage();
 		} finally {
 			DB_Schema::release_path_order_lock();
+		}
+
+		if ( $save_error !== '' ) {
+			wp_die(
+				esc_html( $save_error ),
+				esc_html__( 'Échec de l’enregistrement des parcours', 'seoflix' ),
+				[ 'response' => 500, 'back_link' => true ]
+			);
 		}
 	}
 }
