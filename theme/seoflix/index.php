@@ -1,34 +1,57 @@
 <?php
 /**
- * Fallback générique (utilisé pour le blog WP standard si jamais activé en V2).
+ * Archive des articles natifs et fallback de contenu.
  */
 get_header();
+
+if ( is_home() ) {
+	$posts_page          = (int) get_option( 'page_for_posts' );
+	$archive_title       = single_post_title( '', false ) ?: 'Le blog';
+	$archive_description = $posts_page ? get_post_field( 'post_excerpt', $posts_page ) : '';
+} elseif ( is_category() ) {
+	$archive_title       = sprintf( 'Articles : %s', single_cat_title( '', false ) );
+	$archive_description = category_description();
+} elseif ( is_date() ) {
+	$archive_title       = get_the_archive_title();
+	$archive_description = get_the_archive_description();
+} else {
+	$archive_title       = get_the_archive_title() ?: 'Tous les contenus';
+	$archive_description = get_the_archive_description();
+}
+$archive_title = wp_strip_all_tags( $archive_title );
 ?>
 
-<div class="sx-container sx-page">
+<div class="sx-container sx-page sx-blog-archive">
+	<header class="sx-blog-archive__header">
+		<p class="sx-blog-archive__kicker">Éditorial</p>
+		<h1 class="sx-blog-archive__title"><?php echo esc_html( $archive_title ); ?></h1>
+		<?php if ( $archive_description ) : ?>
+			<div class="sx-blog-archive__description"><?php echo wp_kses_post( $archive_description ); ?></div>
+		<?php endif; ?>
+	</header>
+
 	<?php if ( have_posts() ) : ?>
-		<div class="sx-grid sx-grid--videos">
-			<?php while ( have_posts() ) : the_post();
-				if ( get_post_type() === 'seoflix_video' ) {
-					seoflix_render_video_card( get_post() );
-				} else {
-					?>
-					<article style="background: var(--sx-color-surface); border: 1px solid var(--sx-color-border); border-radius: var(--sx-radius-md); padding: var(--sx-space-6);">
-						<a href="<?php the_permalink(); ?>" style="color: var(--sx-color-text);">
-							<h3><?php the_title(); ?></h3>
-							<p style="color: var(--sx-color-text-muted); margin-top: 0.5rem;"><?php echo esc_html( wp_trim_words( get_the_excerpt(), 25 ) ); ?></p>
-						</a>
-					</article>
-					<?php
-				}
-			endwhile; ?>
+		<div class="sx-blog-grid">
+			<?php while ( have_posts() ) : the_post(); ?>
+				<?php if ( 'seoflix_video' === get_post_type() ) : ?>
+					<?php seoflix_render_video_card( get_post() ); ?>
+				<?php else : ?>
+					<?php seoflix_render_post_card( get_post() ); ?>
+				<?php endif; ?>
+			<?php endwhile; ?>
 		</div>
 
-		<nav class="sx-pagination" aria-label="Pagination">
-			<?php echo paginate_links( [ 'prev_text' => '←', 'next_text' => '→' ] ); ?>
-		</nav>
+		<?php the_posts_pagination( [
+			'mid_size'           => 1,
+			'prev_text'          => 'Précédent',
+			'next_text'          => 'Suivant',
+			'screen_reader_text' => 'Pagination des articles',
+		] ); ?>
 	<?php else : ?>
-		<div class="sx-empty">Aucun contenu trouvé.</div>
+		<div class="sx-blog-empty" role="status">
+			<h2>Aucun article trouvé</h2>
+			<p>Les prochains articles apparaîtront ici dès leur publication.</p>
+		</div>
 	<?php endif; ?>
 </div>
 

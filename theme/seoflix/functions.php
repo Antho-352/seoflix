@@ -56,6 +56,7 @@ add_action( 'wp_enqueue_scripts', static function () {
 	wp_enqueue_style( 'seoflix-layout',     get_theme_file_uri( 'assets/css/layout.css' ),     [ 'seoflix-reset' ], $ver );
 	wp_enqueue_style( 'seoflix-components', get_theme_file_uri( 'assets/css/components.css' ), [ 'seoflix-layout' ], $ver );
 	wp_enqueue_style( 'seoflix-pages',      get_theme_file_uri( 'assets/css/pages.css' ),      [ 'seoflix-components' ], $ver );
+	wp_enqueue_style( 'seoflix-blog',       get_stylesheet_uri(),                              [ 'seoflix-pages' ], $ver );
 
 	// Toggle eye sur les champs password (toutes les pages auth)
 	$toggle_js = <<<'JS'
@@ -524,6 +525,87 @@ function seoflix_product_videos( int $product_id, int $limit = 8 ): array {
 		'orderby' => 'date',
 		'order'   => 'DESC',
 	] );
+}
+
+/* ============================================================
+ *  Helpers — Blog
+ * ============================================================ */
+
+if ( ! function_exists( 'seoflix_post_reading_time' ) ) {
+	/**
+	 * Estime la durée à partir du texte réellement lisible, à 220 mots/minute.
+	 */
+	function seoflix_post_reading_time( ?WP_Post $post = null ): int {
+		$post = $post ?: get_post();
+		if ( ! $post instanceof WP_Post ) {
+			return 1;
+		}
+
+		$visible_text = wp_strip_all_tags( strip_shortcodes( $post->post_content ), true );
+		$visible_text = html_entity_decode( $visible_text, ENT_QUOTES | ENT_HTML5, get_bloginfo( 'charset' ) ?: 'UTF-8' );
+		$word_count   = preg_match_all( "/[\\p{L}\\p{N}]+(?:[’'-][\\p{L}\\p{N}]+)*/u", $visible_text, $matches );
+
+		return max( 1, (int) ceil( (int) $word_count / 220 ) );
+	}
+}
+
+if ( ! function_exists( 'seoflix_render_post_card' ) ) {
+	/**
+	 * Rend une carte réutilisable pour un article WordPress natif.
+	 *
+	 * @param array{heading_level?: int} $opts
+	 */
+	function seoflix_render_post_card( WP_Post $post, array $opts = [] ): void {
+		$opts          = wp_parse_args( $opts, [ 'heading_level' => 2 ] );
+		$heading_level = in_array( (int) $opts['heading_level'], [ 2, 3, 4 ], true ) ? (int) $opts['heading_level'] : 2;
+		$permalink     = get_permalink( $post );
+		$title         = get_the_title( $post );
+		$categories    = get_the_category( $post->ID );
+		$category      = $categories ? $categories[0] : null;
+		$reading_time  = seoflix_post_reading_time( $post );
+		$excerpt       = get_the_excerpt( $post );
+		if ( '' === trim( $excerpt ) ) {
+			$excerpt = wp_trim_words( wp_strip_all_tags( strip_shortcodes( $post->post_content ) ), 28 );
+		}
+		$thumbnail_id  = get_post_thumbnail_id( $post->ID );
+		$thumbnail_alt = $thumbnail_id ? trim( (string) get_post_meta( $thumbnail_id, '_wp_attachment_image_alt', true ) ) : '';
+		if ( '' === $thumbnail_alt ) {
+			$thumbnail_alt = $title;
+		}
+		?>
+		<article class="sx-post-card">
+			<?php if ( $thumbnail_id ) : ?>
+				<a class="sx-post-card__image-link" href="<?php echo esc_url( $permalink ); ?>" tabindex="-1" aria-hidden="true">
+					<?php echo get_the_post_thumbnail( $post, 'large', [
+						'alt'     => $thumbnail_alt,
+						'class'   => 'sx-post-card__image',
+						'loading' => 'lazy',
+					] ); ?>
+				</a>
+			<?php endif; ?>
+
+			<div class="sx-post-card__body">
+				<?php if ( $category ) : ?>
+					<a class="sx-post-card__category" href="<?php echo esc_url( get_category_link( $category->term_id ) ); ?>"><?php echo esc_html( $category->name ); ?></a>
+				<?php endif; ?>
+
+				<h<?php echo (int) $heading_level; ?> class="sx-post-card__title">
+					<a href="<?php echo esc_url( $permalink ); ?>"><?php echo esc_html( $title ); ?></a>
+				</h<?php echo (int) $heading_level; ?>>
+
+				<?php if ( $excerpt ) : ?>
+					<p class="sx-post-card__excerpt"><?php echo esc_html( wp_trim_words( $excerpt, 28 ) ); ?></p>
+				<?php endif; ?>
+
+				<div class="sx-post-card__meta">
+					<time datetime="<?php echo esc_attr( get_the_date( DATE_W3C, $post ) ); ?>"><?php echo esc_html( get_the_date( '', $post ) ); ?></time>
+					<span aria-hidden="true">·</span>
+					<span><?php echo esc_html( sprintf( _n( '%d min', '%d min', $reading_time, 'seoflix' ), $reading_time ) ); ?></span>
+				</div>
+			</div>
+		</article>
+		<?php
+	}
 }
 
 /* ============================================================
