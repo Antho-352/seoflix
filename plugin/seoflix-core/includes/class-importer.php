@@ -361,7 +361,7 @@ final class Importer {
 		$seen_ids    = [];
 		$reserved_ids = [];
 		foreach ( $rows as $row ) {
-			$id = is_array( $row ) && is_scalar( $row['id'] ?? null ) ? (string) $row['id'] : '';
+			$id = is_array( $row ) && is_scalar( $row['id'] ?? null ) ? strtolower( (string) $row['id'] ) : '';
 			if ( wp_is_uuid( $id ) ) {
 				$reserved_ids[ $id ] = true;
 			}
@@ -370,7 +370,7 @@ final class Importer {
 			if ( ! is_array( $row ) ) {
 				continue;
 			}
-			$id = is_scalar( $row['id'] ?? null ) ? (string) $row['id'] : '';
+			$id = is_scalar( $row['id'] ?? null ) ? strtolower( (string) $row['id'] ) : '';
 			$fingerprint = hash( 'sha256', wp_json_encode( [
 				$row['seconds'] ?? null,
 				$row['label'] ?? null,
@@ -398,7 +398,7 @@ final class Importer {
 		$seen_ids    = [];
 		$reserved_ids = [];
 		foreach ( $rows as $row ) {
-			$id = is_array( $row ) && is_scalar( $row['id'] ?? null ) ? (string) $row['id'] : '';
+			$id = is_array( $row ) && is_scalar( $row['id'] ?? null ) ? strtolower( (string) $row['id'] ) : '';
 			if ( wp_is_uuid( $id ) ) {
 				$reserved_ids[ $id ] = true;
 			}
@@ -407,7 +407,7 @@ final class Importer {
 			$text = is_string( $row )
 				? $row
 				: ( is_array( $row ) && is_scalar( $row['text'] ?? null ) ? (string) $row['text'] : '' );
-			$id = is_array( $row ) && is_scalar( $row['id'] ?? null ) ? (string) $row['id'] : '';
+			$id = is_array( $row ) && is_scalar( $row['id'] ?? null ) ? strtolower( (string) $row['id'] ) : '';
 			$fingerprint = hash( 'sha256', sanitize_text_field( $text ) );
 			$occurrence = $occurrences[ $fingerprint ] ?? 0;
 			$occurrences[ $fingerprint ] = $occurrence + 1;

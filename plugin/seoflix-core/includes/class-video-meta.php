@@ -505,7 +505,7 @@ final class Video_Meta {
 				continue;
 			}
 
-			$posted_id = is_scalar( $row['id'] ?? null ) ? sanitize_text_field( (string) $row['id'] ) : '';
+			$posted_id = is_scalar( $row['id'] ?? null ) ? strtolower( sanitize_text_field( (string) $row['id'] ) ) : '';
 			$id = $posted_id && wp_is_uuid( $posted_id ) ? $posted_id : '';
 			if ( $id === '' || isset( $seen_ids[ $id ] ) ) {
 				do {
@@ -547,7 +547,7 @@ final class Video_Meta {
 				$text = sanitize_text_field( (string) $point );
 			} elseif ( is_array( $point ) ) {
 				$text      = is_scalar( $point['text'] ?? null ) ? sanitize_text_field( (string) $point['text'] ) : '';
-				$posted_id = is_scalar( $point['id'] ?? null ) ? sanitize_text_field( (string) $point['id'] ) : '';
+				$posted_id = is_scalar( $point['id'] ?? null ) ? strtolower( sanitize_text_field( (string) $point['id'] ) ) : '';
 			}
 			if ( $text === '' ) {
 				continue;

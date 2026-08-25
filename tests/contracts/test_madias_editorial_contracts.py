@@ -255,12 +255,14 @@ class MadiasEditorialMetadataContracts(unittest.TestCase):
             with self.subTest(layer="metabox", method=method):
                 self.assertIn("$seen_ids", body)
                 self.assertIn("isset( $seen_ids[ $id ] )", body)
+                self.assertIn("strtolower", body)
                 self.assertIn("wp_generate_uuid4", body)
         for method in ("prepare_timestamp_import_rows", "prepare_key_concept_import_rows"):
             body = compact(method_source(importer, method))
             with self.subTest(layer="importer", method=method):
                 self.assertIn("$seen_ids", body)
                 self.assertIn("isset( $seen_ids[ $id ] )", body)
+                self.assertIn("strtolower", body)
                 self.assertIn("self::stable_import_uuid", body)
 
     def test_import_document_defines_exact_new_shapes_and_legacy_compatibility(self) -> None:
