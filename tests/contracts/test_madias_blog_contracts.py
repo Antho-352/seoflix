@@ -12,11 +12,32 @@ INDEX_PATH = "theme/seoflix/index.php"
 FUNCTIONS_PATH = "theme/seoflix/functions.php"
 STYLE_PATH = "theme/seoflix/style.css"
 FOOTER_PATH = "theme/seoflix/footer.php"
+TOKENS_PATH = "theme/seoflix/assets/css/tokens.css"
 
 
 def optional_source(relative_path: str) -> str:
     path = Path(REPO_ROOT, relative_path)
     return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def css_rule(css: str, selector: str) -> str:
+    match = re.search(rf"{re.escape(selector)}\s*\{{(?P<body>[^}}]*)\}}", css, re.S)
+    return match.group("body") if match else ""
+
+
+def css_hex_token(css: str, token: str) -> str:
+    match = re.search(rf"{re.escape(token)}\s*:\s*(#[0-9A-Fa-f]{{6}})\s*;", css)
+    return match.group(1) if match else ""
+
+
+def contrast_ratio(foreground: str, background: str) -> float:
+    def luminance(value: str) -> float:
+        channels = [int(value[index : index + 2], 16) / 255 for index in (1, 3, 5)]
+        linear = [channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4 for channel in channels]
+        return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+    light, dark = sorted((luminance(foreground), luminance(background)), reverse=True)
+    return (light + 0.05) / (dark + 0.05)
 
 
 def function_body(text: str, name: str) -> str:
@@ -79,9 +100,10 @@ class MadiasBlogContracts(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.single = optional_source(SINGLE_PATH)
         cls.index = source(INDEX_PATH)
-        cls.functions = source(FUNCTIONS_PATH)
-        cls.style = source(STYLE_PATH)
-        cls.footer = source(FOOTER_PATH)
+        cls.functions = optional_source(FUNCTIONS_PATH)
+        cls.style = optional_source(STYLE_PATH)
+        cls.footer = optional_source(FOOTER_PATH)
+        cls.tokens = optional_source(TOKENS_PATH)
 
     def test_native_templates_own_exactly_one_h1_and_footer_owns_newsletter(self) -> None:
         self.assertTrue(Path(REPO_ROOT, SINGLE_PATH).is_file(), "single-post.php must exist")
@@ -153,6 +175,9 @@ class MadiasBlogContracts(unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token, body)
+        image_link = re.search(r'<a class="sx-post-card__image-link".*$', body, re.M)
+        self.assertIsNotNone(image_link)
+        self.assertNotIn('aria-hidden="true"', image_link.group(0))
 
     def test_blog_styles_are_loaded_accessible_and_responsive(self) -> None:
         self.assertIn("get_stylesheet_uri()", self.functions)
@@ -167,7 +192,9 @@ class MadiasBlogContracts(unittest.TestCase):
             with self.subTest(selector=selector):
                 self.assertIn(selector, self.style)
         self.assertRegex(self.style, r"\.sx-article__content\s*\{[^}]*max-width\s*:\s*(?:7[0-9]{2}px|(?:6[89]|7[0-2])ch)")
-        self.assertRegex(self.style, r"min-height\s*:\s*44px")
+        title_link = css_rule(self.style, ".sx-post-card__title a")
+        self.assertRegex(title_link, r"display\s*:\s*(?:inline-)?flex")
+        self.assertRegex(title_link, r"min-height\s*:\s*44px")
         self.assertRegex(self.style, r":focus-visible")
         self.assertRegex(self.style, r"@media\s*\(\s*max-width\s*:")
         self.assertRegex(self.style, r"grid-template-columns\s*:\s*minmax\(\s*0\s*,\s*1fr\s*\)")
@@ -175,6 +202,14 @@ class MadiasBlogContracts(unittest.TestCase):
             self.style,
             re.compile(r"background(?:-color)?\s*:\s*#FF2D3F\s*;[^}]*color\s*:\s*(?:#fff(?:fff)?|white)", re.I | re.S),
         )
+
+        muted = css_hex_token(self.tokens, "--sx-color-text-muted")
+        surface = css_hex_token(self.tokens, "--sx-color-surface")
+        background = css_hex_token(self.tokens, "--sx-color-bg")
+        self.assertGreaterEqual(contrast_ratio(muted, surface), 4.5)
+        self.assertGreaterEqual(contrast_ratio(muted, background), 4.5)
+        self.assertIn("color: var(--sx-color-text-muted)", css_rule(self.style, ".sx-post-card__meta"))
+        self.assertIn("color: var(--sx-color-text-muted)", css_rule(self.style, ".sx-breadcrumbs"))
 
 
 if __name__ == "__main__":

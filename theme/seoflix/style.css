@@ -122,6 +122,9 @@ Text Domain: seoflix
 }
 
 .sx-post-card__title a {
+	display: inline-flex;
+	min-height: 44px;
+	align-items: center;
 	color: var(--sx-color-text);
 }
 
@@ -141,7 +144,7 @@ Text Domain: seoflix
 	gap: var(--sx-space-2);
 	margin-top: auto;
 	padding-top: var(--sx-space-6);
-	color: var(--sx-color-text-subtle);
+	color: var(--sx-color-text-muted);
 	font-size: 0.82rem;
 }
 
@@ -203,7 +206,7 @@ Text Domain: seoflix
 	align-items: center;
 	gap: var(--sx-space-2);
 	overflow: hidden;
-	color: var(--sx-color-text-subtle);
+	color: var(--sx-color-text-muted);
 	font-size: 0.84rem;
 	white-space: nowrap;
 }

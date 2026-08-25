@@ -575,7 +575,7 @@ if ( ! function_exists( 'seoflix_render_post_card' ) ) {
 		?>
 		<article class="sx-post-card">
 			<?php if ( $thumbnail_id ) : ?>
-				<a class="sx-post-card__image-link" href="<?php echo esc_url( $permalink ); ?>" tabindex="-1" aria-hidden="true">
+				<a class="sx-post-card__image-link" href="<?php echo esc_url( $permalink ); ?>" tabindex="-1">
 					<?php echo get_the_post_thumbnail( $post, 'large', [
 						'alt'     => $thumbnail_alt,
 						'class'   => 'sx-post-card__image',
