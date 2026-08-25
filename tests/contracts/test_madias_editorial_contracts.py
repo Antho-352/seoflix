@@ -190,6 +190,41 @@ class MadiasEditorialMetadataContracts(unittest.TestCase):
                 self.assertIn(helper, php)
         self.assertIn("array_key_exists( 'key_concepts', $v )", php)
 
+    def test_importer_does_not_erase_existing_editorial_rows_for_malformed_nonempty_arrays(self) -> None:
+        php = compact(source(IMPORTER))
+        self.assertIn("function should_persist_editorial_rows", php)
+        self.assertRegex(
+            php,
+            re.compile(
+                r"return \$raw === \[\] \|\| \$sanitized !== \[\]"
+            ),
+        )
+        self.assertGreaterEqual(php.count("self::should_persist_editorial_rows("), 2)
+        self.assertIn("self::prepare_timestamp_import_rows( $v['timestamps'], $youtube_id )", php)
+        self.assertIn("self::prepare_key_concept_import_rows( $v['key_concepts'], $youtube_id )", php)
+        for helper in (
+            "function prepare_timestamp_import_rows",
+            "function prepare_key_concept_import_rows",
+            "function stable_import_uuid",
+            "hash( 'sha256'",
+        ):
+            with self.subTest(helper=helper):
+                self.assertIn(helper, php)
+        self.assertRegex(
+            php,
+            re.compile(
+                r"should_persist_editorial_rows\( \$v\['timestamps'\], \$timestamps \).*"
+                r"update_post_meta\( \$id, Meta_Keys::VIDEO_TIMESTAMPS",
+            ),
+        )
+        self.assertRegex(
+            php,
+            re.compile(
+                r"should_persist_editorial_rows\( \$v\['key_concepts'\], \$key_concepts \).*"
+                r"update_post_meta\( \$id, Meta_Keys::VIDEO_KEY_CONCEPTS",
+            ),
+        )
+
     def test_import_document_defines_exact_new_shapes_and_legacy_compatibility(self) -> None:
         doc = source(IMPORT_DOC)
         self.assertIn('"editorial_video_url": "https://youtu.be/MADIAS12345"', doc)

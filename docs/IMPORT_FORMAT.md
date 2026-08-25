@@ -179,7 +179,7 @@ Liste des produits/services SaaS mentionnés dans les vidéos. L'importer crée 
 4. `videos[*].paths[*]` (optionnel) DOIT être dans la liste valide `seoflix_path`.
 5. `videos[*].products_mentioned[*]` DOIT correspondre à un `products_detected[*].slug` (sinon ignoré).
 6. `videos[*].youtube_id` est l'identifiant d'unicité — un import existant est ignoré (dédup).
-7. Les champs éditoriaux sont optionnels : s'ils sont absents, l'import ne modifie pas les métadonnées existantes. Un tableau `timestamps` ou `key_concepts` malformé est également ignoré plutôt que d'effacer l'existant.
+7. Les champs éditoriaux sont optionnels : s'ils sont absents, l'import ne modifie pas les métadonnées existantes. Un tableau `timestamps` ou `key_concepts` malformé est également ignoré plutôt que d'effacer l'existant. Un tableau vide explicite efface le champ. Les lignes sans UUID reçoivent un identifiant déterministe afin qu'un même import ne change pas leurs identités.
 8. Les timestamps pilotent toujours la vidéo source; `editorial_video_url` désigne uniquement la future capsule « L'essentiel par MADIAS ».
 
 ## Règles éditoriales (agents)

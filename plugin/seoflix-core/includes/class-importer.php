@@ -287,12 +287,18 @@ final class Importer {
 			$duration   = isset( $v['duration_seconds'] ) && is_numeric( $v['duration_seconds'] )
 				? max( 0, (int) $v['duration_seconds'] )
 				: (int) get_post_meta( $id, Meta_Keys::VIDEO_DURATION, true );
-			$timestamps = Video_Meta::sanitize_timestamps( $v['timestamps'], $duration );
-			update_post_meta( $id, Meta_Keys::VIDEO_TIMESTAMPS, wp_json_encode( $timestamps ) );
+			$timestamp_rows = self::prepare_timestamp_import_rows( $v['timestamps'], $youtube_id );
+			$timestamps     = Video_Meta::sanitize_timestamps( $timestamp_rows, $duration );
+			if ( self::should_persist_editorial_rows( $v['timestamps'], $timestamps ) ) {
+				update_post_meta( $id, Meta_Keys::VIDEO_TIMESTAMPS, wp_json_encode( $timestamps ) );
+			}
 		}
 		if ( array_key_exists( 'key_concepts', $v ) && is_array( $v['key_concepts'] ) ) {
-			$key_concepts = Video_Meta::sanitize_key_concepts( $v['key_concepts'] );
-			update_post_meta( $id, Meta_Keys::VIDEO_KEY_CONCEPTS, wp_json_encode( $key_concepts ) );
+			$key_concept_rows = self::prepare_key_concept_import_rows( $v['key_concepts'], $youtube_id );
+			$key_concepts     = Video_Meta::sanitize_key_concepts( $key_concept_rows );
+			if ( self::should_persist_editorial_rows( $v['key_concepts'], $key_concepts ) ) {
+				update_post_meta( $id, Meta_Keys::VIDEO_KEY_CONCEPTS, wp_json_encode( $key_concepts ) );
+			}
 		}
 		if ( isset( $v['transcript_available'] ) ) {
 			update_post_meta( $id, Meta_Keys::VIDEO_TRANSCRIPT_AVAILABLE, $v['transcript_available'] ? '1' : '0' );
@@ -314,6 +320,70 @@ final class Importer {
 		self::set_video_terms( $id, $v['paths']   ?? [], Taxonomies::PATH );
 
 		return [ 'id' => (int) $id, 'created' => $created ];
+	}
+
+	/**
+	 * Un tableau vide explicite efface le champ. Un tableau non vide dont aucune
+	 * ligne ne survit à la validation est malformé et ne doit jamais effacer la
+	 * valeur éditoriale déjà enregistrée.
+	 */
+	private static function should_persist_editorial_rows( array $raw, array $sanitized ): bool {
+		return $raw === [] || $sanitized !== [];
+	}
+
+	/** Ajoute des UUID déterministes aux passages importés qui n'en ont pas. */
+	private static function prepare_timestamp_import_rows( array $rows, string $youtube_id ): array {
+		$occurrences = [];
+		foreach ( $rows as $index => $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$id = is_scalar( $row['id'] ?? null ) ? (string) $row['id'] : '';
+			if ( wp_is_uuid( $id ) ) {
+				continue;
+			}
+			$fingerprint = hash( 'sha256', wp_json_encode( [
+				$row['seconds'] ?? null,
+				$row['label'] ?? null,
+				$row['takeaway'] ?? null,
+			] ) );
+			$occurrence = $occurrences[ $fingerprint ] ?? 0;
+			$occurrences[ $fingerprint ] = $occurrence + 1;
+			$rows[ $index ]['id'] = self::stable_import_uuid( $youtube_id . '|timestamp|' . $fingerprint . '|' . $occurrence );
+		}
+		return $rows;
+	}
+
+	/** Ajoute des UUID déterministes aux points importés, y compris l'ancien format string[]. */
+	private static function prepare_key_concept_import_rows( array $rows, string $youtube_id ): array {
+		$occurrences = [];
+		foreach ( $rows as $index => $row ) {
+			$text = is_string( $row )
+				? $row
+				: ( is_array( $row ) && is_scalar( $row['text'] ?? null ) ? (string) $row['text'] : '' );
+			$id = is_array( $row ) && is_scalar( $row['id'] ?? null ) ? (string) $row['id'] : '';
+			if ( wp_is_uuid( $id ) ) {
+				continue;
+			}
+			$fingerprint = hash( 'sha256', sanitize_text_field( $text ) );
+			$occurrence = $occurrences[ $fingerprint ] ?? 0;
+			$occurrences[ $fingerprint ] = $occurrence + 1;
+			$rows[ $index ] = [
+				'id'   => self::stable_import_uuid( $youtube_id . '|key-concept|' . $fingerprint . '|' . $occurrence ),
+				'text' => $text,
+			];
+		}
+		return $rows;
+	}
+
+	/** Construit un UUID v5-compatible déterministe sans dépendance externe. */
+	private static function stable_import_uuid( string $seed ): string {
+		$hash = hash( 'sha256', $seed );
+		return substr( $hash, 0, 8 ) . '-'
+			. substr( $hash, 8, 4 ) . '-5'
+			. substr( $hash, 13, 3 ) . '-a'
+			. substr( $hash, 17, 3 ) . '-'
+			. substr( $hash, 20, 12 );
 	}
 
 	private static function find_video_id_by_youtube_id( string $youtube_id ): int {
