@@ -108,6 +108,8 @@ class MadiasPathOrderContracts(unittest.TestCase):
         self.assertRegex(ordered, r"'date'\s*=>\s*'ASC'")
         self.assertRegex(ordered, r"'ID'\s*=>\s*'ASC'")
         self.assertIn("get_explicit_order", ordered)
+        self.assertIn("update_meta_cache", ordered)
+        self.assertIn("_prime_post_caches", ordered)
         self.assertIn("usort", ordered)
         self.assertRegex(ordered, r"\border\b[\s\S]*<=>|<=>[\s\S]*\border\b")
 
@@ -134,19 +136,36 @@ class MadiasPathOrderContracts(unittest.TestCase):
         self.assertIn("Path_Order::get_order_map", migration)
         self.assertIn("array_key_exists", migration)
         self.assertIn("wp_get_object_terms", migration)
+        self.assertIn("$video_ids", migration)
+        self.assertIn("MIGRATION_BATCH_SIZE", schema)
+        self.assertIn("MIGRATION_CURSOR_OPTION", schema)
+        self.assertIn("update_meta_cache", migration)
+        self.assertNotIn("'posts_per_page'", migration)
+        self.assertRegex(migration, r"LIMIT\s+%d")
         self.assertIn("wp_json_encode", migration)
-        self.assertRegex(migration, r"return\s+(?:true|false)\s*;")
+        self.assertIn("self::MIGRATION_COMPLETE", migration)
+        self.assertIn("self::MIGRATION_PENDING", migration)
+        self.assertIn("self::MIGRATION_FAILED", migration)
 
         self.assertIn("self::install", upgrade)
         self.assertIn("self::migrate_legacy_path_orders", upgrade)
         migration_call = upgrade.index("self::migrate_legacy_path_orders")
         version_write = upgrade.index("update_option( 'seoflix_db_version'")
         self.assertLess(migration_call, version_write)
-        self.assertRegex(
-            upgrade[:version_write],
-            r"if\s*\(\s*!\s*self::migrate_legacy_path_orders\s*\(\s*\)\s*\)\s*\{\s*return\s+false",
-        )
+        self.assertIn("self::MIGRATION_COMPLETE", upgrade[:version_write])
         self.assertNotRegex(schema, r"\b(?:DROP|TRUNCATE)\s+TABLE\b")
+
+    def test_schema_install_fails_closed_for_each_dbdelta_and_verifies_tables(self) -> None:
+        schema = source("plugin/seoflix-core/includes/class-db-schema.php")
+        install = method_source(schema, "install")
+        apply_statement = method_source(schema, "apply_schema_statement")
+
+        self.assertGreaterEqual(install.count("self::apply_schema_statement("), 3)
+        self.assertIn("dbDelta", apply_statement)
+        self.assertIn("$wpdb->last_error", apply_statement)
+        self.assertIn("SHOW TABLES LIKE", apply_statement)
+        self.assertIn("$wpdb->prepare", apply_statement)
+        self.assertRegex(apply_statement, r"return\s+false")
 
     def test_fresh_activation_uses_the_upgrade_runner(self) -> None:
         activator = source("plugin/seoflix-core/includes/class-activator.php")

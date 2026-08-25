@@ -108,6 +108,10 @@ final class Path_Order {
 			],
 			'orderby'        => [ 'date' => 'ASC', 'ID' => 'ASC' ],
 		] ) );
+		if ( $video_ids ) {
+			_prime_post_caches( $video_ids, false, false );
+			update_meta_cache( 'post', $video_ids );
+		}
 
 		$explicit = [];
 		$unordered = [];
