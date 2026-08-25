@@ -28,7 +28,7 @@ final class DB_Schema {
 		return $wpdb->prefix . 'seoflix_affiliate_clicks';
 	}
 
-	public static function install(): void {
+	public static function install(): bool {
 		global $wpdb;
 		$charset_collate = $wpdb->get_charset_collate();
 
@@ -78,10 +78,78 @@ final class DB_Schema {
 			KEY k_clicked_at (clicked_at)
 		) {$charset_collate};";
 
+		$wpdb->last_error = '';
 		dbDelta( $sql_favorites );
 		dbDelta( $sql_watch );
 		dbDelta( $sql_clicks );
 
+		return $wpdb->last_error === '';
+	}
+
+	/**
+	 * Copie chaque ordre global positif dans les parcours associés qui n'ont
+	 * pas encore d'ordre propre. Les entrées récentes ne sont jamais écrasées.
+	 */
+	public static function migrate_legacy_path_orders(): bool {
+		$video_ids = get_posts( [
+			'post_type'      => CPT::VIDEO,
+			'post_status'    => 'any',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'meta_key'       => Path_Order::META_ORDER_KEY,
+			'meta_value'     => 0,
+			'meta_compare'   => '>',
+			'meta_type'      => 'NUMERIC',
+		] );
+
+		foreach ( array_map( 'intval', $video_ids ) as $video_id ) {
+			$legacy_order = (int) get_post_meta( $video_id, Path_Order::META_ORDER_KEY, true );
+			if ( $legacy_order <= 0 ) {
+				continue;
+			}
+
+			$term_ids = wp_get_object_terms( $video_id, Taxonomies::PATH, [ 'fields' => 'ids' ] );
+			if ( is_wp_error( $term_ids ) ) {
+				return false;
+			}
+
+			$orders  = Path_Order::get_order_map( $video_id );
+			$changed = false;
+			foreach ( array_map( 'intval', $term_ids ) as $term_id ) {
+				if ( $term_id > 0 && ! array_key_exists( $term_id, $orders ) ) {
+					$orders[ $term_id ] = $legacy_order;
+					$changed = true;
+				}
+			}
+
+			if ( $changed ) {
+				ksort( $orders, SORT_NUMERIC );
+				$encoded = wp_json_encode( $orders );
+				if ( false === update_post_meta( $video_id, Meta_Keys::VIDEO_PATH_ORDERS, $encoded )
+					&& get_post_meta( $video_id, Meta_Keys::VIDEO_PATH_ORDERS, true ) !== $encoded ) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Exécute les mises à niveau après un remplacement ZIP du plugin.
+	 */
+	public static function maybe_upgrade(): bool {
+		if ( (int) get_option( 'seoflix_db_version', 0 ) >= (int) SEOFLIX_DB_VERSION ) {
+			return true;
+		}
+		if ( ! self::install() ) {
+			return false;
+		}
+		if ( ! self::migrate_legacy_path_orders() ) {
+			return false;
+		}
+
 		update_option( 'seoflix_db_version', SEOFLIX_DB_VERSION );
+		return (string) get_option( 'seoflix_db_version', '' ) === (string) SEOFLIX_DB_VERSION;
 	}
 }

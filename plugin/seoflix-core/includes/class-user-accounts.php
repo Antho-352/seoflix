@@ -289,34 +289,34 @@ final class User_Accounts {
 	 * Retourne [ 'total' => int, 'watched' => int, 'next_video_id' => ?int ]
 	 */
 	public static function path_progress( int $user_id, int $term_id ): array {
-		$videos = get_posts( [
-			'post_type'      => CPT::VIDEO,
-			'post_status'    => 'publish',
-			'posts_per_page' => -1,
-			'fields'         => 'ids',
-			'tax_query'      => [
-				[ 'taxonomy' => 'seoflix_path', 'field' => 'term_id', 'terms' => $term_id ],
-			],
-			'meta_key'       => Path_Order::META_ORDER_KEY,
-			'orderby'        => [ 'meta_value_num' => 'ASC', 'date' => 'ASC' ],
-		] );
+		$videos = Path_Order::ordered_video_ids_for_term( $term_id );
 
-		$total   = count( $videos );
-		$watched = 0;
-		$next    = null;
-		foreach ( $videos as $vid ) {
-			$is_done = self::is_video_watched( $user_id, $vid );
-			if ( $is_done ) {
-				$watched++;
+		$completed_ids = [];
+		if ( $user_id > 0 && $videos ) {
+			global $wpdb;
+			$table = DB_Schema::table_watch();
+			$completed_ids = array_map( 'intval', (array) $wpdb->get_col(
+				$wpdb->prepare( "SELECT video_id FROM {$table} WHERE user_id=%d AND completed=1", $user_id )
+			) );
+		}
+		$completed = array_fill_keys( $completed_ids, true );
+
+		$watched_ids = [];
+		$next        = null;
+		foreach ( $videos as $video_id ) {
+			if ( isset( $completed[ $video_id ] ) ) {
+				$watched_ids[] = $video_id;
 			} elseif ( $next === null ) {
-				$next = (int) $vid;
+				$next = $video_id;
 			}
 		}
+
 		return [
-			'total'         => $total,
-			'watched'       => $watched,
-			'next_video_id' => $next,
-			'video_ids'     => array_map( 'intval', $videos ),
+			'total'             => count( $videos ),
+			'watched'           => count( $watched_ids ),
+			'next_video_id'     => $next,
+			'video_ids'         => $videos,
+			'watched_video_ids' => $watched_ids,
 		];
 	}
 }

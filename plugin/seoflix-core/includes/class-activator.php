@@ -8,15 +8,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Activator {
 
 	public static function activate(): void {
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-meta-keys.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-cpt.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-taxonomies.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-path-order.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-db-schema.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-affiliate.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-frontend.php';
 
-		CPT::register();
-		Taxonomies::register();
-		DB_Schema::install();
+		// L'activation arrive après `init` : enregistrer immédiatement, sans hook tardif.
+		CPT::register_video();
+		CPT::register_channel();
+		CPT::register_product();
+		Taxonomies::register_topic();
+		Taxonomies::register_format();
+		Taxonomies::register_path();
+		Taxonomies::register_product_category();
+		DB_Schema::maybe_upgrade();
 		Affiliate::register_rewrite();
 		Frontend::register_rewrite();
 
@@ -97,7 +105,6 @@ final class Activator {
 	}
 
 	private static function seed_default_options(): void {
-		add_option( 'seoflix_db_version', SEOFLIX_DB_VERSION );
 		add_option( 'seoflix_terms_seed_version', self::TERMS_SEED_VERSION );
 		add_option( 'seoflix_user_accounts_enabled', false );
 		add_option( 'seoflix_auto_publish_ai', false );

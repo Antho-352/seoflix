@@ -23,6 +23,8 @@ final class Plugin {
 
 		CPT::register();
 		Taxonomies::register();
+		// Priorité 30 : les CPT/taxonomies (10) et le re-seed (20) sont prêts.
+		add_action( 'init', [ DB_Schema::class, 'maybe_upgrade' ], 30 );
 		FeatureFlags::init();
 
 		Affiliate::init();

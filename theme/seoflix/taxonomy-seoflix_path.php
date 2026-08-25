@@ -11,24 +11,15 @@ $term       = get_queried_object();
 $user_id    = get_current_user_id();
 $accounts_on = class_exists( '\Seoflix\FeatureFlags' ) && \Seoflix\FeatureFlags::user_accounts_enabled();
 
-// Récupère TOUTES les vidéos du parcours, ordonnées
-$videos_query = new WP_Query( [
-	'post_type'      => 'seoflix_video',
-	'post_status'    => 'publish',
-	'posts_per_page' => -1,
-	'tax_query'      => [
-		[ 'taxonomy' => 'seoflix_path', 'field' => 'term_id', 'terms' => $term->term_id ],
-	],
-	'meta_key'       => '_seoflix_path_order',
-	'orderby'        => [ 'meta_value_num' => 'ASC', 'date' => 'ASC' ],
-] );
-
-$total = (int) $videos_query->found_posts;
+// Source unique d'ordre : inclut aussi les vidéos sans aucune méta d'ordre.
+$ordered_video_ids = \Seoflix\Path_Order::ordered_video_ids_for_term( (int) $term->term_id );
+$total             = count( $ordered_video_ids );
 
 $progress = null;
 if ( $accounts_on && $user_id ) {
 	$progress = \Seoflix\User_Accounts::path_progress( $user_id, $term->term_id );
 }
+$watched_video_ids = $progress ? array_fill_keys( $progress['watched_video_ids'], true ) : [];
 ?>
 
 <div class="sx-container sx-page sx-path-archive">
@@ -67,17 +58,20 @@ if ( $accounts_on && $user_id ) {
 		<?php endif; ?>
 	</header>
 
-	<?php if ( $videos_query->have_posts() ) : ?>
+	<?php if ( $ordered_video_ids ) : ?>
 		<ol class="sx-path-list">
-			<?php $idx = 0;
-			while ( $videos_query->have_posts() ) : $videos_query->the_post(); $idx++;
-				$vid       = get_the_ID();
-				$is_done   = $user_id ? \Seoflix\User_Accounts::is_video_watched( $user_id, $vid ) : false;
+			<?php foreach ( $ordered_video_ids as $idx => $vid ) :
+				$post = get_post( $vid );
+				if ( ! $post ) {
+					continue;
+				}
+				setup_postdata( $post );
+				$is_done   = isset( $watched_video_ids[ $vid ] );
 				$thumb     = seoflix_video_thumbnail_url( $vid );
 				$duration  = seoflix_video_duration_formatted( $vid );
 				?>
 				<li class="sx-path-item <?php echo $is_done ? 'is-done' : ''; ?>">
-					<div class="sx-path-item__num"><?php echo $is_done ? '✓' : (string) $idx; ?></div>
+					<div class="sx-path-item__num"><?php echo $is_done ? '✓' : (string) ( $idx + 1 ); ?></div>
 					<a class="sx-path-item__thumb" href="<?php echo esc_url( get_permalink() ); ?>">
 						<?php if ( $thumb ) : ?>
 							<img src="<?php echo esc_url( $thumb ); ?>" alt="" loading="lazy">
@@ -91,7 +85,7 @@ if ( $accounts_on && $user_id ) {
 						<p><?php echo esc_html( wp_trim_words( get_the_excerpt() ?: get_the_content(), 25 ) ); ?></p>
 					</div>
 				</li>
-			<?php endwhile;
+			<?php endforeach;
 			wp_reset_postdata(); ?>
 		</ol>
 	<?php else : ?>
