@@ -261,7 +261,7 @@ final class Importer {
 		update_post_meta( $id, Meta_Keys::VIDEO_CHANNEL_ID, $channel_id );
 
 		if ( isset( $v['duration_seconds'] ) && is_numeric( $v['duration_seconds'] ) ) {
-			update_post_meta( $id, Meta_Keys::VIDEO_DURATION, (int) $v['duration_seconds'] );
+			update_post_meta( $id, Meta_Keys::VIDEO_DURATION, max( 0, (int) $v['duration_seconds'] ) );
 		}
 		if ( $published_at ) {
 			update_post_meta( $id, Meta_Keys::VIDEO_PUBLISHED_AT, $published_at );
@@ -275,8 +275,24 @@ final class Importer {
 		if ( ! empty( $v['youtube_url'] ) ) {
 			update_post_meta( $id, Meta_Keys::VIDEO_YOUTUBE_URL, esc_url_raw( $v['youtube_url'] ) );
 		}
-		if ( ! empty( $v['key_concepts'] ) && is_array( $v['key_concepts'] ) ) {
-			update_post_meta( $id, Meta_Keys::VIDEO_KEY_CONCEPTS, wp_json_encode( array_values( array_map( 'sanitize_text_field', $v['key_concepts'] ) ) ) );
+		if ( array_key_exists( 'editorial_video_url', $v ) ) {
+			$editorial_url = Video_Meta::normalize_editorial_youtube_url( $v['editorial_video_url'] );
+			if ( $editorial_url === '' ) {
+				delete_post_meta( $id, Meta_Keys::VIDEO_EDITORIAL_URL );
+			} elseif ( $editorial_url !== null ) {
+				update_post_meta( $id, Meta_Keys::VIDEO_EDITORIAL_URL, $editorial_url );
+			}
+		}
+		if ( array_key_exists( 'timestamps', $v ) && is_array( $v['timestamps'] ) ) {
+			$duration   = isset( $v['duration_seconds'] ) && is_numeric( $v['duration_seconds'] )
+				? max( 0, (int) $v['duration_seconds'] )
+				: (int) get_post_meta( $id, Meta_Keys::VIDEO_DURATION, true );
+			$timestamps = Video_Meta::sanitize_timestamps( $v['timestamps'], $duration );
+			update_post_meta( $id, Meta_Keys::VIDEO_TIMESTAMPS, wp_json_encode( $timestamps ) );
+		}
+		if ( array_key_exists( 'key_concepts', $v ) && is_array( $v['key_concepts'] ) ) {
+			$key_concepts = Video_Meta::sanitize_key_concepts( $v['key_concepts'] );
+			update_post_meta( $id, Meta_Keys::VIDEO_KEY_CONCEPTS, wp_json_encode( $key_concepts ) );
 		}
 		if ( isset( $v['transcript_available'] ) ) {
 			update_post_meta( $id, Meta_Keys::VIDEO_TRANSCRIPT_AVAILABLE, $v['transcript_available'] ? '1' : '0' );
