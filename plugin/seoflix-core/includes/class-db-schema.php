@@ -83,13 +83,28 @@ final class DB_Schema {
 			KEY k_clicked_at (clicked_at)
 		) {$charset_collate};";
 
-		if ( ! self::apply_schema_statement( $sql_favorites, $favorites ) ) {
+		if ( ! self::apply_schema_statement(
+			$sql_favorites,
+			$favorites,
+			[ 'id', 'user_id', 'video_id', 'created_at' ],
+			[ 'PRIMARY', 'uq_user_video', 'k_user', 'k_video' ]
+		) ) {
 			return false;
 		}
-		if ( ! self::apply_schema_statement( $sql_watch, $watch ) ) {
+		if ( ! self::apply_schema_statement(
+			$sql_watch,
+			$watch,
+			[ 'id', 'user_id', 'video_id', 'watched_at', 'progress_seconds', 'completed' ],
+			[ 'PRIMARY', 'uq_user_video', 'k_user', 'k_video', 'k_watched_at' ]
+		) ) {
 			return false;
 		}
-		if ( ! self::apply_schema_statement( $sql_clicks, $clicks ) ) {
+		if ( ! self::apply_schema_statement(
+			$sql_clicks,
+			$clicks,
+			[ 'id', 'product_id', 'source_video_id', 'source_page', 'ip_hash', 'user_agent', 'referer', 'clicked_at' ],
+			[ 'PRIMARY', 'k_product', 'k_source_video', 'k_clicked_at' ]
+		) ) {
 			return false;
 		}
 
@@ -97,7 +112,12 @@ final class DB_Schema {
 	}
 
 	/** Exécute et vérifie immédiatement une instruction dbDelta. */
-	private static function apply_schema_statement( string $sql, string $table ): bool {
+	private static function apply_schema_statement(
+		string $sql,
+		string $table,
+		array $required_columns,
+		array $required_indexes
+	): bool {
 		global $wpdb;
 		$wpdb->last_error = '';
 		dbDelta( $sql );
@@ -109,7 +129,33 @@ final class DB_Schema {
 			'SHOW TABLES LIKE %s',
 			$wpdb->esc_like( $table )
 		) );
-		return $found === $table;
+		if ( $found !== $table ) {
+			return false;
+		}
+
+		$identifier = '`' . str_replace( '`', '``', $table ) . '`';
+		$wpdb->last_error = '';
+		$columns = array_map( 'strval', $wpdb->get_col( "SHOW COLUMNS FROM {$identifier}", 0 ) );
+		if ( $wpdb->last_error !== '' || array_diff( $required_columns, $columns ) ) {
+			return false;
+		}
+
+		$wpdb->last_error = '';
+		$indexes = array_unique( array_map( 'strval', $wpdb->get_col( "SHOW INDEX FROM {$identifier}", 2 ) ) );
+		return $wpdb->last_error === '' && ! array_diff( $required_indexes, $indexes );
+	}
+
+	/** Sérialise migration et sauvegardes éditoriales sur la connexion MySQL. */
+	public static function acquire_path_order_lock( int $timeout = 0 ): bool {
+		global $wpdb;
+		$lock_name = 'seoflix_path_order_' . md5( DB_NAME . '|' . $wpdb->prefix );
+		return 1 === (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $lock_name, max( 0, $timeout ) ) );
+	}
+
+	public static function release_path_order_lock(): void {
+		global $wpdb;
+		$lock_name = 'seoflix_path_order_' . md5( DB_NAME . '|' . $wpdb->prefix );
+		$wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock_name ) );
 	}
 
 	/**
@@ -118,6 +164,11 @@ final class DB_Schema {
 	 */
 	public static function migrate_legacy_path_orders(): int {
 		global $wpdb;
+		if ( ! self::acquire_path_order_lock() ) {
+			return self::MIGRATION_PENDING;
+		}
+
+		try {
 		$cursor = max( 0, (int) get_option( self::MIGRATION_CURSOR_OPTION, 0 ) );
 		$wpdb->last_error = '';
 		$video_ids = array_map( 'intval', $wpdb->get_col( $wpdb->prepare(
@@ -192,6 +243,9 @@ final class DB_Schema {
 			return self::MIGRATION_FAILED;
 		}
 		return self::MIGRATION_PENDING;
+		} finally {
+			self::release_path_order_lock();
+		}
 	}
 
 	/**

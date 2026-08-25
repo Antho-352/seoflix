@@ -95,6 +95,9 @@ class MadiasPathOrderContracts(unittest.TestCase):
         self.assertIn("get_order_map", save)
         self.assertIn("array_key_exists", save)
         self.assertIn("Meta_Keys::VIDEO_PATH_ORDERS", save)
+        self.assertIn("DB_Schema::acquire_path_order_lock", save)
+        self.assertIn("DB_Schema::release_path_order_lock", save)
+        self.assertIn("finally", save)
         self.assertRegex(save, r"wp_json_encode\s*\(\s*\(object\)\s*\$orders\s*\)")
         self.assertNotIn("update_post_meta( $post_id, self::META_ORDER_KEY", save)
 
@@ -146,6 +149,9 @@ class MadiasPathOrderContracts(unittest.TestCase):
         self.assertIn("self::MIGRATION_COMPLETE", migration)
         self.assertIn("self::MIGRATION_PENDING", migration)
         self.assertIn("self::MIGRATION_FAILED", migration)
+        self.assertIn("self::acquire_path_order_lock", migration)
+        self.assertIn("self::release_path_order_lock", migration)
+        self.assertIn("finally", migration)
 
         self.assertIn("self::install", upgrade)
         self.assertIn("self::migrate_legacy_path_orders", upgrade)
@@ -164,8 +170,22 @@ class MadiasPathOrderContracts(unittest.TestCase):
         self.assertIn("dbDelta", apply_statement)
         self.assertIn("$wpdb->last_error", apply_statement)
         self.assertIn("SHOW TABLES LIKE", apply_statement)
+        self.assertIn("SHOW COLUMNS", apply_statement)
+        self.assertIn("SHOW INDEX", apply_statement)
+        self.assertIn("$required_columns", apply_statement)
+        self.assertIn("$required_indexes", apply_statement)
         self.assertIn("$wpdb->prepare", apply_statement)
         self.assertRegex(apply_statement, r"return\s+false")
+
+    def test_course_schema_uses_the_same_multi_path_order(self) -> None:
+        seo = source("plugin/seoflix-core/includes/class-seo.php")
+        course = method_source(seo, "build_course")
+
+        self.assertIn("Path_Order::ordered_video_ids_for_term", course)
+        self.assertRegex(course, r"'post__in'\s*=>\s*\$video_ids")
+        self.assertRegex(course, r"'orderby'\s*=>\s*'post__in'")
+        self.assertNotIn("_seoflix_path_order", course)
+        self.assertNotIn("meta_value_num", course)
 
     def test_fresh_activation_uses_the_upgrade_runner(self) -> None:
         activator = source("plugin/seoflix-core/includes/class-activator.php")

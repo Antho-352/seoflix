@@ -668,16 +668,14 @@ final class SEO {
 	}
 
 	private static function build_course( \WP_Term $term ): array {
-		$videos = get_posts( [
+		$video_ids = Path_Order::ordered_video_ids_for_term( (int) $term->term_id );
+		$videos = $video_ids ? get_posts( [
 			'post_type'      => CPT::VIDEO,
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,
-			'tax_query'      => [
-				[ 'taxonomy' => 'seoflix_path', 'field' => 'term_id', 'terms' => $term->term_id ],
-			],
-			'meta_key'       => '_seoflix_path_order',
-			'orderby'        => [ 'meta_value_num' => 'ASC', 'date' => 'ASC' ],
-		] );
+			'post__in'       => $video_ids,
+			'orderby'        => 'post__in',
+		] ) : [];
 
 		$count = count( $videos );
 		$plural = $count > 1 ? 's' : '';

@@ -171,7 +171,15 @@ final class Path_Order {
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
+		if ( ! DB_Schema::acquire_path_order_lock( 10 ) ) {
+			wp_die(
+				esc_html__( 'La migration des parcours est en cours. Recharge cette page puis enregistre à nouveau.', 'seoflix' ),
+				esc_html__( 'Ordre des parcours temporairement verrouillé', 'seoflix' ),
+				[ 'response' => 409, 'back_link' => true ]
+			);
+		}
 
+		try {
 		$assigned_term_ids = wp_get_object_terms( $post_id, Taxonomies::PATH, [ 'fields' => 'ids' ] );
 		if ( is_wp_error( $assigned_term_ids ) ) {
 			return;
@@ -198,5 +206,8 @@ final class Path_Order {
 		}
 
 		update_post_meta( $post_id, Meta_Keys::VIDEO_PATH_ORDERS, wp_json_encode( (object) $orders ) );
+		} finally {
+			DB_Schema::release_path_order_lock();
+		}
 	}
 }
