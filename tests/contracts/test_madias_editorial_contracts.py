@@ -263,6 +263,12 @@ class MadiasEditorialMetadataContracts(unittest.TestCase):
                 self.assertIn("$seen_ids", body)
                 self.assertIn("isset( $seen_ids[ $id ] )", body)
                 self.assertIn("strtolower", body)
+                self.assertRegex(
+                    body,
+                    re.compile(
+                        r"if \( wp_is_uuid\( \$id \).*?\{ \$rows\[ \$index \]\['id'\] = \$id; .*?continue; \}"
+                    ),
+                )
                 self.assertIn("self::stable_import_uuid", body)
 
     def test_import_document_defines_exact_new_shapes_and_legacy_compatibility(self) -> None:

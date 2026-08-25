@@ -379,6 +379,7 @@ final class Importer {
 			$occurrence = $occurrences[ $fingerprint ] ?? 0;
 			$occurrences[ $fingerprint ] = $occurrence + 1;
 			if ( wp_is_uuid( $id ) && ! isset( $seen_ids[ $id ] ) ) {
+				$rows[ $index ]['id'] = $id;
 				$seen_ids[ $id ] = true;
 				continue;
 			}
@@ -412,6 +413,7 @@ final class Importer {
 			$occurrence = $occurrences[ $fingerprint ] ?? 0;
 			$occurrences[ $fingerprint ] = $occurrence + 1;
 			if ( wp_is_uuid( $id ) && ! isset( $seen_ids[ $id ] ) ) {
+				$rows[ $index ]['id'] = $id;
 				$seen_ids[ $id ] = true;
 				continue;
 			}
