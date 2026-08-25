@@ -12,8 +12,23 @@ IMPORT_DOC = "docs/IMPORT_FORMAT.md"
 
 
 def compact(text: str) -> str:
-    """Collapse insignificant whitespace without weakening token mappings."""
-    return re.sub(r"\s+", " ", text)
+    """Collapse insignificant whitespace without weakening literal contracts."""
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def method_source(php: str, method: str) -> str:
+    start = re.search(
+        rf"(?:public|private|protected)\s+static\s+function\s+{re.escape(method)}\s*\(",
+        php,
+    )
+    if not start:
+        raise AssertionError(f"Missing method {method}()")
+    following = re.search(
+        r"\n\s*(?:public|private|protected)\s+static\s+function\s+\w+\s*\(",
+        php[start.end() :],
+    )
+    end = start.end() + following.start() if following else len(php)
+    return php[start.start() : end]
 
 
 class MadiasEditorialMetadataContracts(unittest.TestCase):
@@ -200,6 +215,13 @@ class MadiasEditorialMetadataContracts(unittest.TestCase):
             ),
         )
         self.assertGreaterEqual(php.count("self::should_persist_editorial_rows("), 2)
+        self.assertIn("json_decode( $contents )", php)
+        self.assertIn("self::preserve_editorial_container_shapes", php)
+        preserve_shapes = compact(
+            method_source(source(IMPORTER), "preserve_editorial_container_shapes")
+        )
+        self.assertIn("is_object", preserve_shapes)
+        self.assertIn("unset", preserve_shapes)
         self.assertIn("self::prepare_timestamp_import_rows( $v['timestamps'], $youtube_id )", php)
         self.assertIn("self::prepare_key_concept_import_rows( $v['key_concepts'], $youtube_id )", php)
         for helper in (
@@ -224,6 +246,22 @@ class MadiasEditorialMetadataContracts(unittest.TestCase):
                 r"update_post_meta\( \$id, Meta_Keys::VIDEO_KEY_CONCEPTS",
             ),
         )
+
+    def test_duplicate_editorial_ids_are_rekeyed_uniquely(self) -> None:
+        video_meta = source(VIDEO_META)
+        importer = source(IMPORTER)
+        for method in ("sanitize_timestamps", "sanitize_key_concepts"):
+            body = compact(method_source(video_meta, method))
+            with self.subTest(layer="metabox", method=method):
+                self.assertIn("$seen_ids", body)
+                self.assertIn("isset( $seen_ids[ $id ] )", body)
+                self.assertIn("wp_generate_uuid4", body)
+        for method in ("prepare_timestamp_import_rows", "prepare_key_concept_import_rows"):
+            body = compact(method_source(importer, method))
+            with self.subTest(layer="importer", method=method):
+                self.assertIn("$seen_ids", body)
+                self.assertIn("isset( $seen_ids[ $id ] )", body)
+                self.assertIn("self::stable_import_uuid", body)
 
     def test_import_document_defines_exact_new_shapes_and_legacy_compatibility(self) -> None:
         doc = source(IMPORT_DOC)

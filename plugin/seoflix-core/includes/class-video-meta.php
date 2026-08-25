@@ -490,7 +490,8 @@ final class Video_Meta {
 	 * @return array<int, array{id:string,seconds:int,label:string,takeaway:string}>
 	 */
 	public static function sanitize_timestamps( array $rows, int $duration = 0 ): array {
-		$clean = [];
+		$clean    = [];
+		$seen_ids = [];
 		foreach ( array_values( $rows ) as $order => $row ) {
 			if ( ! is_array( $row ) ) {
 				continue;
@@ -505,7 +506,13 @@ final class Video_Meta {
 			}
 
 			$posted_id = is_scalar( $row['id'] ?? null ) ? sanitize_text_field( (string) $row['id'] ) : '';
-			$id        = $posted_id && wp_is_uuid( $posted_id ) ? $posted_id : wp_generate_uuid4();
+			$id = $posted_id && wp_is_uuid( $posted_id ) ? $posted_id : '';
+			if ( $id === '' || isset( $seen_ids[ $id ] ) ) {
+				do {
+					$id = wp_generate_uuid4();
+				} while ( isset( $seen_ids[ $id ] ) );
+			}
+			$seen_ids[ $id ] = true;
 			$clean[]   = [
 				'id'       => $id,
 				'seconds'  => $seconds,
@@ -531,7 +538,8 @@ final class Video_Meta {
 	 * @return array<int, array{id:string,text:string}>
 	 */
 	public static function sanitize_key_concepts( array $points ): array {
-		$clean = [];
+		$clean    = [];
+		$seen_ids = [];
 		foreach ( array_values( $points ) as $point ) {
 			$text      = '';
 			$posted_id = '';
@@ -545,7 +553,13 @@ final class Video_Meta {
 				continue;
 			}
 
-			$id      = $posted_id && wp_is_uuid( $posted_id ) ? $posted_id : wp_generate_uuid4();
+			$id = $posted_id && wp_is_uuid( $posted_id ) ? $posted_id : '';
+			if ( $id === '' || isset( $seen_ids[ $id ] ) ) {
+				do {
+					$id = wp_generate_uuid4();
+				} while ( isset( $seen_ids[ $id ] ) );
+			}
+			$seen_ids[ $id ] = true;
 			$clean[] = [ 'id' => $id, 'text' => $text ];
 		}
 		return $clean;

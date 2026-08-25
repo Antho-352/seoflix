@@ -26,11 +26,35 @@ final class Importer {
 		if ( $contents === false ) {
 			return self::error_report( 'Impossible de lire le fichier.' );
 		}
-		$data = json_decode( $contents, true );
-		if ( ! is_array( $data ) ) {
+		$raw_data = json_decode( $contents );
+		$data     = json_decode( $contents, true );
+		if ( ! is_object( $raw_data ) || ! is_array( $data ) ) {
 			return self::error_report( 'JSON invalide : ' . json_last_error_msg() );
 		}
+		$data = self::preserve_editorial_container_shapes( $data, $raw_data );
 		return self::import_from_data( $data );
+	}
+
+	/**
+	 * json_decode(..., true) confond {} et []. On retire les collections
+	 * éditoriales encodées comme objets afin qu'elles soient ignorées, jamais
+	 * interprétées comme une demande d'effacement.
+	 */
+	private static function preserve_editorial_container_shapes( array $data, object $raw_data ): array {
+		if ( ! isset( $raw_data->videos ) || ! is_array( $raw_data->videos ) ) {
+			return $data;
+		}
+		foreach ( $raw_data->videos as $index => $raw_video ) {
+			if ( ! is_object( $raw_video ) || ! isset( $data['videos'][ $index ] ) || ! is_array( $data['videos'][ $index ] ) ) {
+				continue;
+			}
+			foreach ( [ 'timestamps', 'key_concepts' ] as $field ) {
+				if ( property_exists( $raw_video, $field ) && is_object( $raw_video->{$field} ) ) {
+					unset( $data['videos'][ $index ][ $field ] );
+				}
+			}
+		}
+		return $data;
 	}
 
 	public static function import_from_data( array $data ): array {
@@ -334,14 +358,19 @@ final class Importer {
 	/** Ajoute des UUID déterministes aux passages importés qui n'en ont pas. */
 	private static function prepare_timestamp_import_rows( array $rows, string $youtube_id ): array {
 		$occurrences = [];
+		$seen_ids    = [];
+		$reserved_ids = [];
+		foreach ( $rows as $row ) {
+			$id = is_array( $row ) && is_scalar( $row['id'] ?? null ) ? (string) $row['id'] : '';
+			if ( wp_is_uuid( $id ) ) {
+				$reserved_ids[ $id ] = true;
+			}
+		}
 		foreach ( $rows as $index => $row ) {
 			if ( ! is_array( $row ) ) {
 				continue;
 			}
 			$id = is_scalar( $row['id'] ?? null ) ? (string) $row['id'] : '';
-			if ( wp_is_uuid( $id ) ) {
-				continue;
-			}
 			$fingerprint = hash( 'sha256', wp_json_encode( [
 				$row['seconds'] ?? null,
 				$row['label'] ?? null,
@@ -349,7 +378,16 @@ final class Importer {
 			] ) );
 			$occurrence = $occurrences[ $fingerprint ] ?? 0;
 			$occurrences[ $fingerprint ] = $occurrence + 1;
-			$rows[ $index ]['id'] = self::stable_import_uuid( $youtube_id . '|timestamp|' . $fingerprint . '|' . $occurrence );
+			if ( wp_is_uuid( $id ) && ! isset( $seen_ids[ $id ] ) ) {
+				$seen_ids[ $id ] = true;
+				continue;
+			}
+			do {
+				$id = self::stable_import_uuid( $youtube_id . '|timestamp|' . $fingerprint . '|' . $occurrence );
+				$occurrence++;
+			} while ( isset( $seen_ids[ $id ] ) || isset( $reserved_ids[ $id ] ) );
+			$rows[ $index ]['id'] = $id;
+			$seen_ids[ $id ] = true;
 		}
 		return $rows;
 	}
@@ -357,21 +395,35 @@ final class Importer {
 	/** Ajoute des UUID déterministes aux points importés, y compris l'ancien format string[]. */
 	private static function prepare_key_concept_import_rows( array $rows, string $youtube_id ): array {
 		$occurrences = [];
+		$seen_ids    = [];
+		$reserved_ids = [];
+		foreach ( $rows as $row ) {
+			$id = is_array( $row ) && is_scalar( $row['id'] ?? null ) ? (string) $row['id'] : '';
+			if ( wp_is_uuid( $id ) ) {
+				$reserved_ids[ $id ] = true;
+			}
+		}
 		foreach ( $rows as $index => $row ) {
 			$text = is_string( $row )
 				? $row
 				: ( is_array( $row ) && is_scalar( $row['text'] ?? null ) ? (string) $row['text'] : '' );
 			$id = is_array( $row ) && is_scalar( $row['id'] ?? null ) ? (string) $row['id'] : '';
-			if ( wp_is_uuid( $id ) ) {
-				continue;
-			}
 			$fingerprint = hash( 'sha256', sanitize_text_field( $text ) );
 			$occurrence = $occurrences[ $fingerprint ] ?? 0;
 			$occurrences[ $fingerprint ] = $occurrence + 1;
+			if ( wp_is_uuid( $id ) && ! isset( $seen_ids[ $id ] ) ) {
+				$seen_ids[ $id ] = true;
+				continue;
+			}
+			do {
+				$id = self::stable_import_uuid( $youtube_id . '|key-concept|' . $fingerprint . '|' . $occurrence );
+				$occurrence++;
+			} while ( isset( $seen_ids[ $id ] ) || isset( $reserved_ids[ $id ] ) );
 			$rows[ $index ] = [
-				'id'   => self::stable_import_uuid( $youtube_id . '|key-concept|' . $fingerprint . '|' . $occurrence ),
+				'id'   => $id,
 				'text' => $text,
 			];
+			$seen_ids[ $id ] = true;
 		}
 		return $rows;
 	}
