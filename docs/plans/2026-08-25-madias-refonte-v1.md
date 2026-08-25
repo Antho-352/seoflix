@@ -100,22 +100,57 @@
 
 **Ordre UX:**
 1. titre, chaîne, durée, sujets/parcours;
-2. bloc optionnel « L’essentiel par MADIAS » avec embed `youtube-nocookie.com`, description courte et lien visible « Aller à la vidéo source »;
-3. vidéo source clairement nommée « Vidéo source »;
-4. « Les passages à regarder » avec liens YouTube horodatés;
-5. « Les points à retenir »;
-6. produits associés;
-7. prochaine étape dans le parcours.
+2. vidéo source clairement nommée « Vidéo source »;
+3. « Les passages à regarder » avec liens YouTube horodatés;
+4. « Les points à retenir »;
+5. bloc optionnel « L’essentiel par MADIAS » avec embed `youtube-nocookie.com`, toujours après la vidéo source;
+6. prochaine étape dans le parcours;
+7. produits associés.
 
 **Empty states:** aucun bloc vide si analyse, timestamps ou points clés absents.
 
 **Verification:** rendu échappé, un seul H1, iframe titrée, mobile 320 px sans overflow, liens timestamp ouvrant au bon temps.
 
-**Interaction:** les timestamps pilotent toujours la vidéo source, jamais la capsule MADIAS. Si la capsule existe, charger paresseusement le second iframe afin de limiter le poids initial.
+**Interaction:** les timestamps pilotent toujours la vidéo source, jamais la capsule MADIAS. La source reste le premier lecteur de la page; la capsule personnelle est chargée paresseusement plus bas.
 
 ---
 
-### Task 4: Migrer l’ordre vers une valeur par parcours
+### Task 4: Ajouter les discussions questions/réponses sous les vidéos
+
+**Objective:** Permettre aux membres connectés de poser une question et de répondre sans ouvrir une surface d’upload, de lien ou d’exécution de contenu actif.
+
+**Architecture:** réutiliser les commentaires natifs WordPress attachés à `seoflix_video`; ne créer ni table de commentaires parallèle ni éditeur riche.
+
+**Files:**
+- Modify: `plugin/seoflix-core/includes/class-cpt.php`
+- Create: `plugin/seoflix-core/includes/class-video-comments.php`
+- Modify: `plugin/seoflix-core/includes/class-plugin.php`
+- Modify: `plugin/seoflix-core/includes/class-feature-flags.php`
+- Modify: l’administration des feature flags
+- Modify: `theme/seoflix/single-seoflix_video.php`
+- Create: `theme/seoflix/comments-video.php`
+- Modify: les styles vidéo du thème
+- Test: `tests/contracts/test_madias_video_comments_contracts.py`
+
+**Security contract:**
+1. section, lecture et formulaire réservés aux utilisateurs authentifiés; un visiteur ne voit qu’une invitation de connexion sans le contenu des échanges;
+2. nonce obligatoire et identité reconstruite depuis l’utilisateur courant, jamais depuis les champs POST;
+3. texte brut uniquement, borné en longueur; HTML, shortcodes, embeds et contenu actif supprimés ou rejetés avant écriture;
+4. toute URL ou forme de lien (`http`, `https`, `www`, domaine reconnaissable, balise ou schéma) est rejetée avec une erreur explicite;
+5. aucun champ fichier; toute requête contenant un upload est rejetée; aucun média n’est créé;
+6. réponses imbriquées uniquement si le parent existe, est approuvé et appartient à la même vidéo;
+7. limitation de fréquence par utilisateur et longueur maximale; aucune confiance dans JavaScript pour ces contrôles;
+8. rendu personnalisé via `esc_html` et retours à la ligne sûrs; ne pas utiliser de filtre qui transforme automatiquement les URLs en liens;
+9. statuts et modération WordPress conservés; les outils de modération restent accessibles aux rôles autorisés;
+10. export, anonymisation/effacement RGPD et suppression de compte testés sur les commentaires natifs;
+11. feature flag désactivable sans supprimer les discussions existantes;
+12. REST ou soumission directe ne doit pas pouvoir contourner nonce, authentification, interdiction des liens ou limitation de fréquence.
+
+**UX:** fil chronologique lisible, réponses limitées en profondeur, état en attente de modération, erreurs inline et retour au commentaire après envoi. Aucun score, badge ou système de réputation au lancement.
+
+---
+
+### Task 5: Migrer l’ordre vers une valeur par parcours
 
 **Objective:** Autoriser un ordre indépendant quand une vidéo appartient à plusieurs parcours et conserver toutes les vidéos non ordonnées.
 
@@ -141,7 +176,7 @@
 
 ---
 
-### Task 5: Rebrander les surfaces visibles sans renommer l’interne
+### Task 6: Rebrander les surfaces visibles sans renommer l’interne
 
 **Objective:** Afficher MADIAS partout où l’utilisateur ou Antho voit encore Seoflix, tout en préservant les contrats techniques.
 
@@ -158,7 +193,7 @@
 
 ---
 
-### Task 6: Refondre la homepage fixe
+### Task 7: Refondre la homepage fixe
 
 **Objective:** Livrer la nouvelle hiérarchie sans builder générique.
 
@@ -187,7 +222,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 7: Créer l’index `/parcours/`
+### Task 8: Créer l’index `/parcours/`
 
 **Objective:** Fournir une vraie page d’entrée vers les six parcours, sans 404.
 
@@ -202,7 +237,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 8: Créer le template d’article natif
+### Task 9: Créer le template d’article natif
 
 **Objective:** Donner aux articles un rendu éditorial cohérent avec MADIAS.
 
@@ -218,7 +253,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 9: Implémenter FOCUS uniquement sur les vidéos
+### Task 10: Implémenter FOCUS uniquement sur les vidéos
 
 **Objective:** Personnaliser la découverte vidéo sans filtrer outils ni articles.
 
@@ -233,7 +268,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 10: Améliorer le questionnaire « Trouver mon business »
+### Task 11: Améliorer le questionnaire « Trouver mon business »
 
 **Objective:** Orienter sans promettre un résultat ni lancer de parcours vide.
 
@@ -264,7 +299,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 11: Fiabiliser les comptes avant d’ajouter le carnet
+### Task 12: Fiabiliser les comptes avant d’ajouter le carnet
 
 **Objective:** Corriger les risques existants avant toute nouvelle persistance utilisateur.
 
@@ -283,7 +318,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 12: Ajouter le carnet progressif et « Continuer »
+### Task 13: Ajouter le carnet progressif et « Continuer »
 
 **Objective:** Transformer les points clés consultés en ressource personnelle réutilisable.
 
@@ -298,7 +333,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 13: Ajouter les codes promo sur les outils
+### Task 14: Ajouter les codes promo sur les outils
 
 **Files:**
 - Modify: `plugin/seoflix-core/includes/class-meta-keys.php`
@@ -318,7 +353,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 14: Préparer la recherche lexicale par passages
+### Task 15: Préparer la recherche lexicale par passages
 
 **Objective:** Permettre une recherche précise sans IA ni infrastructure vectorielle.
 
@@ -334,7 +369,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 15: Préparer la migration de domaine
+### Task 16: Préparer la migration de domaine
 
 **Objective:** Livrer un runbook vérifiable sans déclencher prématurément la bascule.
 
@@ -346,7 +381,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 16: QA intégrée et packaging
+### Task 17: QA intégrée et packaging
 
 **Objective:** Produire des ZIPs remplaçables et prouvés, sans publier.
 
