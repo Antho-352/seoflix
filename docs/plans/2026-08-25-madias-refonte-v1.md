@@ -298,7 +298,27 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 13: Préparer la recherche lexicale par passages
+### Task 13: Ajouter les codes promo sur les outils
+
+**Files:**
+- Modify: `plugin/seoflix-core/includes/class-meta-keys.php`
+- Modify: le module de métadonnées produit existant
+- Modify: `plugin/seoflix-core/includes/class-importer.php`
+- Modify: `plugin/seoflix-core/includes/class-frontend.php`
+- Create: `theme/seoflix/page-promo-codes.php`
+- Modify: `theme/seoflix/single-seoflix_product.php`
+- Modify: `theme/seoflix/style.css`
+- Test: `tests/contracts/test_madias_promo_contracts.py`
+
+**Fields:** code promo, texte exact de la réduction et profils/parcours « idéal pour » sélectionnés manuellement. Une réduction sans code reste possible si l’offre passe directement par le lien affilié.
+
+**Page:** `/codes-promo/` réutilise les cartes outils mais ne liste que les produits ayant un code ou une réduction active. Le tri est éditorial et manuel; aucun classement par clic affilié.
+
+**Safety:** copie du code accessible au clavier avec confirmation textuelle; mentions affiliées visibles; aucune date d’expiration inventée; état vide propre; FOCUS ne filtre jamais cette page.
+
+---
+
+### Task 14: Préparer la recherche lexicale par passages
 
 **Objective:** Permettre une recherche précise sans IA ni infrastructure vectorielle.
 
@@ -314,7 +334,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 14: Préparer la migration de domaine
+### Task 15: Préparer la migration de domaine
 
 **Objective:** Livrer un runbook vérifiable sans déclencher prématurément la bascule.
 
@@ -326,7 +346,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ---
 
-### Task 15: QA intégrée et packaging
+### Task 16: QA intégrée et packaging
 
 **Objective:** Produire des ZIPs remplaçables et prouvés, sans publier.
 
