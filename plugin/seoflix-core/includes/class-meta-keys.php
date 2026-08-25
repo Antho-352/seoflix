@@ -19,6 +19,9 @@ final class Meta_Keys {
 	public const VIDEO_YOUTUBE_URL        = '_seoflix_youtube_url';
 	public const VIDEO_CHANNEL_ID         = '_seoflix_channel_id';        // ID du post seoflix_channel
 	public const VIDEO_KEY_CONCEPTS       = '_seoflix_key_concepts';      // JSON array
+	public const VIDEO_EDITORIAL_URL      = '_seoflix_editorial_video_url';
+	public const VIDEO_TIMESTAMPS         = '_seoflix_timestamps';        // JSON array
+	public const VIDEO_PATH_ORDERS        = '_seoflix_path_orders';       // JSON object term_id => order
 	public const VIDEO_PRODUCTS           = '_seoflix_products';          // JSON array of product post IDs
 	public const VIDEO_TRANSCRIPT_AVAILABLE = '_seoflix_transcript_available';
 
