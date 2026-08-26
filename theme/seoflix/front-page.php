@@ -1,242 +1,207 @@
 <?php
 /**
- * Home page — Netflix-style.
- * Configurable via Seoflix → Page d'accueil (option seoflix_homepage_config).
+ * Page d'accueil MADIAS : assemblage éditorial fixe.
  */
 get_header();
 
-$cfg            = class_exists( '\Seoflix\Homepage' ) ? \Seoflix\Homepage::get_config() : [];
-$hero           = $cfg['hero'] ?? [];
-$sections       = class_exists( '\Seoflix\Homepage' ) ? \Seoflix\Homepage::visible_sections() : [];
-$total_videos   = wp_count_posts( 'seoflix_video' )->publish ?? 0;
-$total_channels = wp_count_posts( 'seoflix_channel' )->publish ?? 0;
-$total_products = wp_count_posts( 'seoflix_product' )->publish ?? 0;
+$cfg          = class_exists( '\Seoflix\Homepage' ) ? \Seoflix\Homepage::get_config() : \Seoflix\Homepage::defaults();
+$hero         = $cfg['hero'];
+$blocks       = $cfg['fixed_blocks'];
+$path_catalog = \Seoflix\Homepage::path_definitions();
+$path_names   = array_column( $path_catalog, 'name', 'slug' );
 
-$hero_title    = (string) ( $hero['title'] ?? 'Maîtrise [rotate] avec les meilleurs.' );
-$hero_subtitle = (string) ( $hero['subtitle'] ?? '' );
-$rotating      = (array)  ( $hero['rotating_words'] ?? [] );
-$show_stats    = ! empty( $hero['show_stats'] );
-
-// Découpage du titre autour de [rotate]
-$has_rotate    = strpos( $hero_title, '[rotate]' ) !== false;
-[$title_before, $title_after] = $has_rotate
-	? array_pad( explode( '[rotate]', $hero_title, 2 ), 2, '' )
-	: [ $hero_title, '' ];
-
-// Compteur de rangées rendues (pour insérer la newsletter au bon endroit)
-// Le bloc newsletter apparaît APRÈS la 2e rangée vidéo (ex: après Nouveautés + SEO)
-$rows_rendered     = 0;
-$newsletter_done   = false;
-$newsletter_after  = 2; // après la 2e rangée
-$render_newsletter = static function () use ( &$rows_rendered, &$newsletter_done, $newsletter_after ) {
-	if ( $newsletter_done ) {
-		return;
+$get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
+	$ordered_ids = \Seoflix\Path_Order::ordered_video_ids_for_term( $term_id );
+	if ( ! $ordered_ids ) {
+		return [];
 	}
-	if ( $rows_rendered >= $newsletter_after && function_exists( 'seoflix_render_newsletter' ) ) {
-		seoflix_render_newsletter( 'homepage', [ 'compact' => true ] );
-		$newsletter_done = true;
-	}
+	return get_posts( [
+		'post_type'      => 'seoflix_video',
+		'post_status'    => 'publish',
+		'posts_per_page' => $limit,
+		'post__in'       => $ordered_ids,
+		'orderby'        => 'post__in',
+	] );
 };
 ?>
 
-<section class="sx-hero">
-	<div class="sx-container">
-		<h1 class="sx-hero__title">
-			<?php echo esc_html( $title_before ); ?>
-			<?php if ( $has_rotate ) : ?>
-				<span id="sx-rotate" class="sx-rotate" aria-live="polite"><?php echo esc_html( $rotating[0] ?? '' ); ?></span>
+<div class="sx-home">
+	<section class="sx-home-hero" aria-labelledby="madias-home-title">
+		<div class="sx-container sx-home-hero__inner">
+			<p class="sx-home-hero__brand">MADIAS</p>
+			<h1 id="madias-home-title" class="sx-home-hero__title"><?php echo esc_html( $hero['title'] ?: 'Apprends le business web sans perdre des heures sur YouTube.' ); ?></h1>
+			<?php if ( $hero['subtitle'] ) : ?>
+				<p class="sx-home-hero__subtitle"><?php echo esc_html( $hero['subtitle'] ); ?></p>
 			<?php endif; ?>
-			<?php echo esc_html( $title_after ); ?>
-		</h1>
-		<?php if ( $hero_subtitle ) : ?>
-			<p class="sx-hero__subtitle"><?php echo esc_html( $hero_subtitle ); ?></p>
+			<a class="sx-home-hero__cta" href="<?php echo esc_url( home_url( '/commencer/' ) ); ?>"><?php echo esc_html( $hero['cta_text'] ?: 'Commencer à apprendre' ); ?></a>
+		</div>
+	</section>
+
+	<div class="sx-container sx-page sx-home__content">
+		<?php if ( ! empty( $blocks['paths'] ) ) : ?>
+			<section id="parcours" class="sx-home-section sx-home-paths" aria-labelledby="home-paths-title">
+				<header class="sx-home-section__header">
+					<p class="sx-home-section__kicker">Choisis ton cap</p>
+					<h2 id="home-paths-title">Six parcours pour apprendre dans le bon ordre</h2>
+				</header>
+				<div class="sx-home-paths__grid">
+					<?php foreach ( $path_catalog as $definition ) :
+						$term = get_term_by( 'slug', $definition['slug'], 'seoflix_path' );
+						if ( $term && ! is_wp_error( $term ) ) :
+							$path_videos = $get_path_videos( (int) $term->term_id );
+							$count       = count( $path_videos );
+							$description = trim( wp_strip_all_tags( $term->description ) );
+							?>
+							<a class="sx-path-card" href="<?php echo esc_url( get_term_link( $term ) ); ?>" aria-label="<?php echo esc_attr( 'Ouvrir le parcours ' . $definition['name'] ); ?>">
+								<span class="sx-path-card__icon" aria-hidden="true"><?php echo esc_html( $definition['icon'] ); ?></span>
+								<span class="sx-path-card__body">
+									<strong class="sx-path-card__title"><?php echo esc_html( $definition['name'] ); ?></strong>
+									<span class="sx-path-card__description"><?php echo esc_html( $description ?: 'Description indisponible.' ); ?></span>
+									<span class="sx-path-card__meta"><?php echo esc_html( sprintf( _n( '%d vidéo publiée', '%d vidéos publiées', $count, 'seoflix' ), $count ) ); ?></span>
+									<span class="sx-path-card__progress" aria-hidden="true"><span></span><span></span><span></span></span>
+								</span>
+							</a>
+						<?php else : ?>
+							<article class="sx-path-card sx-path-card--unavailable" aria-label="<?php echo esc_attr( $definition['name'] . ' indisponible' ); ?>">
+								<span class="sx-path-card__icon" aria-hidden="true"><?php echo esc_html( $definition['icon'] ); ?></span>
+								<span class="sx-path-card__body">
+									<strong class="sx-path-card__title"><?php echo esc_html( $definition['name'] ); ?></strong>
+									<span class="sx-path-card__description">Parcours indisponible : le terme n'existe pas encore.</span>
+									<span class="sx-path-card__meta">Aucune vidéo publiée.</span>
+									<span class="sx-path-card__progress" aria-hidden="true"><span></span><span></span><span></span></span>
+								</span>
+							</article>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				</div>
+			</section>
 		<?php endif; ?>
-		<?php if ( $show_stats ) : ?>
-			<div class="sx-hero__stats">
-				<div class="sx-hero__stat">
-					<strong><?php echo esc_html( number_format_i18n( $total_videos ) ); ?></strong>
-					<span>vidéos</span>
-				</div>
-				<div class="sx-hero__stat">
-					<strong><?php echo esc_html( number_format_i18n( $total_channels ) ); ?></strong>
-					<span>chaînes</span>
-				</div>
-				<div class="sx-hero__stat">
-					<strong><?php echo esc_html( number_format_i18n( $total_products ) ); ?></strong>
-					<span>outils référencés</span>
-				</div>
-			</div>
+
+		<?php if ( ! empty( $blocks['new'] ) ) :
+			$new_videos = get_posts( [
+				'post_type'      => 'seoflix_video',
+				'post_status'    => 'publish',
+				'posts_per_page' => 12,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+			] ); ?>
+			<section id="nouveautes" class="sx-home-section" aria-labelledby="home-new-title">
+				<h2 id="home-new-title" class="screen-reader-text">Nouveautés</h2>
+				<?php if ( $new_videos ) : ?>
+					<?php seoflix_render_video_row( 'Nouveautés', $new_videos, get_post_type_archive_link( 'seoflix_video' ) ); ?>
+				<?php else : ?>
+					<div class="sx-home-empty"><strong>Nouveautés</strong><p>Aucune vidéo publiée pour le moment.</p></div>
+				<?php endif; ?>
+			</section>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $blocks['tools'] ) ) :
+			$best_tool_ids = \Seoflix\Homepage::normalize_tool_ids( $cfg['best_tool_ids'] );
+			$best_tools = $best_tool_ids ? get_posts( [
+				'post_type'      => 'seoflix_product',
+				'post_status'    => 'publish',
+				'posts_per_page' => count( $best_tool_ids ),
+				'post__in'       => $best_tool_ids,
+				'orderby'        => 'post__in',
+			] ) : []; ?>
+			<section id="meilleurs-outils" class="sx-home-section" aria-labelledby="home-tools-title">
+				<header class="sx-home-section__header sx-home-section__header--row">
+					<h2 id="home-tools-title">Meilleurs outils</h2>
+					<a href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_product' ) ?: home_url( '/outils/' ) ); ?>">Voir tous les outils</a>
+				</header>
+				<?php if ( $best_tools ) : ?>
+					<div class="sx-grid sx-grid--products">
+						<?php foreach ( $best_tools as $tool ) : ?>
+							<?php seoflix_render_product_card( $tool, [ 'show_pricing' => true ] ); ?>
+						<?php endforeach; ?>
+					</div>
+				<?php else : ?>
+					<div class="sx-home-empty"><p>Aucun outil publié n'est sélectionné pour le moment.</p></div>
+				<?php endif; ?>
+			</section>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $blocks['promise'] ) ) : ?>
+			<section id="promesse" class="sx-home-promise" aria-labelledby="home-promise-title">
+				<p class="sx-home-section__kicker">Une sélection gratuite</p>
+				<h2 id="home-promise-title">Apprends l’édition de sites sans y laisser 500€.</h2>
+				<p>La sélection complète des meilleures vidéos SEO, affiliation, vente de liens et YouTube business, déjà triées et organisées en parcours.</p>
+				<em>Sans formation à vendre à la fin, sans code obligatoire, sans compte premium caché.</em>
+			</section>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $blocks['featured_paths'] ) ) : ?>
+			<section id="parcours-selectionnes" class="sx-home-section" aria-labelledby="home-featured-paths-title">
+				<header class="sx-home-section__header">
+					<h2 id="home-featured-paths-title">Commence par un parcours</h2>
+				</header>
+				<?php foreach ( $cfg['featured_path_slugs'] as $featured_slug ) :
+					$featured_name = $path_names[ $featured_slug ] ?? $featured_slug;
+					$featured_term = get_term_by( 'slug', $featured_slug, 'seoflix_path' );
+					if ( ! $featured_term || is_wp_error( $featured_term ) ) : ?>
+						<section class="sx-row sx-home-unavailable-row" aria-label="Parcours indisponible">
+							<h3>Parcours indisponible</h3>
+							<p>Le parcours configuré « <?php echo esc_html( $featured_slug ); ?> » n'existe pas.</p>
+						</section>
+						<?php continue; ?>
+					<?php endif;
+					$featured_videos = $get_path_videos( (int) $featured_term->term_id, 12 );
+					if ( $featured_videos ) : ?>
+						<?php seoflix_render_video_row( $featured_name, $featured_videos, get_term_link( $featured_term ) ); ?>
+					<?php else : ?>
+						<section class="sx-row sx-home-unavailable-row" aria-labelledby="featured-path-<?php echo (int) $featured_term->term_id; ?>">
+							<h3 id="featured-path-<?php echo (int) $featured_term->term_id; ?>"><?php echo esc_html( $featured_name ); ?></h3>
+							<p>Aucune vidéo publiée dans ce parcours.</p>
+						</section>
+					<?php endif; ?>
+				<?php endforeach; ?>
+			</section>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $blocks['paths_cta'] ) ) : ?>
+			<section id="tous-les-parcours" class="sx-home-paths-cta" aria-labelledby="home-paths-cta-title">
+				<h2 id="home-paths-cta-title">Tu sais déjà ce que tu veux apprendre ?</h2>
+				<a class="sx-home-cta" href="<?php echo esc_url( home_url( '/parcours/' ) ); ?>">Voir tous les parcours</a>
+			</section>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $blocks['about'] ) ) : ?>
+			<section id="a-propos" class="sx-home-about" aria-labelledby="home-about-title">
+				<p class="sx-home-section__kicker">Pourquoi MADIAS</p>
+				<h2 id="home-about-title">À propos</h2>
+				<p>Cela fait plus de 5 ans que je fais du freelancing et de l'édition de sites (SEO, Affiliation, Youtube) et que je regarde tous les contenus sur ces sujets. Je voulais permettre aux débutants et aux initiés de perdre le moins de temps possible en sélectionnant les vidéos qui apportent de la valeur.</p>
+			</section>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $blocks['newsletter'] ) && function_exists( 'seoflix_render_newsletter' ) ) : ?>
+			<?php seoflix_render_newsletter( 'homepage', [ 'compact' => true ] ); ?>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $blocks['blog'] ) ) :
+			$latest_posts = get_posts( [
+				'post_type'      => 'post',
+				'post_status'    => 'publish',
+				'posts_per_page' => 4,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+			] ); ?>
+			<section id="derniers-articles" class="sx-home-section" aria-labelledby="home-posts-title">
+				<header class="sx-home-section__header sx-home-section__header--row">
+					<h2 id="home-posts-title">Derniers articles</h2>
+					<a href="<?php echo esc_url( get_post_type_archive_link( 'post' ) ?: home_url( '/blog/' ) ); ?>">Voir le blog</a>
+				</header>
+				<?php if ( $latest_posts ) : ?>
+					<div class="sx-blog-grid">
+						<?php foreach ( $latest_posts as $latest_post ) : ?>
+							<?php seoflix_render_post_card( $latest_post, [ 'heading_level' => 3 ] ); ?>
+						<?php endforeach; ?>
+					</div>
+				<?php else : ?>
+					<div class="sx-home-empty"><p>Aucun article publié pour le moment.</p></div>
+				<?php endif; ?>
+			</section>
 		<?php endif; ?>
 	</div>
-</section>
-
-<div class="sx-container sx-page">
-
-	<?php
-	foreach ( $sections as $section ) {
-		$type  = $section['type'] ?? '';
-		$title = (string) ( $section['title'] ?? '' );
-		$limit = (int) ( $section['limit'] ?? 12 );
-
-		switch ( $type ) {
-
-			case \Seoflix\Homepage::TYPE_NEW:
-				$videos = get_posts( [
-					'post_type'      => 'seoflix_video',
-					'post_status'    => 'publish',
-					'posts_per_page' => $limit,
-					'orderby'        => 'date',
-					'order'          => 'DESC',
-				] );
-				seoflix_render_video_row(
-					$title ?: 'Nouveautés',
-					$videos,
-					get_post_type_archive_link( 'seoflix_video' )
-				);
-				$rows_rendered++;
-				$render_newsletter();
-				break;
-
-			case \Seoflix\Homepage::TYPE_MOST_VIEWED:
-				$videos = get_posts( [
-					'post_type'      => 'seoflix_video',
-					'post_status'    => 'publish',
-					'posts_per_page' => $limit,
-					'meta_key'       => '_seoflix_view_count',
-					'orderby'        => 'meta_value_num',
-					'order'          => 'DESC',
-				] );
-				seoflix_render_video_row(
-					$title ?: 'Les plus vues',
-					$videos,
-					get_post_type_archive_link( 'seoflix_video' )
-				);
-				$rows_rendered++;
-				$render_newsletter();
-				break;
-
-			case \Seoflix\Homepage::TYPE_TOPICS:
-				$manual_slugs = isset( $section['topics_manual'] ) && is_array( $section['topics_manual'] )
-					? array_filter( array_map( 'sanitize_key', $section['topics_manual'] ) )
-					: [];
-
-				if ( $manual_slugs ) {
-					// Mode manuel : ordre exact défini par l'admin
-					$topics = [];
-					foreach ( $manual_slugs as $slug ) {
-						$term = get_term_by( 'slug', $slug, 'seoflix_topic' );
-						if ( $term && ! is_wp_error( $term ) ) {
-							$topics[] = $term;
-						}
-					}
-				} else {
-					// Mode auto : top N par nombre de vidéos
-					$topics_count = (int) ( $section['topics_count'] ?? 6 );
-					$topics = get_terms( [
-						'taxonomy'   => 'seoflix_topic',
-						'hide_empty' => true,
-						'orderby'    => 'count',
-						'order'      => 'DESC',
-						'number'     => $topics_count,
-					] );
-					if ( is_wp_error( $topics ) ) {
-						$topics = [];
-					}
-				}
-
-				foreach ( $topics as $topic ) {
-					$videos = get_posts( [
-						'post_type'      => 'seoflix_video',
-						'post_status'    => 'publish',
-						'posts_per_page' => $limit,
-						'tax_query'      => [
-							[ 'taxonomy' => 'seoflix_topic', 'field' => 'term_id', 'terms' => $topic->term_id ],
-						],
-						'orderby'        => 'rand',
-					] );
-					seoflix_render_video_row( $topic->name, $videos, get_term_link( $topic ) );
-					$rows_rendered++;
-					$render_newsletter();
-				}
-				break;
-
-			case \Seoflix\Homepage::TYPE_CHANNELS:
-				$channels = get_posts( [
-					'post_type'      => 'seoflix_channel',
-					'post_status'    => 'publish',
-					'posts_per_page' => $limit,
-					'meta_key'       => '_seoflix_subscriber_count',
-					'orderby'        => 'meta_value_num',
-					'order'          => 'DESC',
-				] );
-				seoflix_render_channel_row(
-					$title ?: 'Chaînes',
-					$channels,
-					get_post_type_archive_link( 'seoflix_channel' )
-				);
-				$rows_rendered++;
-				$render_newsletter();
-				break;
-
-			case \Seoflix\Homepage::TYPE_PATHS:
-				$paths = get_terms( [
-					'taxonomy'   => 'seoflix_path',
-					'hide_empty' => true,
-				] );
-				if ( ! is_wp_error( $paths ) && $paths ) :
-					?>
-					<section class="sx-row">
-						<div class="sx-row__header">
-							<h2 class="sx-row__title"><?php echo esc_html( $title ?: "Parcours d'apprentissage" ); ?></h2>
-						</div>
-						<div class="sx-grid sx-grid--products">
-							<?php foreach ( $paths as $path ) :
-								$count = (int) $path->count; ?>
-								<a class="sx-card-product sx-card-product__link" href="<?php echo esc_url( get_term_link( $path ) ); ?>" style="text-decoration: none;">
-									<h3 class="sx-card-product__name"><?php echo esc_html( $path->name ); ?></h3>
-									<p class="sx-card-product__excerpt"><?php echo esc_html( $count ); ?> vidéo<?php echo $count > 1 ? 's' : ''; ?></p>
-								</a>
-							<?php endforeach; ?>
-						</div>
-					</section>
-					<?php
-					$rows_rendered++;
-					$render_newsletter();
-				endif;
-				break;
-		}
-	}
-
-	// Si pour une raison ou une autre on n'a pas atteint le seuil (ex: 1 seule rangée),
-	// on injecte quand même la newsletter en bas de la home.
-	if ( ! $newsletter_done && function_exists( 'seoflix_render_newsletter' ) ) {
-		seoflix_render_newsletter( 'homepage', [ 'compact' => true ] );
-	}
-	?>
-
 </div>
-
-<?php if ( $has_rotate && count( $rotating ) > 1 ) : ?>
-<script>
-(function() {
-	const el = document.getElementById('sx-rotate');
-	if (!el) return;
-	const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	const words = <?php echo wp_json_encode( array_values( $rotating ) ); ?>;
-	if (!words.length) return;
-	if (reduced) { el.textContent = words[0]; return; }
-	let i = 0;
-	el.textContent = words[0];
-	setInterval(function() {
-		el.classList.add('is-out');
-		setTimeout(function() {
-			i = (i + 1) % words.length;
-			el.textContent = words[i];
-			el.classList.remove('is-out');
-		}, 280);
-	}, 2200);
-})();
-</script>
-<?php endif; ?>
 
 <?php get_footer();

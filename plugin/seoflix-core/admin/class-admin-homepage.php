@@ -7,28 +7,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Page admin Seoflix → Page d'accueil.
- *
- * Permet de configurer :
- *   - Hero (titre + placeholder [rotate], sous-titre, mots qui tournent, stats)
- *   - Sections (ordre, visibilité, titre H2 override)
- */
+/** Réglages ciblés de l'assemblage fixe de la page d'accueil MADIAS. */
 final class Admin_Homepage {
 
 	public const PAGE_SLUG = 'seoflix-homepage';
 	public const NONCE     = 'seoflix_homepage_save';
 
 	public static function init(): void {
-		add_action( 'admin_menu',                              [ self::class, 'register_page' ], 10 );
-		add_action( 'admin_post_seoflix_save_homepage',        [ self::class, 'handle_save' ] );
-		add_action( 'admin_post_seoflix_reset_homepage',       [ self::class, 'handle_reset' ] );
+		add_action( 'admin_menu', [ self::class, 'register_page' ], 10 );
+		add_action( 'admin_post_seoflix_save_homepage', [ self::class, 'handle_save' ] );
+		add_action( 'admin_post_seoflix_reset_homepage', [ self::class, 'handle_reset' ] );
 	}
 
 	public static function register_page(): void {
 		add_submenu_page(
 			'seoflix',
-			"Page d'accueil",
+			"Page d'accueil MADIAS",
 			"Page d'accueil",
 			'manage_options',
 			self::PAGE_SLUG,
@@ -41,174 +35,101 @@ final class Admin_Homepage {
 			wp_die( 'Accès refusé.' );
 		}
 
-		$cfg      = Homepage::get_config();
-		$labels   = Homepage::section_labels();
-		$saved    = isset( $_GET['saved'] );
-		$resetted = isset( $_GET['reset'] );
+		$cfg = Homepage::get_config();
+		$paths = get_terms(
+			[
+				'taxonomy'   => 'seoflix_path',
+				'hide_empty' => false,
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+			]
+		);
+		if ( is_wp_error( $paths ) ) {
+			$paths = [];
+		}
+		$block_labels = [
+			'paths'          => 'Six cartes parcours',
+			'new'            => 'Nouveautés',
+			'tools'          => 'Meilleurs outils',
+			'promise'        => 'Encart promesse',
+			'featured_paths' => 'Trois rangées de parcours',
+			'paths_cta'      => 'CTA vers tous les parcours',
+			'about'          => 'À propos',
+			'newsletter'     => 'Newsletter',
+			'blog'           => 'Derniers articles',
+		];
 		?>
 		<div class="wrap seoflix-wrap">
-			<h1>Page d'accueil</h1>
-
-			<?php if ( $saved ) : ?>
-				<div class="notice notice-success is-dismissible"><p>Configuration enregistrée. <a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank">Voir la home →</a></p></div>
-			<?php endif; ?>
-			<?php if ( $resetted ) : ?>
+			<h1>Page d'accueil MADIAS</h1>
+			<?php if ( isset( $_GET['saved'] ) ) : ?>
+				<div class="notice notice-success is-dismissible"><p>Configuration enregistrée.</p></div>
+			<?php elseif ( isset( $_GET['reset'] ) ) : ?>
 				<div class="notice notice-info is-dismissible"><p>Configuration remise aux valeurs par défaut.</p></div>
 			<?php endif; ?>
 
+			<p>La composition et l'ordre des blocs sont fixes. Ces réglages modifient uniquement les sélections éditoriales prévues.</p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="seoflix_save_homepage">
 				<?php wp_nonce_field( self::NONCE ); ?>
 
 				<div class="seoflix-card">
-					<h2>Hero (bandeau du haut)</h2>
-					<table class="form-table">
+					<h2>Hero</h2>
+					<table class="form-table" role="presentation">
 						<tr>
-							<th><label for="hero_title">Titre principal (H1)</label></th>
-							<td>
-								<input type="text" id="hero_title" name="hero[title]" value="<?php echo esc_attr( $cfg['hero']['title'] ?? '' ); ?>" class="large-text">
-								<p class="description">Utilise <code>[rotate]</code> à la place du mot qui doit tourner. Exemple : <code>Maîtrise [rotate] avec les meilleurs.</code></p>
-							</td>
+							<th><label for="hero_title">Promesse (H1)</label></th>
+							<td><input type="text" id="hero_title" name="hero[title]" value="<?php echo esc_attr( $cfg['hero']['title'] ); ?>" class="large-text" maxlength="140"></td>
 						</tr>
 						<tr>
-							<th><label for="hero_subtitle">Sous-titre</label></th>
-							<td>
-								<textarea id="hero_subtitle" name="hero[subtitle]" rows="3" class="large-text"><?php echo esc_textarea( $cfg['hero']['subtitle'] ?? '' ); ?></textarea>
-							</td>
+							<th><label for="hero_subtitle">Texte d'introduction</label></th>
+							<td><textarea id="hero_subtitle" name="hero[subtitle]" rows="3" class="large-text" maxlength="320"><?php echo esc_textarea( $cfg['hero']['subtitle'] ); ?></textarea></td>
 						</tr>
 						<tr>
-							<th><label for="hero_rotating">Mots qui tournent</label></th>
+							<th><label for="hero_cta_text">Libellé du CTA</label></th>
 							<td>
-								<textarea id="hero_rotating" name="hero[rotating_words]" rows="10" class="large-text" placeholder="Un mot par ligne"><?php echo esc_textarea( implode( "\n", (array) ( $cfg['hero']['rotating_words'] ?? [] ) ) ); ?></textarea>
-								<p class="description">Un mot ou expression par ligne. Inclure les articles (« le », « la », « l' »…) si nécessaire.</p>
-							</td>
-						</tr>
-						<tr>
-							<th>Statistiques</th>
-							<td>
-								<label>
-									<input type="checkbox" name="hero[show_stats]" value="1" <?php checked( ! empty( $cfg['hero']['show_stats'] ) ); ?>>
-									Afficher la ligne « X vidéos / Y chaînes / Z outils »
-								</label>
+								<input type="text" id="hero_cta_text" name="hero[cta_text]" value="<?php echo esc_attr( $cfg['hero']['cta_text'] ); ?>" class="regular-text" maxlength="80">
+								<p class="description">La destination reste volontairement fixée à <code>/commencer/</code>.</p>
 							</td>
 						</tr>
 					</table>
 				</div>
 
 				<div class="seoflix-card">
-					<h2>Sections</h2>
-					<p>Colonne <strong>Ordre</strong> = position de la section sur la page (plus petit = plus haut). Décoche <strong>Visible</strong> pour cacher une section.</p>
-					<table class="widefat striped">
-						<thead>
-							<tr>
-								<th style="width:60px;">Ordre</th>
-								<th style="width:60px;">Visible</th>
-								<th>Type</th>
-								<th>Titre H2 (laisser vide = défaut)</th>
-								<th style="width:120px;">Limite</th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php foreach ( $cfg['sections'] as $idx => $s ) :
-								$type = $s['type'] ?? '';
-								?>
-								<tr>
-									<td>
-										<input type="number" name="sections[<?php echo (int) $idx; ?>][order]" value="<?php echo esc_attr( (string) ( $s['order'] ?? 99 ) ); ?>" min="1" max="99" class="small-text" style="width:60px;">
-										<input type="hidden" name="sections[<?php echo (int) $idx; ?>][type]" value="<?php echo esc_attr( $type ); ?>">
-									</td>
-									<td>
-										<input type="checkbox" name="sections[<?php echo (int) $idx; ?>][visible]" value="1" <?php checked( ! empty( $s['visible'] ) ); ?>>
-									</td>
-									<td><strong><?php echo esc_html( $labels[ $type ] ?? $type ); ?></strong></td>
-									<td>
-										<input type="text" name="sections[<?php echo (int) $idx; ?>][title]" value="<?php echo esc_attr( $s['title'] ?? '' ); ?>" class="regular-text" style="width:100%;">
-									</td>
-									<td>
-										<?php if ( in_array( $type, [ Homepage::TYPE_NEW, Homepage::TYPE_MOST_VIEWED, Homepage::TYPE_CHANNELS, Homepage::TYPE_TOPICS ], true ) ) : ?>
-											<input type="number" name="sections[<?php echo (int) $idx; ?>][limit]" value="<?php echo esc_attr( (string) ( $s['limit'] ?? 12 ) ); ?>" min="1" max="50" class="small-text">
-										<?php else : ?>
-											—
-										<?php endif; ?>
-									</td>
-								</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
-					<p class="description">
-						<strong>Topics</strong> : la section affiche N rangées (une par sujet). Chaque sujet est paramétrable individuellement dans le bloc « Sujets affichés » ci-dessous (cocher/décocher + numéro d'ordre).
-					</p>
+					<h2>Meilleurs outils</h2>
+					<label for="best_tool_ids">IDs des produits, dans l'ordre d'affichage</label>
+					<input type="text" id="best_tool_ids" name="best_tool_ids" value="<?php echo esc_attr( implode( ', ', $cfg['best_tool_ids'] ) ); ?>" class="large-text" inputmode="numeric" placeholder="42, 17, 81">
+					<p class="description">Maximum <?php echo (int) Homepage::MAX_BEST_TOOLS; ?> IDs uniques. Seuls les produits publiés sont affichés.</p>
 				</div>
 
-				<?php
-				// Trouve la section TYPE_TOPICS pour gérer la liste des topics affichés
-				$topics_section_idx = null;
-				foreach ( $cfg['sections'] as $idx => $s ) {
-					if ( ( $s['type'] ?? '' ) === Homepage::TYPE_TOPICS ) {
-						$topics_section_idx = $idx;
-						break;
-					}
-				}
-				$all_topics = get_terms( [
-					'taxonomy'   => 'seoflix_topic',
-					'hide_empty' => false,
-					'orderby'    => 'name',
-					'order'      => 'ASC',
-				] );
-				$saved_topics = ( $topics_section_idx !== null && isset( $cfg['sections'][ $topics_section_idx ]['topics_manual'] ) )
-					? (array) $cfg['sections'][ $topics_section_idx ]['topics_manual']
-					: [];
-				$saved_map = []; // slug => order
-				foreach ( $saved_topics as $i => $slug ) {
-					$saved_map[ $slug ] = $i + 1;
-				}
-				?>
-
-				<?php if ( $topics_section_idx !== null && ! is_wp_error( $all_topics ) ) : ?>
-					<div class="seoflix-card">
-						<h2>Sujets affichés (et ordre)</h2>
-						<p>Coche les sujets à afficher dans la section <em>Topics</em>. Le numéro d'ordre détermine la position du sujet (1 = en haut). Si aucun sujet n'est coché, fallback automatique sur les sujets les plus fournis.</p>
-						<table class="widefat striped">
-							<thead>
-								<tr>
-									<th style="width:80px;">Ordre</th>
-									<th style="width:60px;">Afficher</th>
-									<th>Sujet</th>
-									<th>Slug</th>
-									<th style="width:100px;">Vidéos</th>
-								</tr>
-							</thead>
-							<tbody>
-								<?php foreach ( $all_topics as $t ) :
-									$is_on = isset( $saved_map[ $t->slug ] );
-									$ord   = $saved_map[ $t->slug ] ?? '';
-									?>
-									<tr>
-										<td>
-											<input type="number" name="topics_manual_orders[<?php echo esc_attr( $t->slug ); ?>]" value="<?php echo esc_attr( (string) $ord ); ?>" min="1" max="99" class="small-text" style="width:70px;" placeholder="—">
-										</td>
-										<td>
-											<input type="checkbox" name="topics_manual_active[<?php echo esc_attr( $t->slug ); ?>]" value="1" <?php checked( $is_on ); ?>>
-										</td>
-										<td><strong><?php echo esc_html( $t->name ); ?></strong></td>
-										<td><code><?php echo esc_html( $t->slug ); ?></code></td>
-										<td><?php echo (int) $t->count; ?></td>
-									</tr>
+				<div class="seoflix-card">
+					<h2>Trois rangées parcours</h2>
+					<p>Choisis exactement trois parcours. Leur position ci-dessous détermine l'ordre public.</p>
+					<?php for ( $slot = 0; $slot < Homepage::MAX_FEATURED_ROWS; $slot++ ) : ?>
+						<p>
+							<label for="featured_path_<?php echo (int) $slot; ?>">Rangée <?php echo (int) ( $slot + 1 ); ?></label><br>
+							<select id="featured_path_<?php echo (int) $slot; ?>" name="featured_path_slugs[]">
+								<option value="">— Parcours indisponible —</option>
+								<?php foreach ( $paths as $path ) : ?>
+									<option value="<?php echo esc_attr( $path->slug ); ?>" <?php selected( $cfg['featured_path_slugs'][ $slot ] ?? '', $path->slug ); ?>><?php echo esc_html( $path->name ); ?> (<?php echo (int) $path->count; ?>)</option>
 								<?php endforeach; ?>
-							</tbody>
-						</table>
-						<p class="description">
-							Astuce : tu peux laisser TOUS les ordres vides et juste cocher → l'ordre alphabétique sera utilisé. Ou laisser tout décoché → fallback sur le top N automatique (limite définie par la section Topics).
+							</select>
 						</p>
-					</div>
-				<?php endif; ?>
+					<?php endfor; ?>
+				</div>
+
+				<div class="seoflix-card">
+					<h2>Visibilité des blocs fixes</h2>
+					<fieldset>
+						<legend class="screen-reader-text">Blocs visibles</legend>
+						<?php foreach ( $block_labels as $key => $label ) : ?>
+							<p><label><input type="checkbox" name="fixed_blocks[<?php echo esc_attr( $key ); ?>]" value="1" <?php checked( ! empty( $cfg['fixed_blocks'][ $key ] ) ); ?>> <?php echo esc_html( $label ); ?></label></p>
+						<?php endforeach; ?>
+					</fieldset>
+				</div>
 
 				<p>
 					<?php submit_button( 'Enregistrer', 'primary', 'submit', false ); ?>
-					&nbsp;
-					<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=seoflix_reset_homepage' ), self::NONCE ) ); ?>" class="button" onclick="return confirm('Réinitialiser toute la configuration de la page d\'accueil aux valeurs par défaut ?');">Réinitialiser aux défauts</a>
-					&nbsp;
-					<a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" class="button button-secondary">Aperçu de la home ↗</a>
+					<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=seoflix_reset_homepage' ), self::NONCE ) ); ?>" class="button">Réinitialiser aux valeurs par défaut</a>
+					<a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener" class="button button-secondary">Aperçu de la home</a>
 				</p>
 			</form>
 		</div>
@@ -222,73 +143,35 @@ final class Admin_Homepage {
 		check_admin_referer( self::NONCE );
 
 		$hero_in = isset( $_POST['hero'] ) && is_array( $_POST['hero'] ) ? wp_unslash( $_POST['hero'] ) : [];
-		$rotating_raw = isset( $hero_in['rotating_words'] ) ? (string) $hero_in['rotating_words'] : '';
-		$rotating     = array_values( array_filter( array_map( 'trim', explode( "\n", str_replace( "\r", '', $rotating_raw ) ) ) ) );
-
-		$hero = [
-			'title'          => sanitize_text_field( $hero_in['title'] ?? '' ),
-			'subtitle'       => sanitize_textarea_field( $hero_in['subtitle'] ?? '' ),
-			'rotating_words' => array_map( 'sanitize_text_field', $rotating ),
-			'show_stats'     => ! empty( $hero_in['show_stats'] ),
-		];
-
-		// Liste manuelle des topics (slug ordonnés selon orders saisies)
-		$topics_manual_active = isset( $_POST['topics_manual_active'] ) && is_array( $_POST['topics_manual_active'] )
-			? wp_unslash( $_POST['topics_manual_active'] )
-			: [];
-		$topics_manual_orders = isset( $_POST['topics_manual_orders'] ) && is_array( $_POST['topics_manual_orders'] )
-			? wp_unslash( $_POST['topics_manual_orders'] )
-			: [];
-		$topics_manual = [];
-		foreach ( $topics_manual_active as $slug => $on ) {
-			$slug = sanitize_key( $slug );
-			if ( ! $slug ) {
-				continue;
+		$raw_ids = isset( $_POST['best_tool_ids'] ) ? wp_unslash( $_POST['best_tool_ids'] ) : '';
+		$best_tool_ids = [];
+		foreach ( preg_split( '/[\s,]+/', (string) $raw_ids, -1, PREG_SPLIT_NO_EMPTY ) as $raw_id ) {
+			$id = absint( $raw_id );
+			if ( $id > 0 && ! in_array( $id, $best_tool_ids, true ) ) {
+				$best_tool_ids[] = $id;
 			}
-			$ord = isset( $topics_manual_orders[ $slug ] ) ? (int) $topics_manual_orders[ $slug ] : 0;
-			$topics_manual[ $slug ] = $ord;
-		}
-		// Tri : ordre asc, puis fallback sur l'ordre alphabétique
-		uksort( $topics_manual, static function ( $a, $b ) use ( $topics_manual ) {
-			$oa = $topics_manual[ $a ] ?: 999;
-			$ob = $topics_manual[ $b ] ?: 999;
-			if ( $oa === $ob ) {
-				return strcmp( $a, $b );
-			}
-			return $oa - $ob;
-		} );
-		$topics_manual_slugs = array_keys( $topics_manual );
-
-		$sections_in = isset( $_POST['sections'] ) && is_array( $_POST['sections'] ) ? wp_unslash( $_POST['sections'] ) : [];
-		$sections    = [];
-		foreach ( $sections_in as $s ) {
-			$type = sanitize_key( $s['type'] ?? '' );
-			if ( ! $type ) {
-				continue;
-			}
-			$row = [
-				'type'    => $type,
-				'title'   => sanitize_text_field( $s['title'] ?? '' ),
-				'visible' => ! empty( $s['visible'] ),
-				'order'   => max( 1, min( 99, (int) ( $s['order'] ?? 99 ) ) ),
-			];
-			if ( isset( $s['limit'] ) ) {
-				$row['limit'] = max( 1, min( 50, (int) $s['limit'] ) );
-			}
-			if ( isset( $s['topics_count'] ) ) {
-				$row['topics_count'] = max( 1, min( 20, (int) $s['topics_count'] ) );
-			}
-			// Pour la section topics, attache la liste manuelle si elle existe
-			if ( $type === Homepage::TYPE_TOPICS && $topics_manual_slugs ) {
-				$row['topics_manual'] = $topics_manual_slugs;
-			}
-			$sections[] = $row;
 		}
 
-		Homepage::save_config( [
-			'hero'     => $hero,
-			'sections' => $sections,
-		] );
+		$raw_slugs = isset( $_POST['featured_path_slugs'] ) && is_array( $_POST['featured_path_slugs'] )
+			? wp_unslash( $_POST['featured_path_slugs'] )
+			: [];
+		$featured_path_slugs = array_map( 'sanitize_key', $raw_slugs );
+		$blocks_in = isset( $_POST['fixed_blocks'] ) && is_array( $_POST['fixed_blocks'] )
+			? wp_unslash( $_POST['fixed_blocks'] )
+			: [];
+
+		Homepage::save_config(
+			[
+				'hero' => [
+					'title'    => sanitize_text_field( $hero_in['title'] ?? '' ),
+					'subtitle' => sanitize_textarea_field( $hero_in['subtitle'] ?? '' ),
+					'cta_text' => sanitize_text_field( $hero_in['cta_text'] ?? '' ),
+				],
+				'best_tool_ids'       => $best_tool_ids,
+				'featured_path_slugs' => $featured_path_slugs,
+				'fixed_blocks'        => $blocks_in,
+			]
+		);
 
 		wp_safe_redirect( add_query_arg( [ 'page' => self::PAGE_SLUG, 'saved' => 1 ], admin_url( 'admin.php' ) ) );
 		exit;
@@ -299,9 +182,7 @@ final class Admin_Homepage {
 			wp_die( 'Accès refusé.' );
 		}
 		check_admin_referer( self::NONCE );
-
 		Homepage::reset();
-
 		wp_safe_redirect( add_query_arg( [ 'page' => self::PAGE_SLUG, 'reset' => 1 ], admin_url( 'admin.php' ) ) );
 		exit;
 	}

@@ -27,6 +27,7 @@ final class Activator {
 		DB_Schema::maybe_upgrade();
 		Affiliate::register_rewrite();
 		Frontend::register_rewrite();
+		update_option( 'seoflix_frontend_rewrite_version', Frontend::REWRITE_SCHEMA_VERSION, false );
 
 		self::seed_default_terms();
 		self::seed_default_options();
@@ -69,10 +70,13 @@ final class Activator {
 		$paths = [
 			'apprendre-le-seo'             => 'Apprendre le SEO',
 			'apprendre-le-netlinking'      => 'Apprendre le netlinking',
-			'apprendre-la-vente-de-liens'  => 'Apprendre la vente de liens',
-			'apprendre-l-affiliation'      => "Apprendre l'affiliation",
-			'apprendre-la-vente-de-leads'  => 'Apprendre la vente de leads',
+			'apprendre-la-vente-de-liens'  => 'Vente de liens',
+			'apprendre-l-affiliation'      => 'Affiliation SEO',
+			'apprendre-la-vente-de-leads'  => 'Vente de leads',
 			'apprendre-le-business'        => 'Apprendre le business',
+			'apprendre-youtube'            => 'Youtube',
+			'apprendre-ia-automatisation'  => 'IA et automatisation',
+			'apprendre-le-freelancing'     => 'Freelancing',
 		];
 		self::insert_terms( 'seoflix_path', $paths );
 
@@ -116,7 +120,7 @@ final class Activator {
 	 * Bumper cette constante quand on ajoute / renomme des termes par défaut.
 	 * Le re-seed se fait automatiquement à chaque page chargée (tant que la version stockée < courante).
 	 */
-	public const TERMS_SEED_VERSION = 2;
+	public const TERMS_SEED_VERSION = 3;
 
 	/**
 	 * Re-seed idempotent (safe à exécuter à chaque page chargée).

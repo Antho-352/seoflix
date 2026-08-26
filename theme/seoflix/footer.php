@@ -2,11 +2,12 @@
 
 <?php
 // Newsletter dans le footer (sauf sur les pages auth pour ne pas confondre)
-if ( ! is_page( [ 'connexion', 'inscription', 'mot-de-passe-oublie' ] )
+if ( ! is_front_page()
+	&& ! is_page( [ 'connexion', 'inscription', 'mot-de-passe-oublie' ] )
 	&& ! ( function_exists( 'get_query_var' ) && ( get_query_var( 'seoflix_setpwd' ) || get_query_var( 'seoflix_activate' ) || get_query_var( 'seoflix_dashboard' ) ) )
 	&& function_exists( 'seoflix_render_newsletter' ) ) {
 	echo '<div class="sx-container sx-newsletter-footer-wrap">';
-	seoflix_render_newsletter( \Seoflix\Newsletter::SOURCE_FOOTER, [ 'compact' => true, 'title' => 'Newsletter Seoflix' ] );
+	seoflix_render_newsletter( \seoflix\Newsletter::SOURCE_FOOTER, [ 'compact' => true, 'title' => 'Newsletter MADIAS' ] );
 	echo '</div>';
 }
 ?>
@@ -19,8 +20,8 @@ if ( ! is_page( [ 'connexion', 'inscription', 'mot-de-passe-oublie' ] )
 				<?php if ( is_active_sidebar( 'sx-footer-1' ) ) : ?>
 					<?php dynamic_sidebar( 'sx-footer-1' ); ?>
 				<?php else : ?>
-					<h3>Seoflix</h3>
-					<p style="color: var(--sx-color-text-muted); font-size: 0.9rem; line-height: 1.5;">L'agrégation des meilleures vidéos YouTube SEO francophones. SEO, netlinking, affiliation, vente de liens, business web.</p>
+					<h3>MADIAS</h3>
+					<p style="color: var(--sx-color-text-muted); font-size: 0.9rem; line-height: 1.5;">Les meilleures vidéos business web, sélectionnées et organisées pour apprendre sans perdre de temps.</p>
 				<?php endif; ?>
 			</div>
 
@@ -77,7 +78,7 @@ if ( ! is_page( [ 'connexion', 'inscription', 'mot-de-passe-oublie' ] )
 		</div>
 
 		<div class="sx-site-footer__bottom">
-			<span>© <?php echo esc_html( date( 'Y' ) ); ?> Seoflix.</span>
+			<span>© <?php echo esc_html( date( 'Y' ) ); ?> MADIAS.</span>
 			<span>Certains liens sont des liens d'affiliation. <a href="<?php echo esc_url( home_url( '/affiliation/' ) ); ?>">En savoir plus</a>.</span>
 		</div>
 	</div>

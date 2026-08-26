@@ -363,6 +363,9 @@ final class SEO {
 	}
 
 	private static function current_canonical(): string {
+		if ( Frontend::is_view( 'paths' ) ) {
+			return home_url( '/parcours/' );
+		}
 		if ( is_singular() ) {
 			$canon = (string) get_post_meta( get_queried_object_id(), self::META_CANONICAL, true );
 			if ( $canon ) return $canon;
@@ -443,6 +446,11 @@ final class SEO {
 
 	public static function render_jsonld(): void {
 		$blocks = [];
+
+		if ( Frontend::is_view( 'paths' ) ) {
+			$blocks[] = self::build_paths_index_item_list();
+			$blocks[] = self::build_paths_index_breadcrumbs();
+		}
 
 		// === Homepage : Organization + WebSite ===
 		if ( is_front_page() || is_home() ) {
@@ -766,6 +774,41 @@ final class SEO {
 			'numberOfItems'   => count( $items ),
 			'itemListElement' => $items,
 		];
+	}
+
+	private static function build_paths_index_item_list(): array {
+		$items    = [];
+		$position = 1;
+		foreach ( Homepage::path_definitions() as $definition ) {
+			$term = get_term_by( 'slug', $definition['slug'], Taxonomies::PATH );
+			if ( ! ( $term instanceof \WP_Term ) ) {
+				continue;
+			}
+			$url = get_term_link( $term );
+			if ( is_wp_error( $url ) ) {
+				continue;
+			}
+			$items[] = [
+				'@type'    => 'ListItem',
+				'position' => $position++,
+				'name'     => self::clean_text( $term->name ),
+				'url'      => $url,
+			];
+		}
+		return [
+			'@context'        => 'https://schema.org',
+			'@type'           => 'ItemList',
+			'name'            => 'Parcours MADIAS',
+			'numberOfItems'   => count( $items ),
+			'itemListElement' => $items,
+		];
+	}
+
+	private static function build_paths_index_breadcrumbs(): array {
+		return self::breadcrumbs_to_schema( [
+			[ 'name' => 'Accueil', 'url' => home_url( '/' ) ],
+			[ 'name' => 'Parcours', 'url' => home_url( '/parcours/' ) ],
+		] );
 	}
 
 	private static function build_breadcrumbs_singular( \WP_Post $post ): array {

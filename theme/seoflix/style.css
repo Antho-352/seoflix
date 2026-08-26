@@ -1,9 +1,9 @@
 /*
-Theme Name: Seoflix
-Theme URI: https://seoflix.fr
+Theme Name: MADIAS
+Theme URI: https://madias.fr
 Author: Anthony Russo
-Description: Thème FSE pour Seoflix — agrégation YouTube SEO type Netflix. Design noir + rouge, vanilla CSS, perf-first, zéro JS par défaut.
-Version: 0.11.0
+Description: Thème éditorial MADIAS pour apprendre le business web à partir de vidéos sélectionnées et organisées.
+Version: 0.12.0
 Requires at least: 6.5
 Requires PHP: 8.0
 License: Proprietary
@@ -443,6 +443,326 @@ Text Domain: seoflix
 @media (prefers-reduced-motion: reduce) {
 	.sx-post-card,
 	.sx-post-card__image {
+		transition: none;
+	}
+}
+
+/* ===================================================================
+ *  MADIAS — HOMEPAGE FIXE ET INDEX DES PARCOURS
+ * =================================================================== */
+
+.sx-home,
+.sx-paths-index {
+	min-width: 0;
+	overflow-x: clip;
+}
+
+.sx-home-hero {
+	position: relative;
+	display: grid;
+	min-height: clamp(30rem, 76vh, 48rem);
+	align-items: end;
+	background:
+		radial-gradient(circle at 82% 18%, rgb(255 45 63 / 18%), transparent 36rem),
+		linear-gradient(150deg, var(--sx-color-bg) 20%, var(--sx-color-surface-2));
+	border-bottom: 1px solid var(--sx-color-border);
+}
+
+.sx-home-hero__inner {
+	padding-block: clamp(5rem, 12vw, 9rem) clamp(4rem, 10vw, 7rem);
+}
+
+.sx-home-hero__brand,
+.sx-home-section__kicker {
+	margin: 0 0 var(--sx-space-3);
+	color: var(--sx-color-accent);
+	font-size: 0.78rem;
+	font-weight: 800;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+.sx-home-hero__title {
+	max-width: 18ch;
+	font-size: clamp(2.65rem, 8vw, 6.5rem);
+	line-height: 0.98;
+	letter-spacing: -0.055em;
+	overflow-wrap: anywhere;
+}
+
+.sx-home-hero__subtitle {
+	max-width: 58ch;
+	margin-top: var(--sx-space-6);
+	color: var(--sx-color-text-muted);
+	font-size: clamp(1rem, 2vw, 1.25rem);
+	line-height: 1.65;
+}
+
+.sx-home-hero__cta,
+.sx-home-cta {
+	display: inline-flex;
+	min-height: 44px;
+	align-items: center;
+	justify-content: center;
+	margin-top: var(--sx-space-8);
+	padding: 0.75rem 1.25rem;
+	background: var(--sx-color-accent);
+	border: 2px solid var(--sx-color-accent);
+	border-radius: var(--sx-radius-md);
+	color: var(--sx-color-bg);
+	font-weight: 800;
+	text-align: center;
+}
+
+.sx-home-hero__cta:hover,
+.sx-home-cta:hover {
+	background: transparent;
+	color: var(--sx-color-text);
+}
+
+.sx-home__content {
+	display: grid;
+	gap: clamp(4rem, 10vw, 8rem);
+}
+
+.sx-home-section,
+.sx-home-promise,
+.sx-home-about,
+.sx-home-paths-cta {
+	min-width: 0;
+}
+
+.sx-home-section__header {
+	max-width: 72ch;
+	margin-bottom: var(--sx-space-8);
+}
+
+.sx-home-section__header--row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: end;
+	justify-content: space-between;
+	gap: var(--sx-space-4);
+}
+
+.sx-home-section__header h2,
+.sx-home-promise h2,
+.sx-home-about h2,
+.sx-home-paths-cta h2,
+.sx-paths-index__header h1 {
+	font-size: clamp(1.8rem, 5vw, 3.5rem);
+	line-height: 1.05;
+	letter-spacing: -0.04em;
+	overflow-wrap: anywhere;
+}
+
+.sx-home-paths__grid,
+.sx-paths-index__grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--sx-space-4);
+}
+
+.sx-path-card {
+	display: flex;
+	min-width: 0;
+	min-height: 100%;
+	gap: var(--sx-space-4);
+	padding: clamp(1.1rem, 3vw, 1.6rem);
+	background: var(--sx-color-surface);
+	border: 1px solid var(--sx-color-border);
+	border-radius: var(--sx-radius-lg);
+	color: var(--sx-color-text);
+	box-shadow: var(--sx-shadow-card);
+	transition: transform var(--sx-transition), border-color var(--sx-transition);
+}
+
+.sx-path-card[href]:hover,
+.sx-path-card:has(a:hover) {
+	transform: translateY(-3px);
+	border-color: var(--sx-color-accent);
+}
+
+.sx-path-card--unavailable {
+	opacity: 0.68;
+}
+
+.sx-path-card__icon {
+	display: inline-flex;
+	width: 3rem;
+	height: 3rem;
+	flex: 0 0 3rem;
+	align-items: center;
+	justify-content: center;
+	background: var(--sx-color-surface-2);
+	border: 1px solid var(--sx-color-border);
+	border-radius: 50%;
+	color: var(--sx-color-accent);
+	font-weight: 900;
+}
+
+.sx-path-card__body {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	flex-direction: column;
+}
+
+.sx-path-card__title {
+	font-size: 1.15rem;
+	overflow-wrap: anywhere;
+}
+
+.sx-path-card__title a {
+	display: inline-flex;
+	min-height: 44px;
+	align-items: center;
+	color: inherit;
+}
+
+.sx-path-card__description {
+	margin-top: var(--sx-space-2);
+	color: var(--sx-color-text-muted);
+	line-height: 1.55;
+	overflow-wrap: anywhere;
+}
+
+.sx-path-card__meta {
+	margin-top: auto;
+	padding-top: var(--sx-space-4);
+	color: var(--sx-color-text-muted);
+	font-size: 0.82rem;
+}
+
+.sx-path-card__progress {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 0.3rem;
+	margin-top: var(--sx-space-4);
+}
+
+.sx-path-card__progress span {
+	height: 3px;
+	background: var(--sx-color-border);
+	border-radius: 99px;
+}
+
+.sx-path-card__progress span:first-child {
+	background: var(--sx-color-accent);
+}
+
+.sx-home-empty,
+.sx-home-unavailable-row {
+	padding: var(--sx-space-6);
+	background: var(--sx-color-surface);
+	border: 1px solid var(--sx-color-border);
+	border-radius: var(--sx-radius-lg);
+}
+
+.sx-home-promise,
+.sx-home-about,
+.sx-home-paths-cta {
+	padding: clamp(1.5rem, 6vw, 4rem);
+	background: var(--sx-color-surface);
+	border: 1px solid var(--sx-color-border);
+	border-radius: var(--sx-radius-lg);
+}
+
+.sx-home-promise {
+	border-left: 4px solid var(--sx-color-accent);
+}
+
+.sx-home-promise p,
+.sx-home-about p,
+.sx-home-paths-cta p {
+	max-width: 70ch;
+	margin-top: var(--sx-space-4);
+	color: var(--sx-color-text-muted);
+	line-height: 1.7;
+}
+
+.sx-home-promise em {
+	display: block;
+	margin-top: var(--sx-space-5);
+	color: var(--sx-color-text);
+}
+
+.sx-paths-index__header {
+	max-width: 72ch;
+	margin-bottom: clamp(2rem, 7vw, 4rem);
+}
+
+.sx-paths-index__header > p:last-child {
+	margin-top: var(--sx-space-4);
+	color: var(--sx-color-text-muted);
+	font-size: 1.08rem;
+	line-height: 1.65;
+}
+
+.sx-path-card--index {
+	flex-direction: column;
+}
+
+.sx-path-card__account-progress {
+	display: grid;
+	gap: var(--sx-space-2);
+	margin-top: var(--sx-space-5);
+}
+
+.sx-path-card__account-progress label {
+	font-size: 0.82rem;
+	color: var(--sx-color-text-muted);
+}
+
+.sx-path-card__account-progress progress {
+	width: 100%;
+	accent-color: var(--sx-color-accent);
+}
+
+.sx-path-card__continue {
+	display: inline-flex;
+	min-height: 44px;
+	align-items: center;
+	align-self: start;
+	font-weight: 800;
+}
+
+.sx-home a:focus-visible,
+.sx-paths-index a:focus-visible {
+	outline: 3px solid var(--sx-color-accent);
+	outline-offset: 3px;
+}
+
+@media (max-width: 48rem) {
+	.sx-home-paths__grid,
+	.sx-paths-index__grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.sx-home-section__header--row {
+		align-items: start;
+		flex-direction: column;
+	}
+}
+
+@media (max-width: 20rem) {
+	.sx-home-hero__inner,
+	.sx-home-promise,
+	.sx-home-about,
+	.sx-home-paths-cta,
+	.sx-path-card {
+		padding-inline: var(--sx-space-3);
+	}
+
+	.sx-path-card {
+		flex-direction: column;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sx-path-card,
+	.sx-home-hero__cta,
+	.sx-home-cta {
 		transition: none;
 	}
 }
