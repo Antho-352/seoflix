@@ -310,10 +310,12 @@ class MadiasHomepageContracts(unittest.TestCase):
                 define('ABSPATH', __DIR__);
                 $GLOBALS['sx_view'] = 'paths';
                 $GLOBALS['sx_status'] = 0;
+                $GLOBALS['sx_template_present'] = true;
                 function sanitize_key($value) { return preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $value)); }
                 function get_query_var($key) { return $GLOBALS['sx_view']; }
                 function is_admin() { return false; }
                 function status_header($code) { $GLOBALS['sx_status'] = (int) $code; }
+                function locate_template($template) { return $GLOBALS['sx_template_present'] ? '/theme/' . $template : ''; }
                 class WP_Query {
                     public bool $is_404 = true;
                     public bool $is_home = true;
@@ -325,12 +327,18 @@ class MadiasHomepageContracts(unittest.TestCase):
                 require __SOURCE__;
                 $paths = new WP_Query();
                 $handled = \\Seoflix\\Frontend::pre_handle_404(false, $paths);
+                $paths_status = $GLOBALS['sx_status'];
+                $GLOBALS['sx_template_present'] = false;
+                $GLOBALS['sx_status'] = 0;
+                $missing = new WP_Query();
+                $missing_untouched = \\Seoflix\\Frontend::pre_handle_404(false, $missing);
                 $GLOBALS['sx_view'] = 'other';
                 $other = new WP_Query();
                 $untouched = \\Seoflix\\Frontend::pre_handle_404(false, $other);
                 echo json_encode([
                     'handled'=>$handled,
-                    'paths'=>[$paths->is_404, $paths->is_home, $GLOBALS['sx_status']],
+                    'paths'=>[$paths->is_404, $paths->is_home, $paths_status],
+                    'missing'=>[$missing_untouched, $missing->is_404, $missing->is_home, $GLOBALS['sx_status']],
                     'other'=>[$untouched, $other->is_404, $other->is_home],
                 ]);
             }
@@ -339,7 +347,12 @@ class MadiasHomepageContracts(unittest.TestCase):
         result = subprocess.run(["php"], input=harness, text=True, capture_output=True, check=False)
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual(
-            {"handled": True, "paths": [False, False, 200], "other": [False, True, True]},
+            {
+                "handled": True,
+                "paths": [False, False, 200],
+                "missing": [False, True, True, 0],
+                "other": [False, True, True],
+            },
             json.loads(result.stdout),
         )
 

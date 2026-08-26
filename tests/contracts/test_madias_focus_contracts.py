@@ -30,6 +30,26 @@ class MadiasFocusContracts(unittest.TestCase):
         self.assertIn("includes/class-focus.php", plugin)
         self.assertIn("Focus::init();", plugin)
 
+    def test_focus_banner_runtime_class_guard_resolves_the_loaded_class(self) -> None:
+        functions = source(FUNCTIONS)
+        banner = functions[functions.index("function seoflix_render_focus_banner") :]
+        match = re.search(r"class_exists\(\s*('(?:\\\\.|[^'])*')\s*\)", banner)
+        self.assertIsNotNone(match, "class_exists guard missing")
+        literal = match.group(1)
+        harness = textwrap.dedent(
+            f"""
+            <?php
+            namespace Seoflix {{ class Focus {{}} }}
+            namespace {{
+                $name = {literal};
+                echo json_encode([ 'name' => $name, 'exists' => class_exists($name) ]);
+            }}
+            """
+        ).lstrip()
+        result = subprocess.run(["php"], input=harness, text=True, capture_output=True, check=False)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual({"name": "\\Seoflix\\Focus", "exists": True}, __import__("json").loads(result.stdout))
+
     def test_personalized_surfaces_are_explicitly_excluded_from_full_page_cache(self) -> None:
         php = compact(source(FOCUS))
         functions = source(FUNCTIONS)

@@ -105,6 +105,10 @@ final class Frontend {
 		if ( ! self::is_view( 'topics' ) && ! self::is_view( 'paths' ) && ! self::is_view( 'business-finder' ) ) {
 			return $preempt;
 		}
+		$view = self::current_view();
+		if ( ! isset( self::TEMPLATES[ $view ] ) || ! locate_template( self::TEMPLATES[ $view ] ) ) {
+			return $preempt;
+		}
 		$query->is_404 = false;
 		$query->is_home = false;
 		status_header( 200 );
