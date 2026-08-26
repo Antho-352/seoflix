@@ -59,6 +59,10 @@ add_action( 'wp_enqueue_scripts', static function () {
 	wp_enqueue_style( 'seoflix-focus',      get_theme_file_uri( 'assets/css/focus.css' ),      [ 'seoflix-pages' ], $ver );
 	wp_enqueue_style( 'seoflix-blog',       get_stylesheet_uri(),                              [ 'seoflix-focus' ], $ver );
 
+	if ( class_exists( '\Seoflix\Frontend' ) && \Seoflix\Frontend::is_seoflix_view( 'business-finder' ) ) {
+		wp_enqueue_style( 'seoflix-business-finder', get_theme_file_uri( 'assets/css/business-finder.css' ), [ 'seoflix-pages' ], $ver );
+	}
+
 	// Toggle eye sur les champs password (toutes les pages auth)
 	$toggle_js = <<<'JS'
 	document.addEventListener('click', function(e) {

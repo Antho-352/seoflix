@@ -64,6 +64,7 @@ final class Plugin {
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-importer.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-affiliate.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-security.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-business-finder.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-frontend.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-youtube-api.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-channel-meta.php';

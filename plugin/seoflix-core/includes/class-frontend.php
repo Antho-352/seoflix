@@ -10,12 +10,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * /categories/ : index historique des catégories.
  * /parcours/   : index éditorial fixe des six parcours MADIAS.
+ * /commencer/  : questionnaire d’orientation business.
  */
 final class Frontend {
 
 	private const QUERY_VAR = 'seoflix_view';
-	public const REWRITE_SCHEMA_VERSION = 1;
+	public const REWRITE_SCHEMA_VERSION = 2;
 	private const REWRITE_SCHEMA_OPTION = 'seoflix_frontend_rewrite_version';
+
+	private const TEMPLATES = [
+		'topics'          => 'page-topics-index.php',
+		'paths'           => 'page-paths-index.php',
+		'business-finder' => 'page-business-finder.php',
+	];
 
 	public static function init(): void {
 		add_action( 'init', [ self::class, 'register_rewrite' ] );
@@ -24,11 +31,14 @@ final class Frontend {
 		add_filter( 'template_include', [ self::class, 'load_template' ] );
 		add_action( 'pre_get_posts', [ self::class, 'fix_404' ] );
 		add_filter( 'pre_handle_404', [ self::class, 'pre_handle_404' ], 10, 2 );
+		add_action( 'wp_head', [ self::class, 'render_canonical' ], 2 );
+		add_filter( 'document_title_parts', [ self::class, 'filter_title' ] );
 	}
 
 	public static function register_rewrite(): void {
 		add_rewrite_rule( '^categories/?$', 'index.php?' . self::QUERY_VAR . '=topics', 'top' );
 		add_rewrite_rule( '^parcours/?$', 'index.php?' . self::QUERY_VAR . '=paths', 'top' );
+		add_rewrite_rule( '^commencer/?$', 'index.php?' . self::QUERY_VAR . '=business-finder', 'top' );
 
 		// Les routes de termes `seoflix_path` restent gérées par WordPress.
 		$category_aliases = [
@@ -68,14 +78,23 @@ final class Frontend {
 		return sanitize_key( $view ) === self::current_view();
 	}
 
+	public static function is_seoflix_view( string $view ): bool {
+		return isset( self::TEMPLATES[ $view ] ) && self::is_view( $view );
+	}
+
 	public static function fix_404( \WP_Query $query ): void {
 		if ( ! $query->is_main_query() || is_admin() ) {
 			return;
 		}
-		if ( self::is_view( 'topics' ) || self::is_view( 'paths' ) ) {
-			$query->is_404 = false;
-			$query->is_home = false;
+		if ( ! self::is_view( 'topics' ) && ! self::is_view( 'paths' ) && ! self::is_view( 'business-finder' ) ) {
+			return;
 		}
+		$view = self::current_view();
+		if ( ! locate_template( self::TEMPLATES[ $view ] ) ) {
+			return;
+		}
+		$query->is_404 = false;
+		$query->is_home = false;
 	}
 
 	/** Empêche WP::handle_404() de reclasser les vues virtuelles après la requête. */
@@ -83,7 +102,7 @@ final class Frontend {
 		if ( is_admin() || ! $query->is_main_query() ) {
 			return $preempt;
 		}
-		if ( ! self::is_view( 'topics' ) && ! self::is_view( 'paths' ) ) {
+		if ( ! self::is_view( 'topics' ) && ! self::is_view( 'paths' ) && ! self::is_view( 'business-finder' ) ) {
 			return $preempt;
 		}
 		$query->is_404 = false;
@@ -94,28 +113,37 @@ final class Frontend {
 
 	public static function load_template( string $template ): string {
 		$view = self::current_view();
-		if ( ! $view ) {
-			return $template;
-		}
-
 		switch ( $view ) {
 			case 'topics':
 				$candidate = locate_template( 'page-topics-index.php' );
-				if ( $candidate ) {
-					status_header( 200 );
-					return $candidate;
-				}
 				break;
-
 			case 'paths':
 				$candidate = locate_template( 'page-paths-index.php' );
-				if ( $candidate ) {
-					status_header( 200 );
-					return $candidate;
-				}
 				break;
+			case 'business-finder':
+				$candidate = locate_template( 'page-business-finder.php' );
+				break;
+			default:
+				return $template;
 		}
-
+		if ( $candidate ) {
+			status_header( 200 );
+			return $candidate;
+		}
 		return $template;
+	}
+
+	public static function render_canonical(): void {
+		if ( ! self::is_seoflix_view( 'business-finder' ) ) {
+			return;
+		}
+		echo '<link rel="canonical" href="' . esc_url( home_url( '/commencer/' ) ) . '">' . "\n";
+	}
+
+	public static function filter_title( array $parts ): array {
+		if ( self::is_seoflix_view( 'business-finder' ) ) {
+			$parts['title'] = 'Trouver le business à apprendre';
+		}
+		return $parts;
 	}
 }
