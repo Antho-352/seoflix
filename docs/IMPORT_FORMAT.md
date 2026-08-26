@@ -60,7 +60,7 @@ Liste des vidéos pré-catégorisées.
   "youtube_url": "https://www.youtube.com/watch?v=abc123def45",
   "topics": ["seo-technique", "netlinking"],
   "formats": ["podcast"],
-  "paths": ["apprendre-le-seo"],
+  "paths": ["apprendre-l-affiliation"],
   "description_ai": "...",
   "editorial_video_url": "https://youtu.be/WEASQA12345",
   "timestamps": [{"id": "UUID", "seconds": 95, "label": "Audit initial", "takeaway": "Prioriser les erreurs bloquantes."}],
@@ -146,12 +146,19 @@ Liste des produits/services SaaS mentionnés dans les vidéos. L'importer crée 
 
 ### `seoflix_path` (Parcours d'apprentissage)
 
-- `apprendre-le-seo`
-- `apprendre-le-netlinking`
+- `apprendre-l-affiliation`
+- `apprendre-youtube`
 - `apprendre-la-vente-de-liens`
-- `apprendre-l-affiliation` *(slug : `apprendre-l-affiliation`)*
+- `apprendre-ia-automatisation`
 - `apprendre-la-vente-de-leads`
-- `apprendre-le-business`
+- `apprendre-le-freelancing`
+
+Les exports historiques restent importables : `apprendre-le-seo` et
+`apprendre-le-business` sont convertis vers `apprendre-l-affiliation`,
+`apprendre-le-netlinking` vers `apprendre-la-vente-de-liens`, et
+`apprendre-lia-et-lautomatisation` vers `apprendre-ia-automatisation`.
+Tout autre slug de parcours inconnu fait échouer la vidéo concernée au lieu de
+l'importer silencieusement sans parcours.
 
 ### Catégories produits (champ `category` de `products_detected`)
 

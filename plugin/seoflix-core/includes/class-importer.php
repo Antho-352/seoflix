@@ -77,6 +77,7 @@ final class Importer {
 				$channel_map[ $ch['handle'] ] = $result['id'];
 				$result['created'] ? $report['channels_created']++ : $report['channels_updated']++;
 			} catch ( \Throwable $e ) {
+				$report['ok'] = false;
 				$report['errors'][] = 'Chaîne ' . ( $ch['handle'] ?? '?' ) . ' : ' . $e->getMessage();
 			}
 		}
@@ -89,6 +90,7 @@ final class Importer {
 				$product_map[ $p['slug'] ] = $result['id'];
 				$result['created'] ? $report['products_created']++ : $report['products_updated']++;
 			} catch ( \Throwable $e ) {
+				$report['ok'] = false;
 				$report['errors'][] = 'Produit ' . ( $p['slug'] ?? '?' ) . ' : ' . $e->getMessage();
 			}
 		}
@@ -99,6 +101,7 @@ final class Importer {
 				$result = self::upsert_video( $v, $channel_map, $product_map );
 				$result['created'] ? $report['videos_created']++ : $report['videos_updated']++;
 			} catch ( \Throwable $e ) {
+				$report['ok'] = false;
 				$report['errors'][] = 'Vidéo ' . ( $v['youtube_id'] ?? '?' ) . ' : ' . $e->getMessage();
 			}
 		}
@@ -248,6 +251,12 @@ final class Importer {
 			throw new \InvalidArgumentException( "Chaîne inconnue : $channel_handle" );
 		}
 		$channel_id = (int) $channel_map[ $channel_handle ];
+		$raw_paths  = $v['paths'] ?? [];
+		if ( ! is_array( $raw_paths ) ) {
+			throw new \InvalidArgumentException( 'Liste de parcours invalide.' );
+		}
+		$path_slugs = self::normalize_import_path_slugs( $raw_paths );
+		self::resolve_video_term_ids( $path_slugs, Taxonomies::PATH );
 
 		$existing_id = self::find_video_id_by_youtube_id( $youtube_id );
 
@@ -338,10 +347,11 @@ final class Importer {
 		}
 		update_post_meta( $id, Meta_Keys::VIDEO_PRODUCTS, wp_json_encode( $product_ids ) );
 
-		// Taxonomies (résolution par slug, on ignore les slugs invalides silencieusement)
+		// Taxonomies. Les anciens parcours sont normalisés; un parcours inconnu
+		// échoue fermé pour ne jamais produire une vidéo orpheline silencieusement.
 		self::set_video_terms( $id, $v['topics']  ?? [], Taxonomies::TOPIC );
 		self::set_video_terms( $id, $v['formats'] ?? [], Taxonomies::FORMAT );
-		self::set_video_terms( $id, $v['paths']   ?? [], Taxonomies::PATH );
+		self::set_video_terms( $id, $path_slugs, Taxonomies::PATH );
 
 		return [ 'id' => (int) $id, 'created' => $created ];
 	}
@@ -460,16 +470,50 @@ final class Importer {
 		if ( ! $slugs ) {
 			return;
 		}
+		if ( Taxonomies::PATH === $taxonomy ) {
+			$slugs = self::normalize_import_path_slugs( $slugs );
+		}
+		$term_ids = self::resolve_video_term_ids( $slugs, $taxonomy );
+		if ( $term_ids ) {
+			$assigned = wp_set_object_terms( $post_id, $term_ids, $taxonomy, false );
+			if ( is_wp_error( $assigned ) ) {
+				throw new \RuntimeException( 'Impossible d’affecter la taxonomie ' . $taxonomy . '.' );
+			}
+		}
+	}
+
+	private static function resolve_video_term_ids( array $slugs, string $taxonomy ): array {
 		$term_ids = [];
 		foreach ( $slugs as $slug ) {
 			$slug = sanitize_title( $slug );
 			$term = get_term_by( 'slug', $slug, $taxonomy );
-			if ( $term ) {
-				$term_ids[] = (int) $term->term_id;
+			if ( ! $term ) {
+				if ( Taxonomies::PATH === $taxonomy ) {
+					throw new \RuntimeException( 'Parcours d’import inconnu : ' . $slug . '.' );
+				}
+				continue;
+			}
+			$term_ids[] = (int) $term->term_id;
+		}
+		return array_values( array_unique( $term_ids ) );
+	}
+
+	/** Normalise les exports Seoflix historiques vers les six parcours WEAS. */
+	private static function normalize_import_path_slugs( array $slugs ): array {
+		$legacy_map = [
+			'apprendre-le-seo'                 => 'apprendre-l-affiliation',
+			'apprendre-le-netlinking'          => 'apprendre-la-vente-de-liens',
+			'apprendre-le-business'            => 'apprendre-l-affiliation',
+			'apprendre-lia-et-lautomatisation' => 'apprendre-ia-automatisation',
+		];
+		$normalized = [];
+		foreach ( $slugs as $slug ) {
+			$slug = sanitize_title( $slug );
+			$slug = $legacy_map[ $slug ] ?? $slug;
+			if ( ! in_array( $slug, $normalized, true ) ) {
+				$normalized[] = $slug;
 			}
 		}
-		if ( $term_ids ) {
-			wp_set_object_terms( $post_id, $term_ids, $taxonomy, false );
-		}
+		return $normalized;
 	}
 }

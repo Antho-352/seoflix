@@ -58,6 +58,45 @@ class WeasUxCorrectionsContracts(unittest.TestCase):
         self.assertNotRegex(normalization, r"(?<!verified\()update_post_meta\(")
         self.assertEqual(2, activator.count("self::set_seed_version_verified();"))
 
+    def test_importer_maps_legacy_paths_and_fails_closed_on_unknown_paths(self) -> None:
+        importer = source("plugin/seoflix-core/includes/class-importer.php")
+        docs = source("docs/IMPORT_FORMAT.md")
+        canonical = (
+            "apprendre-l-affiliation",
+            "apprendre-youtube",
+            "apprendre-la-vente-de-liens",
+            "apprendre-ia-automatisation",
+            "apprendre-la-vente-de-leads",
+            "apprendre-le-freelancing",
+        )
+        legacy_map = {
+            "apprendre-le-seo": "apprendre-l-affiliation",
+            "apprendre-le-netlinking": "apprendre-la-vente-de-liens",
+            "apprendre-le-business": "apprendre-l-affiliation",
+            "apprendre-lia-et-lautomatisation": "apprendre-ia-automatisation",
+        }
+        self.assertIn("function normalize_import_path_slugs", importer)
+        self.assertIn("function resolve_video_term_ids", importer)
+        self.assertIn("Taxonomies::PATH === $taxonomy", importer)
+        self.assertIn("Parcours d’import inconnu", importer)
+        self.assertIn("is_wp_error( $assigned )", importer)
+        upsert_video = importer[importer.index("function upsert_video"):importer.index("function should_persist_editorial_rows")]
+        self.assertLess(
+            upsert_video.index("self::resolve_video_term_ids"),
+            upsert_video.index("self::find_video_id_by_youtube_id"),
+        )
+        self.assertEqual(3, importer.count("$report['ok'] = false;"))
+        for legacy, target in legacy_map.items():
+            self.assertRegex(
+                importer,
+                rf"'{re.escape(legacy)}'\s*=>\s*'{re.escape(target)}'",
+            )
+        path_docs = docs[docs.index("### `seoflix_path`"):docs.index("Les exports historiques")]
+        for slug in canonical:
+            self.assertIn(f"`{slug}`", path_docs)
+        for legacy in legacy_map:
+            self.assertNotIn(f"`{legacy}`", path_docs)
+
     def test_focus_is_a_discrete_dynamic_three_choice_header_menu(self) -> None:
         focus = source("plugin/seoflix-core/includes/class-focus.php")
         functions = source("theme/seoflix/functions.php")
