@@ -99,4 +99,6 @@
 })();
 </script>
 
+<?php seoflix_render_focus_banner(); ?>
+
 <main class="sx-main">

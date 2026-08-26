@@ -18,8 +18,9 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 	return get_posts( [
 		'post_type'      => 'seoflix_video',
 		'post_status'    => 'publish',
-		'posts_per_page' => $limit,
-		'post__in'       => $ordered_ids,
+		'posts_per_page'     => $limit,
+		'seoflix_focus_apply' => 1,
+		'post__in'            => $ordered_ids,
 		'orderby'        => 'post__in',
 	] );
 };
@@ -81,8 +82,9 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 			$new_videos = get_posts( [
 				'post_type'      => 'seoflix_video',
 				'post_status'    => 'publish',
-				'posts_per_page' => 12,
-				'orderby'        => 'date',
+				'posts_per_page'     => 12,
+				'seoflix_focus_apply' => 1,
+				'orderby'            => 'date',
 				'order'          => 'DESC',
 			] ); ?>
 			<section id="nouveautes" class="sx-home-section" aria-labelledby="home-new-title">

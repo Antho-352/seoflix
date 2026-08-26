@@ -56,7 +56,8 @@ add_action( 'wp_enqueue_scripts', static function () {
 	wp_enqueue_style( 'seoflix-layout',     get_theme_file_uri( 'assets/css/layout.css' ),     [ 'seoflix-reset' ], $ver );
 	wp_enqueue_style( 'seoflix-components', get_theme_file_uri( 'assets/css/components.css' ), [ 'seoflix-layout' ], $ver );
 	wp_enqueue_style( 'seoflix-pages',      get_theme_file_uri( 'assets/css/pages.css' ),      [ 'seoflix-components' ], $ver );
-	wp_enqueue_style( 'seoflix-blog',       get_stylesheet_uri(),                              [ 'seoflix-pages' ], $ver );
+	wp_enqueue_style( 'seoflix-focus',      get_theme_file_uri( 'assets/css/focus.css' ),      [ 'seoflix-pages' ], $ver );
+	wp_enqueue_style( 'seoflix-blog',       get_stylesheet_uri(),                              [ 'seoflix-focus' ], $ver );
 
 	// Toggle eye sur les champs password (toutes les pages auth)
 	$toggle_js = <<<'JS'
@@ -375,6 +376,99 @@ function seoflix_default_primary_menu(): void {
 }
 
 /* ============================================================
+ *  FOCUS — préférence de parcours limitée aux vidéos
+ * ============================================================ */
+
+/**
+ * Rend le bandeau FOCUS partagé par toutes les pages du thème.
+ */
+function seoflix_render_focus_banner(): void {
+	if ( ! class_exists( '\\Seoflix\\Focus' ) ) {
+		return;
+	}
+	if ( ! \Seoflix\Focus::is_focus_surface() ) {
+		return;
+	}
+
+	$active = \Seoflix\Focus::active_path();
+	$action = admin_url( 'admin-post.php' );
+	$status = isset( $_GET['seoflix_focus_status'] ) && is_string( $_GET['seoflix_focus_status'] )
+		? sanitize_key( wp_unslash( $_GET['seoflix_focus_status'] ) )
+		: '';
+	?>
+	<aside class="sx-focus" aria-labelledby="sx-focus-title">
+		<div class="sx-container sx-focus__inner">
+			<?php if ( $active instanceof WP_Term ) :
+				$path_url = get_term_link( $active );
+				?>
+				<div class="sx-focus__active">
+					<strong class="sx-focus__status" id="sx-focus-title">FOCUS : <?php echo esc_html( $active->name ); ?></strong>
+					<?php if ( ! is_wp_error( $path_url ) ) : ?>
+						<a class="sx-focus__path-link" href="<?php echo esc_url( $path_url ); ?>">Voir le parcours</a>
+					<?php endif; ?>
+					<form class="sx-focus__reset" method="post" action="<?php echo esc_url( $action ); ?>">
+						<input type="hidden" name="action" value="seoflix_focus_reset">
+						<?php wp_nonce_field( \Seoflix\Focus::NONCE_ACTION, \Seoflix\Focus::NONCE_FIELD ); ?>
+						<button type="submit">Voir toutes les vidéos</button>
+					</form>
+				</div>
+				<?php seoflix_render_focus_empty_state( $active ); ?>
+			<?php else :
+				$paths = \Seoflix\Focus::available_paths();
+				?>
+				<form class="sx-focus__form" method="post" action="<?php echo esc_url( $action ); ?>">
+					<input type="hidden" name="action" value="seoflix_focus_set">
+					<?php wp_nonce_field( \Seoflix\Focus::NONCE_ACTION, \Seoflix\Focus::NONCE_FIELD ); ?>
+					<fieldset>
+						<legend id="sx-focus-title">Choisir mon FOCUS vidéo</legend>
+						<div class="sx-focus__choices">
+							<?php foreach ( $paths as $index => $path ) : ?>
+								<label>
+									<input type="radio" name="seoflix_focus_path" value="<?php echo esc_attr( $path->slug ); ?>" <?php checked( 0, $index ); ?> required>
+									<span><?php echo esc_html( $path->name ); ?></span>
+								</label>
+							<?php endforeach; ?>
+						</div>
+					</fieldset>
+					<?php if ( $paths ) : ?>
+						<button class="sx-focus__submit" type="submit">Activer ce FOCUS</button>
+					<?php endif; ?>
+				</form>
+				<?php if ( 'invalid' === $status ) : ?>
+					<p class="sx-focus__notice" role="alert">Ce parcours ne contient aucune vidéo publiée.</p>
+				<?php endif; ?>
+			<?php endif; ?>
+		</div>
+	</aside>
+	<?php
+}
+
+/**
+ * Affiche l'état vide uniquement lorsque la requête vidéo principale a été
+ * effectivement filtrée par le FOCUS actif.
+ */
+function seoflix_render_focus_empty_state( WP_Term $active ): void {
+	global $wp_query;
+	if (
+		! $wp_query instanceof WP_Query
+		|| $active->slug !== $wp_query->get( \Seoflix\Focus::QUERY_VAR_ACTIVE )
+		|| 0 !== (int) $wp_query->post_count
+	) {
+		return;
+	}
+	?>
+	<div class="sx-focus__empty" role="status">
+		<p><strong>Aucune vidéo dans ce FOCUS</strong></p>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="seoflix_focus_reset">
+			<?php wp_nonce_field( \Seoflix\Focus::NONCE_ACTION, \Seoflix\Focus::NONCE_FIELD ); ?>
+			<button type="submit">Voir toutes les vidéos</button>
+		</form>
+	</div>
+	<?php
+}
+
+/* ============================================================
  *  Helpers — Vidéo
  * ============================================================ */
 
@@ -581,6 +675,7 @@ function seoflix_channel_videos( int $channel_id, int $limit = -1 ): array {
 		'post_type'      => 'seoflix_video',
 		'post_status'    => 'publish',
 		'posts_per_page' => $limit,
+		'seoflix_focus_apply' => 1,
 		'meta_query'     => [
 			[ 'key' => '_seoflix_channel_id', 'value' => $channel_id ],
 		],
@@ -611,6 +706,7 @@ function seoflix_product_videos( int $product_id, int $limit = 8 ): array {
 		'post_type'      => 'seoflix_video',
 		'post_status'    => 'publish',
 		'posts_per_page' => $limit,
+		'seoflix_focus_apply' => 1,
 		'meta_query'     => [
 			[
 				'key'     => '_seoflix_products',
