@@ -33,6 +33,9 @@ final class Admin_SEO_Tools {
 	 * ====================================================================== */
 
 	public static function filter_robots_txt( string $output, $public ): string {
+		if ( (string) get_option( 'blog_public', '1' ) === '0' ) {
+			return "User-agent: *\nDisallow: /\n";
+		}
 		$custom = (string) get_option( self::OPTION_ROBOTS, '' );
 		if ( $custom ) {
 			return $custom;

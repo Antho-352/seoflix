@@ -347,6 +347,9 @@ final class SEO {
 	}
 
 	private static function current_seo_robots(): string {
+		if ( (string) get_option( 'blog_public', '1' ) === '0' ) {
+			return 'noindex, follow';
+		}
 		if ( is_search() || is_404() ) return 'noindex, follow';
 		if ( is_singular() ) {
 			$v = (string) get_post_meta( get_queried_object_id(), self::META_ROBOTS, true );
