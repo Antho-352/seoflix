@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *  - Métabox sur tous les post types publics : SEO title, meta description, robots, canonical
  *  - Métabox équivalent sur les termes des taxonomies publiques
  *  - Override du <title> via wp_title / document_title_parts
- *  - Sortie wp_head : meta description, meta robots, canonical
+ *  - Sortie wp_head : meta description, canonical ; robots via le filtre natif wp_robots
  *  - Open Graph + Twitter Card
  *  - JSON-LD : Organization (homepage), VideoObject (single video), BreadcrumbList
  *  - Désactive le générateur de description WP par défaut
@@ -45,6 +45,7 @@ final class SEO {
 		// Output frontend
 		add_filter( 'document_title_parts',   [ self::class, 'filter_title_parts' ] );
 		add_filter( 'document_title_separator', static fn() => '|' );
+		add_filter( 'wp_robots',              [ self::class, 'filter_wp_robots' ], 99 );
 		add_action( 'wp_head',                [ self::class, 'render_meta_tags' ], 1 );
 		add_action( 'wp_head',                [ self::class, 'render_open_graph' ], 5 );
 		add_action( 'wp_head',                [ self::class, 'render_jsonld' ], 7 );
@@ -365,6 +366,22 @@ final class SEO {
 		return 'index, follow';
 	}
 
+	public static function filter_wp_robots( array $robots ): array {
+		foreach ( [ 'index', 'noindex', 'follow', 'nofollow' ] as $directive ) {
+			unset( $robots[ $directive ] );
+		}
+
+		if ( self::current_seo_robots() === 'noindex, follow' ) {
+			$robots['noindex'] = true;
+			$robots['follow']  = true;
+		} else {
+			$robots['index']  = true;
+			$robots['follow'] = true;
+		}
+
+		return $robots;
+	}
+
 	private static function current_canonical(): string {
 		if ( Frontend::is_view( 'paths' ) ) {
 			return home_url( '/parcours/' );
@@ -392,15 +409,13 @@ final class SEO {
 	}
 
 	public static function render_meta_tags(): void {
-		$desc   = self::current_seo_description();
-		$robots = self::current_seo_robots();
-		$canon  = self::current_canonical();
+		$desc  = self::current_seo_description();
+		$canon = self::current_canonical();
 
 		echo "\n<!-- WEAS SEO -->\n";
 		if ( $desc ) {
 			echo '<meta name="description" content="' . esc_attr( $desc ) . '">' . "\n";
 		}
-		echo '<meta name="robots" content="' . esc_attr( $robots ) . '">' . "\n";
 		if ( $canon ) {
 			echo '<link rel="canonical" href="' . esc_url( $canon ) . '">' . "\n";
 		}

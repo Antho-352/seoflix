@@ -29,16 +29,16 @@ final class Homepage {
 	/**
 	 * Catalogue public intentionnel. L'ordre est un contrat éditorial.
 	 *
-	 * @return array<int,array{slug:string,name:string,icon:string}>
+	 * @return array<int,array{slug:string,name:string,hero_label:string,icon:string,description:string}>
 	 */
 	public static function path_definitions(): array {
 		return [
-			[ 'slug' => 'apprendre-l-affiliation', 'name' => 'Affiliation SEO', 'icon' => '◎', 'description' => 'Construire des actifs éditoriaux et monétiser une audience qualifiée.' ],
-			[ 'slug' => 'apprendre-youtube', 'name' => 'Youtube', 'icon' => '▶', 'description' => 'Choisir un angle, publier régulièrement et développer une audience vidéo.' ],
-			[ 'slug' => 'apprendre-la-vente-de-liens', 'name' => 'Vente de liens', 'icon' => '↗', 'description' => 'Créer et exploiter un portefeuille de sites avec méthode.' ],
-			[ 'slug' => 'apprendre-ia-automatisation', 'name' => 'IA et automatisation', 'icon' => '◇', 'description' => 'Utiliser les outils IA pour accélérer des tâches réellement utiles.' ],
-			[ 'slug' => 'apprendre-la-vente-de-leads', 'name' => 'Vente de leads', 'icon' => '＋', 'description' => 'Générer, qualifier et transmettre des contacts à des partenaires.' ],
-			[ 'slug' => 'apprendre-le-freelancing', 'name' => 'Freelancing', 'icon' => '◆', 'description' => 'Vendre une compétence, cadrer ses missions et construire une activité durable.' ],
+			[ 'slug' => 'apprendre-l-affiliation', 'name' => 'Affiliation SEO', 'hero_label' => 'Affiliation SEO', 'icon' => '◎', 'description' => 'Construire des actifs éditoriaux et monétiser une audience qualifiée.' ],
+			[ 'slug' => 'apprendre-youtube', 'name' => 'Youtube', 'hero_label' => 'YouTube', 'icon' => '▶', 'description' => 'Choisir un angle, publier régulièrement et développer une audience vidéo.' ],
+			[ 'slug' => 'apprendre-la-vente-de-liens', 'name' => 'Vente de liens', 'hero_label' => 'Vente de liens', 'icon' => '↗', 'description' => 'Créer et exploiter un portefeuille de sites avec méthode.' ],
+			[ 'slug' => 'apprendre-ia-automatisation', 'name' => 'IA et automatisation', 'hero_label' => 'IA et automatisation', 'icon' => '◇', 'description' => 'Utiliser les outils IA pour accélérer des tâches réellement utiles.' ],
+			[ 'slug' => 'apprendre-la-vente-de-leads', 'name' => 'Vente de leads', 'hero_label' => 'Vente de leads', 'icon' => '＋', 'description' => 'Générer, qualifier et transmettre des contacts à des partenaires.' ],
+			[ 'slug' => 'apprendre-le-freelancing', 'name' => 'Freelancing', 'hero_label' => 'Freelancing', 'icon' => '◆', 'description' => 'Vendre une compétence, cadrer ses missions et construire une activité durable.' ],
 		];
 	}
 

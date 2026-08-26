@@ -216,8 +216,23 @@ class MadiasHomepageContracts(unittest.TestCase):
         self.assertNotRegex(self.front_page, r"switch\s*\(\s*\$type")
         self.assertNotIn("rotating_words", self.front_page)
         self.assertNotRegex(self.front_page, r"orderby['\"]?\s*=>\s*['\"]rand")
-        self.assertNotIn("<script", self.front_page.lower())
         self.assertNotRegex(self.front_page, r"\sstyle\s*=")
+
+    def test_homepage_rotates_the_six_path_labels_accessibly(self) -> None:
+        catalog = method_body(self.homepage, "path_definitions")
+        self.assertEqual(catalog.count("'hero_label'"), 6)
+        for token in (
+            'id="sx-rotate"',
+            'class="sx-rotate"',
+            'class="screen-reader-text"',
+            'aria-hidden="true"',
+            "wp_json_encode",
+            "prefers-reduced-motion: reduce",
+            "setInterval",
+            "2200",
+        ):
+            self.assertIn(token, self.front_page)
+        self.assertNotIn('aria-live=', self.front_page)
 
     def test_homepage_queries_real_ordered_content_without_fake_data(self) -> None:
         self.assertIn("Homepage::path_definitions", self.front_page)

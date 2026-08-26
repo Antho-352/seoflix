@@ -9,6 +9,9 @@ $hero         = $cfg['hero'];
 $blocks       = $cfg['fixed_blocks'];
 $path_catalog = \Seoflix\Homepage::path_definitions();
 $path_names   = array_column( $path_catalog, 'name', 'slug' );
+$default_title = \Seoflix\Homepage::defaults()['hero']['title'] ?: 'Apprends le business web sans perdre des heures sur YouTube.';
+$rotate_hero   = $hero['title'] === $default_title;
+$hero_labels   = array_values( array_filter( array_column( $path_catalog, 'hero_label' ) ) );
 
 $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 	$ordered_ids = \Seoflix\Path_Order::ordered_video_ids_for_term( $term_id );
@@ -30,7 +33,14 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 	<section class="sx-home-hero" aria-labelledby="madias-home-title">
 		<div class="sx-container sx-home-hero__inner">
 			<p class="sx-home-hero__brand">WEAS</p>
-			<h1 id="madias-home-title" class="sx-home-hero__title"><?php echo esc_html( $hero['title'] ?: 'Apprends le business web sans perdre des heures sur YouTube.' ); ?></h1>
+			<h1 id="madias-home-title" class="sx-home-hero__title">
+				<?php if ( $rotate_hero && $hero_labels ) : ?>
+					<span class="screen-reader-text"><?php echo esc_html( $default_title ); ?></span>
+					<span aria-hidden="true"><span>Apprends le business web — </span><span id="sx-rotate" class="sx-rotate"><?php echo esc_html( $hero_labels[0] ); ?></span><span> — sans perdre des heures sur YouTube.</span></span>
+				<?php else : ?>
+					<?php echo esc_html( $hero['title'] ?: $default_title ); ?>
+				<?php endif; ?>
+			</h1>
 			<?php if ( $hero['subtitle'] ) : ?>
 				<p class="sx-home-hero__subtitle"><?php echo esc_html( $hero['subtitle'] ); ?></p>
 			<?php endif; ?>
@@ -205,5 +215,27 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 		<?php endif; ?>
 	</div>
 </div>
+
+<?php if ( $rotate_hero && count( $hero_labels ) > 1 ) : ?>
+<script>
+(function() {
+	const el = document.getElementById('sx-rotate');
+	if (!el) return;
+	const words = <?php echo wp_json_encode( $hero_labels ); ?>;
+	if (!Array.isArray(words) || words.length < 2) return;
+	const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	if (reduced) { el.textContent = words[0]; return; }
+	let index = 0;
+	setInterval(function() {
+		el.classList.add('is-out');
+		setTimeout(function() {
+			index = (index + 1) % words.length;
+			el.textContent = words[index];
+			el.classList.remove('is-out');
+		}, 280);
+	}, 2200);
+})();
+</script>
+<?php endif; ?>
 
 <?php get_footer();

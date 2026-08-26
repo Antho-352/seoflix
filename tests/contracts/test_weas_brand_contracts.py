@@ -46,11 +46,11 @@ class WeasBrandContracts(unittest.TestCase):
         self.assertRegex(plugin, r"Plugin Name:\s+WEAS Core\b")
         self.assertRegex(plugin, r"Plugin URI:\s+https://weas\.fr\b")
         self.assertRegex(plugin, r"Description:\s+.*\bWEAS\b")
-        self.assertRegex(plugin, r"Version:\s+0\.26\.1\b")
+        self.assertRegex(plugin, r"Version:\s+0\.26\.2\b")
         self.assertRegex(theme, r"Theme Name:\s+WEAS\b")
         self.assertRegex(theme, r"Theme URI:\s+https://weas\.fr\b")
         self.assertRegex(theme, r"Description:\s+.*\bWEAS\b")
-        self.assertRegex(theme, r"Version:\s+0\.13\.0\b")
+        self.assertRegex(theme, r"Version:\s+0\.13\.1\b")
 
     def test_every_runtime_brand_surface_has_dropped_visible_madias_copy(self) -> None:
         combined = "\n".join(source(path) for path in RUNTIME_BRAND_FILES)
