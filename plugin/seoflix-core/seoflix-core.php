@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:       Seoflix Core
- * Plugin URI:        https://seoflix.fr
- * Description:       Cœur métier de Seoflix : CPT (vidéos, chaînes, produits), taxonomies, ingestion YouTube, importer JSON, tracking affiliation, REST API, feature flags comptes utilisateurs.
- * Version:           0.25.0
+ * Plugin Name:       WEAS Core
+ * Plugin URI:        https://weas.fr
+ * Description:       Cœur métier de WEAS : CPT (vidéos, chaînes, produits), taxonomies, ingestion YouTube, importer JSON, tracking affiliation, REST API, feature flags comptes utilisateurs.
+ * Version:           0.26.0
  * Requires at least: 6.5
  * Requires PHP:      8.0
  * Author:            Anthony Russo
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SEOFLIX_VERSION', '0.25.0' );
+define( 'SEOFLIX_VERSION', '0.26.0' );
 define( 'SEOFLIX_PLUGIN_FILE', __FILE__ );
 define( 'SEOFLIX_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SEOFLIX_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

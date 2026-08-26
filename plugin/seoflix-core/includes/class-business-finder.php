@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Moteur déterministe du questionnaire d'orientation MADIAS.
+ * Moteur déterministe du questionnaire d'orientation WEAS.
  *
  * Les égalités suivent toujours TIE_BREAK_ORDER. La table est versionnée pour
  * rendre toute évolution explicite et auditable.

@@ -558,17 +558,17 @@ final class Custom_Auth {
 			'body'    => [ 'secret' => $secret, 'response' => $token, 'remoteip' => $ip ],
 		] );
 		if ( is_wp_error( $response ) ) {
-			error_log( 'Seoflix Turnstile: HTTP error - ' . $response->get_error_message() );
+			error_log( 'WEAS Turnstile: HTTP error - ' . $response->get_error_message() );
 			return false;
 		}
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( $code !== 200 ) {
-			error_log( 'Seoflix Turnstile: HTTP ' . $code );
+			error_log( 'WEAS Turnstile: HTTP ' . $code );
 			return false;
 		}
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( ! is_array( $body ) ) {
-			error_log( 'Seoflix Turnstile: invalid JSON response' );
+			error_log( 'WEAS Turnstile: invalid JSON response' );
 			return false;
 		}
 		return ! empty( $body['success'] );

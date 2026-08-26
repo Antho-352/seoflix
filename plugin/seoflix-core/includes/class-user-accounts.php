@@ -83,7 +83,7 @@ final class User_Accounts {
 		}
 		if ( $failed ) {
 			wp_die(
-				'Les données d’activité MADIAS n’ont pas pu être supprimées. La suppression du compte est interrompue.',
+				'Les données d’activité WEAS n’ont pas pu être supprimées. La suppression du compte est interrompue.',
 				'Suppression du compte interrompue',
 				[ 'response' => 500 ]
 			);
@@ -92,7 +92,7 @@ final class User_Accounts {
 
 	public static function register_privacy_exporter( array $exporters ): array {
 		$exporters['seoflix-account-activity'] = [
-			'exporter_friendly_name' => 'Favoris et historique vidéo MADIAS',
+			'exporter_friendly_name' => 'Favoris et historique vidéo WEAS',
 			'callback'               => [ self::class, 'personal_data_exporter' ],
 		];
 		return $exporters;
@@ -100,7 +100,7 @@ final class User_Accounts {
 
 	public static function register_privacy_eraser( array $erasers ): array {
 		$erasers['seoflix-account-activity'] = [
-			'eraser_friendly_name' => 'Favoris et historique vidéo MADIAS',
+			'eraser_friendly_name' => 'Favoris et historique vidéo WEAS',
 			'callback'             => [ self::class, 'personal_data_eraser' ],
 		];
 		return $erasers;
@@ -223,7 +223,7 @@ final class User_Accounts {
 				$state['cursors'][ $source_index ] = $row_id;
 				$data[] = [
 					'group_id'    => 'seoflix-account-activity',
-					'group_label' => 'Activité vidéo MADIAS',
+					'group_label' => 'Activité vidéo WEAS',
 					'item_id'     => $source['kind'] . '-' . $row_id,
 					'data'        => array_map(
 						static fn( $key, $value ) => [ 'name' => (string) $key, 'value' => (string) $value ],

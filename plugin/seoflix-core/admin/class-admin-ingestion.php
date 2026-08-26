@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Page admin Seoflix → Ingestion.
+ * Page admin WEAS → Ingestion.
  *
  * V1 : Importer un fichier JSON conforme à docs/IMPORT_FORMAT.md.
  * V2 : boutons de scan YouTube par chaîne.
@@ -35,7 +35,7 @@ final class Admin_Ingestion {
 		}
 		?>
 		<div class="wrap seoflix-wrap">
-			<h1>Seoflix — Ingestion</h1>
+			<h1>WEAS — Ingestion</h1>
 
 			<?php if ( $report ) : self::render_report( $report ); endif; ?>
 

@@ -12,29 +12,29 @@ Trois pages référencées par le footer du thème. À créer manuellement dans 
 **Slug** : `affiliation`
 
 ```
-Seoflix utilise des liens d'affiliation pour financer la plateforme. Cela signifie que lorsque tu cliques sur un lien vers un produit ou service mentionné dans une vidéo ou sur une page outil, et que tu effectues un achat, Seoflix peut percevoir une commission de la part du vendeur, sans coût supplémentaire pour toi.
+WEAS utilise des liens d'affiliation pour financer la plateforme. Cela signifie que lorsque tu cliques sur un lien vers un produit ou service mentionné dans une vidéo ou sur une page outil, et que tu effectues un achat, WEAS peut percevoir une commission de la part du vendeur, sans coût supplémentaire pour toi.
 
 ## Comment identifier un lien d'affiliation
 
-Tous les liens d'affiliation sont mentionnés explicitement et passent par une URL de redirection sous la forme `seoflix.fr/go/[nom-du-produit]`. Ils portent l'attribut `rel="sponsored nofollow"` conforme aux recommandations Google.
+Tous les liens d'affiliation sont mentionnés explicitement et passent par une URL de redirection sous la forme `weas.fr/go/[nom-du-produit]`. Ils portent l'attribut `rel="sponsored nofollow"` conforme aux recommandations Google.
 
 Les blocs « Produits & services mentionnés » sur les pages vidéos sont identifiés par la mention « Liens affiliés ».
 
 ## Notre engagement éditorial
 
-- Aucun produit n'est mis en avant sur Seoflix uniquement parce qu'il offre une commission.
+- Aucun produit n'est mis en avant sur WEAS uniquement parce qu'il offre une commission.
 - Les vidéos référencées sont sélectionnées sur des critères qualité (pertinence, profondeur, retours d'expérience), indépendamment des programmes d'affiliation.
-- Les descriptions des produits sont factuelles et n'engagent pas Seoflix sur les performances réelles.
+- Les descriptions des produits sont factuelles et n'engagent pas WEAS sur les performances réelles.
 
 ## Programmes utilisés
 
-Seoflix peut utiliser, entre autres, les programmes d'affiliation des plateformes suivantes : Linkuma, Semrush, Ahrefs, RocketLinks, Ereferer, Awin, Kwanko, ainsi que des programmes directs auprès des éditeurs de logiciels SaaS référencés.
+WEAS peut utiliser, entre autres, les programmes d'affiliation des plateformes suivantes : Linkuma, Semrush, Ahrefs, RocketLinks, Ereferer, Awin, Kwanko, ainsi que des programmes directs auprès des éditeurs de logiciels SaaS référencés.
 
 ## Tes droits
 
-Tu peux à tout moment décider de ne pas passer par les liens d'affiliation et accéder directement aux sites officiels des produits via un moteur de recherche. Aucun cookie tiers n'est déposé par Seoflix sans ton consentement.
+Tu peux à tout moment décider de ne pas passer par les liens d'affiliation et accéder directement aux sites officiels des produits via un moteur de recherche. Aucun cookie tiers n'est déposé par WEAS sans ton consentement.
 
-Pour toute question, contacte-nous à contact@seoflix.fr.
+Pour toute question, contacte-nous à contact@weas.fr.
 ```
 
 ---
@@ -47,35 +47,35 @@ Pour toute question, contacte-nous à contact@seoflix.fr.
 ```
 ## Éditeur du site
 
-**Seoflix** est édité par Anthony Russo, entrepreneur individuel.
+**WEAS** est édité par Anthony Russo, entrepreneur individuel.
 
 - **Directeur de la publication** : Anthony Russo
 - **SIRET** : 98497752000019
-- **Adresse e-mail** : contact@seoflix.fr
+- **Adresse e-mail** : contact@weas.fr
 - **Adresse postale** : [à compléter]
 
 ## Hébergeur
 
-Le site est hébergé par OVH SAS (ou Kimsufi, à préciser selon la prod réelle).
+Le site est hébergé par OVH SAS, infrastructure Kimsufi exploitée via HestiaCP.
 
 - 2 rue Kellermann, 59100 Roubaix, France
 - Téléphone : 09 72 10 10 07
 
 ## Propriété intellectuelle
 
-Le contenu rédactionnel de Seoflix (descriptions des vidéos, textes des pages, organisation des catégories) est la propriété d'Anthony Russo. Toute reproduction sans autorisation est interdite.
+Le contenu rédactionnel de WEAS (descriptions des vidéos, textes des pages, organisation des catégories) est la propriété d'Anthony Russo. Toute reproduction sans autorisation est interdite.
 
-Les vidéos référencées sur Seoflix sont la propriété intellectuelle de leurs auteurs respectifs (les chaînes YouTube référencées). Seoflix se contente de fournir une interface d'agrégation et utilise le lecteur YouTube embarqué officiel pour la lecture, conformément aux conditions d'utilisation YouTube.
+Les vidéos référencées sur WEAS sont la propriété intellectuelle de leurs auteurs respectifs (les chaînes YouTube référencées). WEAS se contente de fournir une interface d'agrégation et utilise le lecteur YouTube embarqué officiel pour la lecture, conformément aux conditions d'utilisation YouTube.
 
 Les marques et logos des produits et services référencés (Linkuma, Semrush, Ahrefs, etc.) appartiennent à leurs propriétaires respectifs.
 
 ## Liens affiliés
 
-Seoflix utilise des liens d'affiliation. Pour plus de détails, voir la page [Politique d'affiliation](/affiliation/).
+WEAS utilise des liens d'affiliation. Pour plus de détails, voir la page [Politique d'affiliation](/affiliation/).
 
 ## Limitation de responsabilité
 
-Les informations diffusées sur Seoflix sont données à titre informatif. Les performances en SEO, affiliation, vente de liens ou tout autre business mentionné dépendent de nombreux facteurs et ne peuvent être garanties. Seoflix ne saurait être tenu responsable des décisions prises sur la base des contenus référencés.
+Les informations diffusées sur WEAS sont données à titre informatif. Les performances en SEO, affiliation, vente de liens ou tout autre business mentionné dépendent de nombreux facteurs et ne peuvent être garanties. WEAS ne saurait être tenu responsable des décisions prises sur la base des contenus référencés.
 ```
 
 ---
@@ -88,7 +88,7 @@ Les informations diffusées sur Seoflix sont données à titre informatif. Les p
 ```
 ## Données collectées
 
-Seoflix collecte le minimum de données nécessaires à son fonctionnement :
+WEAS collecte le minimum de données nécessaires à son fonctionnement :
 
 - **Statistiques de visite** : pages consultées, durée, source (referer). Ces données sont agrégées et anonymisées.
 - **Clics sur liens d'affiliation** : nombre de clics par produit, page source du clic, hash anonymisé de l'IP (SHA-256 + sel) pour empêcher les abus, user-agent. Aucune adresse IP en clair n'est conservée.
@@ -97,7 +97,7 @@ Aucune donnée personnelle nominative n'est collectée tant que tu n'as pas cré
 
 ## Cookies
 
-Seoflix utilise uniquement des cookies fonctionnels strictement nécessaires (session WP). Aucun cookie publicitaire ni de tracking tiers n'est déposé par Seoflix.
+WEAS utilise uniquement des cookies fonctionnels strictement nécessaires (session WP). Aucun cookie publicitaire ni de tracking tiers n'est déposé par WEAS.
 
 Le lecteur vidéo YouTube intégré utilise le mode `youtube-nocookie.com` qui ne dépose des cookies qu'au moment où tu démarres la lecture d'une vidéo. Les cookies déposés à ce moment sont gérés par YouTube/Google.
 
@@ -112,7 +112,7 @@ Conformément au Règlement Général sur la Protection des Données (RGPD), tu 
 - Droit à la portabilité
 - Droit d'opposition
 
-Pour exercer ces droits, contacte-nous à contact@seoflix.fr.
+Pour exercer ces droits, contacte-nous à contact@weas.fr.
 
 ## Durée de conservation
 
@@ -121,11 +121,11 @@ Pour exercer ces droits, contacte-nous à contact@seoflix.fr.
 
 ## Sécurité
 
-Les données sont hébergées sur un serveur dédié (Kimsufi, France). Le site est servi en HTTPS. Les mots de passe administrateurs sont stockés hashés (bcrypt natif WordPress).
+Les données sont hébergées sur un serveur Kimsufi administré via HestiaCP en France. Le site est servi en HTTPS. Les mots de passe administrateurs sont stockés hashés (bcrypt natif WordPress).
 
 ## Contact
 
-Pour toute question relative à la confidentialité : contact@seoflix.fr.
+Pour toute question relative à la confidentialité : contact@weas.fr.
 ```
 
 ---

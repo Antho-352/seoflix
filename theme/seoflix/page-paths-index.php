@@ -1,6 +1,6 @@
 <?php
 /**
- * Index éditorial des six parcours MADIAS.
+ * Index éditorial des six parcours WEAS.
  * Route dédiée : /parcours/ (aucune page WordPress requise).
  */
 get_header();
@@ -20,7 +20,7 @@ $user_id       = $show_progress ? get_current_user_id() : 0;
 
 	<header class="sx-paths-index__header">
 		<p class="sx-home-section__kicker">Apprendre sans s'éparpiller</p>
-		<h1>Les parcours MADIAS</h1>
+		<h1>Les parcours WEAS</h1>
 		<p>Six chemins éditoriaux construits à partir de vidéos réellement publiées. Choisis un sujet, puis avance dans l'ordre.</p>
 	</header>
 

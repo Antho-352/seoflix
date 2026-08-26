@@ -171,36 +171,36 @@ HTML;
 
 	private static function content_affiliation(): string {
 		return <<<HTML
-<!-- wp:paragraph --><p>Seoflix utilise des liens d'affiliation pour financer la plateforme. Cela signifie que lorsque tu cliques sur un lien vers un produit ou service mentionné dans une vidéo ou sur une page outil, et que tu effectues un achat, Seoflix peut percevoir une commission de la part du vendeur, sans coût supplémentaire pour toi.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>WEAS utilise des liens d'affiliation pour financer la plateforme. Cela signifie que lorsque tu cliques sur un lien vers un produit ou service mentionné dans une vidéo ou sur une page outil, et que tu effectues un achat, WEAS peut percevoir une commission de la part du vendeur, sans coût supplémentaire pour toi.</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Comment identifier un lien d'affiliation</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Tous les liens d'affiliation sont mentionnés explicitement et passent par une URL de redirection sous la forme <code>seoflix.fr/go/[nom-du-produit]</code>. Ils portent l'attribut <code>rel="sponsored nofollow"</code> conforme aux recommandations Google.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Tous les liens d'affiliation sont mentionnés explicitement et passent par une URL de redirection sous la forme <code>weas.fr/go/[nom-du-produit]</code>. Ils portent l'attribut <code>rel="sponsored nofollow"</code> conforme aux recommandations Google.</p><!-- /wp:paragraph -->
 <!-- wp:paragraph --><p>Les blocs « Produits & services mentionnés » sur les pages vidéos sont identifiés par la mention « Liens affiliés ».</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Notre engagement éditorial</h2><!-- /wp:heading -->
 <!-- wp:list --><ul>
-<li>Aucun produit n'est mis en avant sur Seoflix uniquement parce qu'il offre une commission.</li>
+<li>Aucun produit n'est mis en avant sur WEAS uniquement parce qu'il offre une commission.</li>
 <li>Les vidéos référencées sont sélectionnées sur des critères qualité (pertinence, profondeur, retours d'expérience), indépendamment des programmes d'affiliation.</li>
-<li>Les descriptions des produits sont factuelles et n'engagent pas Seoflix sur les performances réelles.</li>
+<li>Les descriptions des produits sont factuelles et n'engagent pas WEAS sur les performances réelles.</li>
 </ul><!-- /wp:list -->
 
 <!-- wp:heading --><h2>Programmes utilisés</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Seoflix peut utiliser, entre autres, les programmes d'affiliation des plateformes suivantes : Linkuma, Semrush, Ahrefs, RocketLinks, Ereferer, Awin, Kwanko, ainsi que des programmes directs auprès des éditeurs de logiciels SaaS référencés.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>WEAS peut utiliser, entre autres, les programmes d'affiliation des plateformes suivantes : Linkuma, Semrush, Ahrefs, RocketLinks, Ereferer, Awin, Kwanko, ainsi que des programmes directs auprès des éditeurs de logiciels SaaS référencés.</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Tes droits</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Tu peux à tout moment décider de ne pas passer par les liens d'affiliation et accéder directement aux sites officiels des produits via un moteur de recherche. Aucun cookie tiers n'est déposé par Seoflix sans ton consentement.</p><!-- /wp:paragraph -->
-<!-- wp:paragraph --><p>Pour toute question, contacte-nous à <a href="mailto:contact@seoflix.fr">contact@seoflix.fr</a>.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Tu peux à tout moment décider de ne pas passer par les liens d'affiliation et accéder directement aux sites officiels des produits via un moteur de recherche. Aucun cookie tiers n'est déposé par WEAS sans ton consentement.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Pour toute question, contacte-nous à <a href="mailto:contact@weas.fr">contact@weas.fr</a>.</p><!-- /wp:paragraph -->
 HTML;
 	}
 
 	private static function content_mentions(): string {
 		return <<<HTML
 <!-- wp:heading --><h2>Éditeur du site</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p><strong>Seoflix</strong> est édité par Anthony Russo, entrepreneur individuel.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p><strong>WEAS</strong> est édité par Anthony Russo, entrepreneur individuel.</p><!-- /wp:paragraph -->
 <!-- wp:list --><ul>
 <li><strong>Directeur de la publication</strong> : Anthony Russo</li>
 <li><strong>SIRET</strong> : 98497752000019</li>
-<li><strong>Adresse e-mail</strong> : contact@seoflix.fr</li>
+<li><strong>Adresse e-mail</strong> : contact@weas.fr</li>
 <li><strong>Adresse postale</strong> : [à compléter]</li>
 </ul><!-- /wp:list -->
 
@@ -212,25 +212,25 @@ HTML;
 </ul><!-- /wp:list -->
 
 <!-- wp:heading --><h2>Propriété intellectuelle</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Le contenu rédactionnel de Seoflix (descriptions des vidéos, textes des pages, organisation des catégories) est la propriété d'Anthony Russo. Toute reproduction sans autorisation est interdite.</p><!-- /wp:paragraph -->
-<!-- wp:paragraph --><p>Les vidéos référencées sur Seoflix sont la propriété intellectuelle de leurs auteurs respectifs (les chaînes YouTube référencées). Seoflix se contente de fournir une interface d'agrégation et utilise le lecteur YouTube embarqué officiel pour la lecture, conformément aux conditions d'utilisation YouTube.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Le contenu rédactionnel de WEAS (descriptions des vidéos, textes des pages, organisation des catégories) est la propriété d'Anthony Russo. Toute reproduction sans autorisation est interdite.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Les vidéos référencées sur WEAS sont la propriété intellectuelle de leurs auteurs respectifs (les chaînes YouTube référencées). WEAS se contente de fournir une interface d'agrégation et utilise le lecteur YouTube embarqué officiel pour la lecture, conformément aux conditions d'utilisation YouTube.</p><!-- /wp:paragraph -->
 <!-- wp:paragraph --><p>Les marques et logos des produits et services référencés (Linkuma, Semrush, Ahrefs, etc.) appartiennent à leurs propriétaires respectifs.</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Liens affiliés</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Seoflix utilise des liens d'affiliation. Pour plus de détails, voir la page <a href="/affiliation/">Politique d'affiliation</a>.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>WEAS utilise des liens d'affiliation. Pour plus de détails, voir la page <a href="/affiliation/">Politique d'affiliation</a>.</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Limitation de responsabilité</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Les informations diffusées sur Seoflix sont données à titre informatif. Les performances en SEO, affiliation, vente de liens ou tout autre business mentionné dépendent de nombreux facteurs et ne peuvent être garanties. Seoflix ne saurait être tenu responsable des décisions prises sur la base des contenus référencés.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Les informations diffusées sur WEAS sont données à titre informatif. Les performances en SEO, affiliation, vente de liens ou tout autre business mentionné dépendent de nombreux facteurs et ne peuvent être garanties. WEAS ne saurait être tenu responsable des décisions prises sur la base des contenus référencés.</p><!-- /wp:paragraph -->
 HTML;
 	}
 
 	private static function content_privacy(): string {
 		return <<<HTML
 <!-- wp:heading --><h2>Données collectées</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Seoflix collecte le minimum de données nécessaires à son fonctionnement :</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>WEAS collecte le minimum de données nécessaires à son fonctionnement :</p><!-- /wp:paragraph -->
 <!-- wp:list --><ul>
 <li><strong>Logs serveur</strong> (Apache) : adresse IP, date/heure, page consultée, user-agent. Conservés pendant <strong>30 jours maximum</strong>, puis purgés automatiquement par l'hébergeur.</li>
-<li><strong>Clics sur liens d'affiliation</strong> : produit cliqué, page source du clic, hash anonymisé de l'IP (SHA-256 + sel propre au site) pour empêcher les abus, user-agent. <strong>Aucune adresse IP en clair n'est conservée</strong> dans la base de Seoflix : seul le hash irréversible l'est.</li>
+<li><strong>Clics sur liens d'affiliation</strong> : produit cliqué, page source du clic, hash anonymisé de l'IP (SHA-256 + sel propre au site) pour empêcher les abus, user-agent. <strong>Aucune adresse IP en clair n'est conservée</strong> dans la base de WEAS : seul le hash irréversible l'est.</li>
 <li><strong>Commentaires</strong> (si activés) : pseudonyme, e-mail, contenu, IP, user-agent. Stockés tant que le commentaire est publié ou modéré.</li>
 </ul><!-- /wp:list -->
 <!-- wp:paragraph --><p>Aucune donnée personnelle nominative n'est collectée tant que tu n'as pas créé de compte. Les comptes utilisateurs ne sont pas activés en V1 — il est donc impossible de t'inscrire.</p><!-- /wp:paragraph -->
@@ -243,7 +243,7 @@ HTML;
 </ul><!-- /wp:list -->
 
 <!-- wp:heading --><h2>Cookies</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Seoflix utilise uniquement des cookies fonctionnels strictement nécessaires (session WordPress pour l'administration). Aucun cookie publicitaire ni de tracking tiers n'est déposé par Seoflix.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>WEAS utilise uniquement des cookies fonctionnels strictement nécessaires (session WordPress pour l'administration). Aucun cookie publicitaire ni de tracking tiers n'est déposé par WEAS.</p><!-- /wp:paragraph -->
 <!-- wp:paragraph --><p>Le lecteur vidéo YouTube intégré utilise le mode <code>youtube-nocookie.com</code> qui ne dépose des cookies qu'au moment où tu démarres la lecture d'une vidéo. Les cookies déposés à ce moment sont gérés par YouTube/Google et soumis à leur propre politique de confidentialité.</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Tes droits (RGPD)</h2><!-- /wp:heading -->
@@ -258,17 +258,17 @@ HTML;
 </ul><!-- /wp:list -->
 
 <!-- wp:heading --><h2>Comment exercer ces droits</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Pour exercer l'un de ces droits, envoie un e-mail à <a href="mailto:contact@seoflix.fr">contact@seoflix.fr</a> en précisant :</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Pour exercer l'un de ces droits, envoie un e-mail à <a href="mailto:contact@weas.fr">contact@weas.fr</a> en précisant :</p><!-- /wp:paragraph -->
 <!-- wp:list --><ul>
 <li>Le droit que tu souhaites exercer</li>
 <li>Une preuve d'identité (copie de pièce d'identité partiellement masquée — seul ton nom et ta photo doivent rester lisibles)</li>
-<li>L'adresse IP que tu utilises ou as utilisée pour visiter Seoflix (utile pour identifier d'éventuels clics affiliés)</li>
+<li>L'adresse IP que tu utilises ou as utilisée pour visiter WEAS (utile pour identifier d'éventuels clics affiliés)</li>
 </ul><!-- /wp:list -->
 <!-- wp:paragraph --><p><strong>Délai de réponse</strong> : 1 mois à compter de la réception de la demande, prolongeable de 2 mois supplémentaires en cas de demande complexe (tu seras informé de la prolongation et de ses motifs dans le mois suivant la demande).</p><!-- /wp:paragraph -->
 <!-- wp:paragraph --><p>L'exercice de ces droits est gratuit, sauf si la demande est manifestement infondée ou excessive.</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Recours auprès de la CNIL</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Si tu estimes, après avoir contacté Seoflix, que tes droits Informatique et Libertés ne sont pas respectés, tu peux adresser une réclamation à la <strong>Commission Nationale de l'Informatique et des Libertés (CNIL)</strong> :</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Si tu estimes, après avoir contacté WEAS, que tes droits Informatique et Libertés ne sont pas respectés, tu peux adresser une réclamation à la <strong>Commission Nationale de l'Informatique et des Libertés (CNIL)</strong> :</p><!-- /wp:paragraph -->
 <!-- wp:list --><ul>
 <li>En ligne : <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener">cnil.fr/fr/plaintes</a></li>
 <li>Par courrier : 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07</li>
@@ -286,7 +286,7 @@ HTML;
 <!-- wp:paragraph --><p>Les données sont hébergées sur un serveur dédié en France (OVH/Kimsufi). Le site est servi exclusivement en HTTPS. Les mots de passe administrateurs sont stockés hashés (bcrypt natif WordPress, jamais en clair).</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Contact</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>Pour toute question relative à la confidentialité ou au traitement de tes données : <a href="mailto:contact@seoflix.fr">contact@seoflix.fr</a>.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Pour toute question relative à la confidentialité ou au traitement de tes données : <a href="mailto:contact@weas.fr">contact@weas.fr</a>.</p><!-- /wp:paragraph -->
 HTML;
 	}
 }

@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Tableau de bord Seoflix : stats globales.
+ * Tableau de bord WEAS : stats globales.
  */
 final class Admin_Dashboard {
 
@@ -23,7 +23,7 @@ final class Admin_Dashboard {
 		$stats = self::stats();
 		?>
 		<div class="wrap seoflix-wrap">
-			<h1>Seoflix — Tableau de bord</h1>
+			<h1>WEAS — Tableau de bord</h1>
 
 			<div class="seoflix-stats">
 				<div class="seoflix-stat">

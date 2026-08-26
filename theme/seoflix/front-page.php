@@ -1,6 +1,6 @@
 <?php
 /**
- * Page d'accueil MADIAS : assemblage éditorial fixe.
+ * Page d'accueil WEAS : assemblage éditorial fixe.
  */
 get_header();
 
@@ -29,7 +29,7 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 <div class="sx-home">
 	<section class="sx-home-hero" aria-labelledby="madias-home-title">
 		<div class="sx-container sx-home-hero__inner">
-			<p class="sx-home-hero__brand">MADIAS</p>
+			<p class="sx-home-hero__brand">WEAS</p>
 			<h1 id="madias-home-title" class="sx-home-hero__title"><?php echo esc_html( $hero['title'] ?: 'Apprends le business web sans perdre des heures sur YouTube.' ); ?></h1>
 			<?php if ( $hero['subtitle'] ) : ?>
 				<p class="sx-home-hero__subtitle"><?php echo esc_html( $hero['subtitle'] ); ?></p>
@@ -169,7 +169,7 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 
 		<?php if ( ! empty( $blocks['about'] ) ) : ?>
 			<section id="a-propos" class="sx-home-about" aria-labelledby="home-about-title">
-				<p class="sx-home-section__kicker">Pourquoi MADIAS</p>
+				<p class="sx-home-section__kicker">Pourquoi WEAS</p>
 				<h2 id="home-about-title">À propos</h2>
 				<p>Cela fait plus de 5 ans que je fais du freelancing et de l'édition de sites (SEO, Affiliation, Youtube) et que je regarde tous les contenus sur ces sujets. Je voulais permettre aux débutants et aux initiés de perdre le moins de temps possible en sélectionnant les vidéos qui apportent de la valeur.</p>
 			</section>

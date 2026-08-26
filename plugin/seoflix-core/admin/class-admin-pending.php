@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Page admin Seoflix → Vidéos à valider.
+ * Page admin WEAS → Vidéos à valider.
  *
  * Liste les vidéos en statut `pending`, avec actions Publier / Modifier / Rejeter.
  */
@@ -38,7 +38,7 @@ final class Admin_Pending {
 
 		?>
 		<div class="wrap seoflix-wrap">
-			<h1>Seoflix — Vidéos à valider <span class="title-count"><?php echo count( $videos ); ?></span></h1>
+			<h1>WEAS — Vidéos à valider <span class="title-count"><?php echo count( $videos ); ?></span></h1>
 
 			<?php if ( ! $videos ) : ?>
 				<div class="seoflix-card">

@@ -1,8 +1,8 @@
-# MADIAS Refonte V1 Implementation Plan
+# WEAS Refonte V1 Implementation Plan
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 
-**Goal:** Rebrander Seoflix en MADIAS et livrer un socle éditorial différenciant autour des parcours, timestamps, analyses vidéo d’Antho, progression et découverte guidée.
+**Goal:** Rebrander Seoflix en WEAS et livrer un socle éditorial différenciant autour des parcours, timestamps, analyses vidéo d’Antho, progression et découverte guidée.
 
 **Architecture:** Conserver tous les identifiants techniques historiques `seoflix_*`. Étendre le plugin métier pour les données structurées et la persistance; garder le rendu dans le thème. La homepage reste un assemblage fixe avec quelques sélections ciblées, sans builder générique. Les comptes ne sont élargis qu’après correction et preuve runtime.
 
@@ -21,8 +21,8 @@
 - Les promotions restent gérées manuellement par Antho; pas de workflow de fraîcheur complexe.
 - Une vidéo peut appartenir à plusieurs parcours, avec ordre indépendant.
 - Conserver les identifiants techniques `seoflix_*`.
-- Préparer la migration 301 `seoflix.fr` vers `madias.fr` sans l’activer avant réservation et validation du domaine.
-- Chaque fiche vidéo peut recevoir une vidéo personnelle optionnelle d’Antho, rendue sous « L’analyse MADIAS ».
+- Préparer la migration 301 `seoflix.fr` vers `weas.fr` sans l’activer avant réservation et validation du domaine.
+- Chaque fiche vidéo peut recevoir une vidéo personnelle optionnelle d’Antho, rendue sous « L’analyse WEAS ».
 - Export initial du carnet : vue imprimable et copie Markdown.
 
 ## Modèle de données retenu
@@ -88,7 +88,7 @@
 
 ---
 
-### Task 3: Rendre la fiche vidéo MADIAS
+### Task 3: Rendre la fiche vidéo WEAS
 
 **Objective:** Donner une valeur éditoriale propre sans masquer la vidéo source.
 
@@ -103,7 +103,7 @@
 2. vidéo source clairement nommée « Vidéo source »;
 3. « Les passages à regarder » avec liens YouTube horodatés;
 4. « Les points à retenir »;
-5. bloc optionnel « L’essentiel par MADIAS » avec embed `youtube-nocookie.com`, toujours après la vidéo source;
+5. bloc optionnel « L’essentiel par WEAS » avec embed `youtube-nocookie.com`, toujours après la vidéo source;
 6. prochaine étape dans le parcours;
 7. produits associés.
 
@@ -111,7 +111,7 @@
 
 **Verification:** rendu échappé, un seul H1, iframe titrée, mobile 320 px sans overflow, liens timestamp ouvrant au bon temps.
 
-**Interaction:** les timestamps pilotent toujours la vidéo source, jamais la capsule MADIAS. La source reste le premier lecteur de la page; la capsule personnelle est chargée paresseusement plus bas.
+**Interaction:** les timestamps pilotent toujours la vidéo source, jamais la capsule WEAS. La source reste le premier lecteur de la page; la capsule personnelle est chargée paresseusement plus bas.
 
 ---
 
@@ -178,7 +178,7 @@
 
 ### Task 6: Rebrander les surfaces visibles sans renommer l’interne
 
-**Objective:** Afficher MADIAS partout où l’utilisateur ou Antho voit encore Seoflix, tout en préservant les contrats techniques.
+**Objective:** Afficher WEAS partout où l’utilisateur ou Antho voit encore Seoflix, tout en préservant les contrats techniques.
 
 **Files:**
 - Modify: labels et textes visibles dans le plugin et le thème
@@ -205,7 +205,7 @@
 - Test: `tests/contracts/test_madias_homepage_contracts.py`
 
 **Sections fixes:**
-1. hero MADIAS + CTA « Commencer à apprendre »;
+1. hero WEAS + CTA « Commencer à apprendre »;
 2. six cartes parcours;
 3. nouveautés;
 4. meilleurs outils choisis manuellement dans l’admin;
@@ -239,7 +239,7 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 
 ### Task 9: Créer le template d’article natif
 
-**Objective:** Donner aux articles un rendu éditorial cohérent avec MADIAS.
+**Objective:** Donner aux articles un rendu éditorial cohérent avec WEAS.
 
 **Files:**
 - Create: `theme/seoflix/single-post.php`
@@ -374,10 +374,10 @@ La homepage ne doit pas recevoir une seconde newsletter depuis le footer.
 **Objective:** Livrer un runbook vérifiable sans déclencher prématurément la bascule.
 
 **Files:**
-- Create: `docs/MADIAS_DOMAIN_MIGRATION.md`
+- Create: `docs/WEAS_DOMAIN_MIGRATION.md`
 - Modify: métadonnées visibles, e-mails, OG, JSON-LD et pages générées
 
-**Checklist:** sauvegarde; inventaire URL; 301 une-à-une; `home`/`siteurl`; Cloudflare; TLS; Turnstile; clés API; expéditeur mail; Search Console; sitemap; robots; canonical; liens affiliés; cache; rollback. Interdire la redirection tant que `madias.fr` n’est pas résolu, certifié et validé par Antho.
+**Checklist:** sauvegarde; inventaire URL; 301 une-à-une; `home`/`siteurl`; Cloudflare; TLS; Turnstile; clés API; expéditeur mail; Search Console; sitemap; robots; canonical; liens affiliés; cache; rollback. Interdire la redirection tant que `weas.fr` n’est pas résolu, certifié et validé par Antho.
 
 ---
 

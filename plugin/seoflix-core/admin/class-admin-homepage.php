@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/** Réglages ciblés de l'assemblage fixe de la page d'accueil MADIAS. */
+/** Réglages ciblés de l'assemblage fixe de la page d'accueil WEAS. */
 final class Admin_Homepage {
 
 	public const PAGE_SLUG = 'seoflix-homepage';
@@ -22,7 +22,7 @@ final class Admin_Homepage {
 	public static function register_page(): void {
 		add_submenu_page(
 			'seoflix',
-			"Page d'accueil MADIAS",
+			"Page d'accueil WEAS",
 			"Page d'accueil",
 			'manage_options',
 			self::PAGE_SLUG,
@@ -60,7 +60,7 @@ final class Admin_Homepage {
 		];
 		?>
 		<div class="wrap seoflix-wrap">
-			<h1>Page d'accueil MADIAS</h1>
+			<h1>Page d'accueil WEAS</h1>
 			<?php if ( isset( $_GET['saved'] ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>Configuration enregistrée.</p></div>
 			<?php elseif ( isset( $_GET['reset'] ) ) : ?>

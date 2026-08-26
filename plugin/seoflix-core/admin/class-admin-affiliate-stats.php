@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Page admin Seoflix → Stats affiliation.
+ * Page admin WEAS → Stats affiliation.
  */
 final class Admin_Affiliate_Stats {
 
@@ -53,7 +53,7 @@ final class Admin_Affiliate_Stats {
 
 		?>
 		<div class="wrap seoflix-wrap">
-			<h1>Seoflix — Stats affiliation</h1>
+			<h1>WEAS — Stats affiliation</h1>
 
 			<div class="seoflix-stats">
 				<div class="seoflix-stat">

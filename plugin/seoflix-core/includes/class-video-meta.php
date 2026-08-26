@@ -32,7 +32,7 @@ final class Video_Meta {
 		);
 		add_meta_box(
 			'seoflix_video_editorial',
-			'Contenu éditorial MADIAS',
+			'Contenu éditorial WEAS',
 			[ self::class, 'render_editorial_metabox' ],
 			CPT::VIDEO,
 			'normal',
@@ -135,13 +135,13 @@ final class Video_Meta {
 			})();
 			</script>
 		<?php else : ?>
-			<p>Aucun produit dans la base. Crée des produits via Seoflix → Produits → Ajouter.</p>
+			<p>Aucun produit dans la base. Crée des produits via WEAS → Produits → Ajouter.</p>
 		<?php endif; ?>
 		<?php
 	}
 
 	/* ======================================================================
-	 *  Métabox "Contenu éditorial MADIAS"
+	 *  Métabox "Contenu éditorial WEAS"
 	 * ====================================================================== */
 
 	public static function render_editorial_metabox( \WP_Post $post ): void {
@@ -158,7 +158,7 @@ final class Video_Meta {
 		<input type="hidden" name="seoflix_key_concepts_present" value="1">
 
 		<p>
-			<label for="seoflix_editorial_video_url" style="display:block; font-weight:600; margin-bottom:0.25rem;">Vidéo personnelle MADIAS (YouTube)</label>
+			<label for="seoflix_editorial_video_url" style="display:block; font-weight:600; margin-bottom:0.25rem;">Vidéo personnelle WEAS (YouTube)</label>
 			<input type="text" id="seoflix_editorial_video_url" name="seoflix_editorial_video_url" value="<?php echo esc_attr( $editorial_url ); ?>" class="widefat code" placeholder="ID ou URL YouTube">
 			<span class="description">Optionnelle. Une valeur valide est normalisée vers youtube-nocookie.com.</span>
 		</p>

@@ -45,7 +45,7 @@ final class Admin {
 	}
 
 	public static function enqueue_assets( string $hook ): void {
-		// Charger CSS uniquement sur les pages Seoflix.
+		// Charger CSS uniquement sur les pages WEAS.
 		if ( strpos( $hook, 'seoflix' ) === false ) {
 			return;
 		}

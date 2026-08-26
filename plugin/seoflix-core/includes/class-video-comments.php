@@ -256,7 +256,7 @@ final class Video_Comments {
 		if ( self::$inside_validated_handler || ! $post_id || get_post_type( $post_id ) !== CPT::VIDEO ) {
 			return $comment_data;
 		}
-		wp_die( esc_html__( 'Cette discussion utilise le formulaire privé Seoflix.', 'seoflix' ), '', [ 'response' => 403 ] );
+		wp_die( esc_html__( 'Cette discussion utilise le formulaire privé WEAS.', 'seoflix' ), '', [ 'response' => 403 ] );
 	}
 
 	public static function guard_final_insertion( array $data, array $comment_data ): array {
@@ -335,7 +335,7 @@ final class Video_Comments {
 		// Notre politique doit s'exécuter avant l'effaceur natif, qui viderait sinon l'e-mail de correspondance.
 		return [
 			'seoflix-video-discussions' => [
-				'eraser_friendly_name' => 'Discussions privées des vidéos MADIAS',
+				'eraser_friendly_name' => 'Discussions privées des vidéos WEAS',
 				'callback'             => [ self::class, 'personal_data_eraser' ],
 			],
 		] + $erasers;

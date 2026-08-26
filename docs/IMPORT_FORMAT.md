@@ -1,6 +1,6 @@
-# Format JSON d'import — Seoflix
+# Format JSON d’import — WEAS
 
-Ce document définit le format consommé par `Seoflix\Importer` (admin → Seoflix → Ingestion → Importer JSON). Les agents de catégorisation de backlog produisent des fichiers conformes à ce schéma.
+Ce document définit le format consommé par `Seoflix\Importer` (admin → WEAS → Ingestion → Importer JSON). Les agents de catégorisation de backlog produisent des fichiers conformes à ce schéma.
 
 ## Vue d'ensemble
 
@@ -62,7 +62,7 @@ Liste des vidéos pré-catégorisées.
   "formats": ["podcast"],
   "paths": ["apprendre-le-seo"],
   "description_ai": "...",
-  "editorial_video_url": "https://youtu.be/MADIAS12345",
+  "editorial_video_url": "https://youtu.be/WEASQA12345",
   "timestamps": [{"id": "UUID", "seconds": 95, "label": "Audit initial", "takeaway": "Prioriser les erreurs bloquantes."}],
   "key_concepts": [{"id": "UUID", "text": "Commencer par les pages indexables"}],
   "products_mentioned": ["ahrefs", "linkuma"],
@@ -84,7 +84,7 @@ Liste des vidéos pré-catégorisées.
 | `formats` | string[] | oui | Slugs de la taxonomie `seoflix_format` |
 | `paths` | string[] | non | Slugs de la taxonomie `seoflix_path` (peut être vide) |
 | `description_ai` | string | oui | 150-200 mots en français, factuel |
-| `editorial_video_url` | string | non | ID ou URL YouTube de la capsule MADIAS; hôtes acceptés : `youtube.com`, `www.youtube.com`, `m.youtube.com`, `youtu.be`, `youtube-nocookie.com`, `www.youtube-nocookie.com`. Stockage canonique `https://www.youtube-nocookie.com/embed/{id}`. Une chaîne vide supprime la méta; une valeur invalide laisse la valeur existante intacte. |
+| `editorial_video_url` | string | non | ID ou URL YouTube de la capsule WEAS; hôtes acceptés : `youtube.com`, `www.youtube.com`, `m.youtube.com`, `youtu.be`, `youtube-nocookie.com`, `www.youtube-nocookie.com`. Stockage canonique `https://www.youtube-nocookie.com/embed/{id}`. Une chaîne vide supprime la méta; une valeur invalide laisse la valeur existante intacte. |
 | `timestamps` | object[] | non | Lignes `{id, seconds, label, takeaway}`. `id` est un UUID conservé ou généré, `seconds` est un entier positif ou nul borné par `duration_seconds` lorsqu'elle est positive, `label` est requis et `takeaway` optionnel. Les lignes valides sont triées par secondes puis ordre d'entrée. |
 | `key_concepts` | string[] ou object[] | non | Le format historique `string[]` reste compatible. Le format structuré est `{id, text}`; un UUID valide est conservé, sinon généré, et les textes vides sont ignorés. |
 | `products_mentioned` | string[] | non | Slugs des produits (cf. `products_detected`) |
@@ -180,7 +180,7 @@ Liste des produits/services SaaS mentionnés dans les vidéos. L'importer crée 
 5. `videos[*].products_mentioned[*]` DOIT correspondre à un `products_detected[*].slug` (sinon ignoré).
 6. `videos[*].youtube_id` est l'identifiant d'unicité — un import existant est ignoré (dédup).
 7. Les champs éditoriaux sont optionnels : s'ils sont absents, l'import ne modifie pas les métadonnées existantes. Un tableau `timestamps` ou `key_concepts` malformé est également ignoré plutôt que d'effacer l'existant. Seul un vrai tableau JSON vide `[]` efface le champ ; un objet `{}` est invalide et ignoré. Les lignes sans UUID reçoivent un identifiant déterministe afin qu'un même import ne change pas leurs identités. Les UUID sont normalisés en minuscules et un UUID fourni en double est réattribué de façon unique à partir de sa deuxième occurrence.
-8. Les timestamps pilotent toujours la vidéo source; `editorial_video_url` désigne uniquement la future capsule « L'essentiel par MADIAS ».
+8. Les timestamps pilotent toujours la vidéo source; `editorial_video_url` désigne uniquement la future capsule « L'essentiel par WEAS ».
 
 ## Règles éditoriales (agents)
 

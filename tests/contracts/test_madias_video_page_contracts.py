@@ -192,7 +192,7 @@ class MadiasVideoPageContracts(unittest.TestCase):
             re.S,
         )
         self.assertIsNotNone(block)
-        self.assertIn("L’essentiel par MADIAS", block.group(0))
+        self.assertIn("L’essentiel par WEAS", block.group(0))
         self.assertIn("esc_url( $editorial_url )", block.group(0))
         self.assertIn("esc_attr(", block.group(0))
         self.assertRegex(

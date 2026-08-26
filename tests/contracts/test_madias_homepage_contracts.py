@@ -255,10 +255,10 @@ class MadiasHomepageContracts(unittest.TestCase):
         self.assertIn("! is_front_page()", self.footer)
         self.assertEqual(self.footer.count("seoflix_render_newsletter("), 1)
 
-    def test_visible_brand_is_madias_without_internal_renames(self) -> None:
-        self.assertGreaterEqual(self.header.count("MADIAS"), 2)
-        self.assertGreaterEqual(self.footer.count("MADIAS"), 2)
-        self.assertRegex(self.style, r"Theme Name:\s*MADIAS\b")
+    def test_visible_brand_is_weas_without_internal_renames(self) -> None:
+        self.assertGreaterEqual(self.header.count("WEAS"), 2)
+        self.assertGreaterEqual(self.footer.count("WEAS"), 2)
+        self.assertRegex(self.style, r"Theme Name:\s*WEAS\b")
         self.assertIn("Text Domain: seoflix", self.style)
         combined = self.homepage + self.admin + self.frontend + self.seo + self.front_page
         for identifier in (

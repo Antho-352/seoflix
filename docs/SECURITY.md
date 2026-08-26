@@ -1,4 +1,4 @@
-# Sécurité Seoflix
+# Sécurité WEAS
 
 État de la sécurité du site, des fixes appliqués, et de la roadmap V2 (inscription utilisateurs).
 
@@ -7,7 +7,7 @@
 ## Modèle de menace
 
 - **Site public**, pas de comptes en V1 → surface d'attaque = front + admin uniquement.
-- **Hébergement** : Kimsufi/OVH cPanel + ConfigServer Firewall (CSF/LFD).
+- **Hébergement** : Kimsufi/OVH avec HestiaCP + ConfigServer Firewall (CSF/LFD).
 - **Frontend** : Cloudflare proxy (CDN + WAF + DDoS protection au niveau edge).
 - **Stack** : WordPress + plugin custom + thème custom + FluentSMTP.
 
@@ -86,7 +86,7 @@ Empêche l'édition de fichiers plugin/thème via le dashboard, même si un admi
 
 ---
 
-## Recommandations serveur (à faire dans WHM/cPanel)
+## Recommandations serveur HestiaCP
 
 ### `wp-config.php` — ajouter
 
@@ -98,7 +98,7 @@ define( 'WP_DEBUG_LOG', false );
 define( 'AUTOMATIC_UPDATER_DISABLED', false ); // laisse les màj de sécurité auto
 ```
 
-### `.htaccess` — hardening (ajouter dans Seoflix → .htaccess)
+### `.htaccess` — hardening (ajouter dans WEAS → .htaccess)
 
 ```apache
 # Bloque l'accès aux fichiers sensibles
@@ -131,21 +131,21 @@ Options -Indexes
 - **Rate Limiting Rule** : POST sur `/wp-admin/admin-post.php` → 30 req/min/IP, action Challenge
 - **WAF Custom Rule** : bloquer `(http.request.uri.path contains "xmlrpc.php")` → Block
 - **Bot Fight Mode** : Activer (Pro plan) ou Bot Management (Enterprise)
-- **Page Rules** : `seoflix.fr/wp-admin/*` → Security Level: High
+- **Page Rules** : `weas.fr/wp-admin/*` → Security Level: High
 - **DDoS Protection** : par défaut activé, vérifier dans Security → DDoS
 
 ### CSF/LFD (déjà investigué)
 
-- `SMTP_BLOCK = Off` ou `SMTP_ALLOWUSER = seoflix` (whitelist user)
-- `LF_SMTPRELAY` raisonnable (≥ 100 mails/heure pour le user seoflix)
+- `SMTP_BLOCK = Off` ou `SMTP_ALLOWUSER = weas` (whitelist user)
+- `LF_SMTPRELAY` raisonnable (≥ 100 mails/heure pour le user weas)
 - `LF_TRIGGER` actif (alertes mail sur events suspects)
 
 ### File permissions standard
 
 ```bash
-find /home/seoflix/public_html -type d -exec chmod 755 {} \;
-find /home/seoflix/public_html -type f -exec chmod 644 {} \;
-chmod 600 /home/seoflix/public_html/wp-config.php
+find /home/weas/web/weas.fr/public_html -type d -exec chmod 755 {} \;
+find /home/weas/web/weas.fr/public_html -type f -exec chmod 644 {} \;
+chmod 600 /home/weas/web/weas.fr/public_html/wp-config.php
 ```
 
 ---
@@ -157,9 +157,9 @@ chmod 600 /home/seoflix/public_html/wp-config.php
    - Changer tous les mots de passe (admin WP, FTP/SSH, BDD, FluentSMTP, Cloudflare)
    - Vérifier `wp-content/uploads/` à la recherche de fichiers PHP suspects
    - Vérifier `wp-content/plugins/` à la recherche de plugins ajoutés sans toi
-   - Vérifier les utilisateurs WP (`SELECT * FROM wp_users` via cPanel phpMyAdmin)
+   - Vérifier les utilisateurs WP (`SELECT * FROM wp_users` via l’administration MySQL Hestia)
 2. **Restauration** :
-   - Restore depuis backup propre (Cloudways/cPanel JetBackup)
+   - Restaurer depuis une sauvegarde Hestia vérifiée
    - Update WordPress + tous les plugins après
    - Re-scanner le site avec [Sucuri SiteCheck](https://sitecheck.sucuri.net) pour confirmer le clean
 3. **Post-mortem** :

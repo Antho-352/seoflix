@@ -17,12 +17,12 @@
 
 <header class="sx-site-header">
 	<div class="sx-container sx-site-header__inner">
-		<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="sx-logo" aria-label="MADIAS — accueil">
+		<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="sx-logo" aria-label="WEAS — accueil">
 			<svg class="sx-logo__mark" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true">
 				<rect width="100" height="100" rx="22" fill="#16161D"/>
 				<path d="M50 28 L74 72 L26 72 Z" fill="#FF2D3F"/>
 			</svg>
-			<span class="sx-logo__text">MADIAS</span>
+			<span class="sx-logo__text">WEAS</span>
 		</a>
 
 		<nav class="sx-nav sx-nav--desktop" aria-label="Navigation principale">
@@ -59,7 +59,7 @@
 					<rect width="100" height="100" rx="22" fill="#16161D"/>
 					<path d="M50 28 L74 72 L26 72 Z" fill="#FF2D3F"/>
 				</svg>
-				<span class="sx-logo__text">MADIAS</span>
+				<span class="sx-logo__text">WEAS</span>
 			</a>
 			<button type="button" class="sx-drawer__close" aria-label="Fermer le menu" data-sx-close>×</button>
 		</div>

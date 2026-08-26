@@ -1,9 +1,9 @@
 /*
-Theme Name: MADIAS
-Theme URI: https://madias.fr
+Theme Name: WEAS
+Theme URI: https://weas.fr
 Author: Anthony Russo
-Description: Thème éditorial MADIAS pour apprendre le business web à partir de vidéos sélectionnées et organisées.
-Version: 0.12.0
+Description: Thème éditorial WEAS pour apprendre le business web à partir de vidéos sélectionnées et organisées.
+Version: 0.13.0
 Requires at least: 6.5
 Requires PHP: 8.0
 License: Proprietary
@@ -448,7 +448,7 @@ Text Domain: seoflix
 }
 
 /* ===================================================================
- *  MADIAS — HOMEPAGE FIXE ET INDEX DES PARCOURS
+ *  WEAS — HOMEPAGE FIXE ET INDEX DES PARCOURS
  * =================================================================== */
 
 .sx-home,

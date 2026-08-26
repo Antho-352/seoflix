@@ -196,7 +196,7 @@ while ( have_posts() ) :
 					<?php else : ?>
 						<div class="sx-video-page__products sx-video-page__products--empty">
 							<h2>Aucun produit référencé pour cette vidéo</h2>
-							<p>Découvre tous les outils SEO recommandés sur Seoflix.</p>
+							<p>Découvre tous les outils SEO recommandés sur WEAS.</p>
 							<p><a class="sx-btn sx-btn--ghost" href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_product' ) ); ?>">Voir le catalogue</a></p>
 						</div>
 					<?php endif; ?>
@@ -225,12 +225,12 @@ while ( have_posts() ) :
 				<section class="sx-madias-capsule" data-sx-player="madias" aria-labelledby="sx-madias-capsule-title">
 					<div class="sx-madias-capsule__heading">
 						<p class="sx-madias-capsule__eyebrow">Éclairage éditorial</p>
-						<h2 id="sx-madias-capsule-title">L’essentiel par MADIAS</h2>
+						<h2 id="sx-madias-capsule-title">L’essentiel par WEAS</h2>
 					</div>
 					<div class="sx-player sx-madias-capsule__player">
 						<iframe
 							src="<?php echo esc_url( $editorial_url ); ?>"
-							title="<?php echo esc_attr( sprintf( 'L’essentiel par MADIAS : %s', get_the_title() ) ); ?>"
+							title="<?php echo esc_attr( sprintf( 'L’essentiel par WEAS : %s', get_the_title() ) ); ?>"
 							loading="lazy"
 							referrerpolicy="strict-origin-when-cross-origin"
 							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

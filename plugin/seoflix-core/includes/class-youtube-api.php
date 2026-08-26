@@ -125,7 +125,7 @@ final class YouTube_API {
 	public static function fetch_channel( string $handle_or_id ) {
 		$api_key = self::get_api_key();
 		if ( ! $api_key ) {
-			return new \WP_Error( 'no_api_key', 'Clé YouTube Data API non configurée. Va dans Seoflix → Réglages.' );
+			return new \WP_Error( 'no_api_key', 'Clé YouTube Data API non configurée. Va dans WEAS → Réglages.' );
 		}
 		if ( ! self::has_quota( 1 ) ) {
 			return new \WP_Error( 'quota_exceeded', self::quota_blocker_message() );
@@ -154,7 +154,7 @@ final class YouTube_API {
 
 		$response = wp_remote_get( $url, [
 			'timeout'    => 15,
-			'user-agent' => 'Seoflix/1.0 (+https://seoflix.fr)',
+			'user-agent' => 'WEAS/1.0 (+https://weas.fr)',
 		] );
 
 		if ( is_wp_error( $response ) ) {
@@ -251,7 +251,7 @@ final class YouTube_API {
 
 			$resp = wp_remote_get(
 				self::ENDPOINT_PLAYLIST_ITEMS . '?' . http_build_query( $params ),
-				[ 'timeout' => 15, 'user-agent' => 'Seoflix/1.0' ]
+				[ 'timeout' => 15, 'user-agent' => 'WEAS/1.0' ]
 			);
 			$units_used += 1;
 			if ( is_wp_error( $resp ) ) {
@@ -292,7 +292,7 @@ final class YouTube_API {
 
 			$resp = wp_remote_get(
 				self::ENDPOINT_VIDEOS . '?' . http_build_query( $params ),
-				[ 'timeout' => 20, 'user-agent' => 'Seoflix/1.0' ]
+				[ 'timeout' => 20, 'user-agent' => 'WEAS/1.0' ]
 			);
 			$units_used += 1;
 			if ( is_wp_error( $resp ) ) {

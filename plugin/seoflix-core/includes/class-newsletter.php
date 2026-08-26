@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - Endpoint frontend POST /sx-auth/newsletter/ (bypass WPS Hide Login comme l'auth)
  * - Bloc rendu via fonction `seoflix_render_newsletter_form()` utilisée dans la home + footer + form inscription
  * - Notification admin à chaque nouveau subscriber
- * - Page admin Seoflix → Newsletter avec liste + export CSV
+ * - Page admin WEAS → Newsletter avec liste + export CSV
  *
  * Plus tard : intégration Brevo/Mailerlite via API si besoin.
  */

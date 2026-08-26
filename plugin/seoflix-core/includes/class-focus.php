@@ -119,7 +119,7 @@ final class Focus {
 			$url = add_query_arg( 'seoflix_focus_status', 'invalid', $url );
 		}
 
-		wp_safe_redirect( $url, 303, 'Seoflix FOCUS' );
+		wp_safe_redirect( $url, 303, 'WEAS FOCUS' );
 		exit;
 	}
 

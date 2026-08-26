@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Page admin Seoflix → Réglages.
+ * Page admin WEAS → Réglages.
  */
 final class Admin_Settings {
 
@@ -115,7 +115,7 @@ final class Admin_Settings {
 
 		?>
 		<div class="wrap seoflix-wrap">
-			<h1>Seoflix — Réglages</h1>
+			<h1>WEAS — Réglages</h1>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( self::GROUP_YOUTUBE ); ?>

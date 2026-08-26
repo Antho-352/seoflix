@@ -1,6 +1,6 @@
 # Procédure de traitement des demandes RGPD
 
-Marche à suivre quand un visiteur t'envoie une demande RGPD (accès, rectification, effacement, portabilité) à `contact@seoflix.fr`.
+Marche à suivre quand un visiteur t'envoie une demande RGPD (accès, rectification, effacement, portabilité) à `contact@weas.fr`.
 
 ---
 
@@ -8,11 +8,11 @@ Marche à suivre quand un visiteur t'envoie une demande RGPD (accès, rectificat
 
 | Source | Donnée | Lieu | Identifiable ? |
 |--------|--------|------|----------------|
-| Logs Apache | IP en clair, page, user-agent | Serveur Kimsufi (cPanel) | Oui (par IP) |
+| Logs Apache | IP en clair, page, user-agent | Serveur Kimsufi (HestiaCP) | Oui (par IP) |
 | `wp_seoflix_affiliate_clicks` | Hash IP + UA + page | Base WP | **Non** (hash irréversible, sauf si IP fournie pour recompute) |
 | `wp_comments` | Nom, e-mail, IP, contenu | Base WP | Oui (par e-mail ou IP) |
 | `wp_users` | Login, e-mail, hash mot de passe | Base WP | Oui (vide en V1, pas de comptes) |
-| Mailbox `contact@seoflix.fr` | E-mails reçus | Hébergeur mail | Oui |
+| Mailbox `contact@weas.fr` | E-mails reçus | Hébergeur mail | Oui |
 | Backups | Snapshot complet | Selon outil de backup | Oui (jusqu'à expiration) |
 
 En V1 il n'y a pas de comptes utilisateurs, donc 99% des demandes seront vides.
@@ -21,9 +21,9 @@ En V1 il n'y a pas de comptes utilisateurs, donc 99% des demandes seront vides.
 
 La fonctionnalité repose uniquement sur `wp_comments` et `wp_commentmeta`, avec le type dédié `seoflix_video_discussion`. Elle ne crée aucune table. Elle reste désactivée tant que l'option `seoflix_video_discussions_enabled` n'est pas activée **et** que les comptes utilisateurs ne sont pas actifs. Couper l'un des deux flags masque l'interface et bloque les lectures/écritures, sans effacer les fils existants.
 
-Données conservées pour une contribution : identifiant du commentaire et de la vidéo, identifiant utilisateur, nom affiché et e-mail reconstruits depuis le compte, texte brut, parent éventuel, dates et statut de modération. L'adresse IP, l'URL auteur et le user-agent sont volontairement vides. Ce lot n'écrit aucune ligne `wp_commentmeta`. L'exporteur natif de commentaires WordPress couvre les champs de `wp_comments` ; toute extension tierce ajoutant ses propres métadonnées doit fournir son exporteur, et l'export JSON du panneau Seoflix reste un contrôle administratif complémentaire.
+Données conservées pour une contribution : identifiant du commentaire et de la vidéo, identifiant utilisateur, nom affiché et e-mail reconstruits depuis le compte, texte brut, parent éventuel, dates et statut de modération. L'adresse IP, l'URL auteur et le user-agent sont volontairement vides. Ce lot n'écrit aucune ligne `wp_commentmeta`. L'exporteur natif de commentaires WordPress couvre les champs de `wp_comments` ; toute extension tierce ajoutant ses propres métadonnées doit fournir son exporteur, et l'export JSON du panneau WEAS reste un contrôle administratif complémentaire.
 
-L'effaceur de données personnelles enregistré par Seoflix traite seulement ce type dédié, par lots bornés. Il est placé avant l'effaceur natif WordPress afin que celui-ci ne vide pas l'e-mail de correspondance avant l'application de la politique dédiée. Une question ou réponse sans enfant est supprimée. Une question ayant des réponses d'autres membres devient un **tombstone** : auteur, e-mail, URL, IP, user-agent et `user_id` sont vidés, le corps est remplacé par un texte fixe et toutes ses lignes `wp_commentmeta` sont supprimées. Cette anonymisation préserve les réponses des autres personnes sans conserver de métadonnée personnelle sur le parent. Si une purge ou une écriture échoue, l'effaceur signale des données retenues, ne marque pas le traitement comme terminé et conserve l'e-mail de correspondance pour permettre une reprise après correction. Le bouton du panneau **Seoflix → RGPD** appelle la même règle.
+L'effaceur de données personnelles enregistré par WEAS traite seulement ce type dédié, par lots bornés. Il est placé avant l'effaceur natif WordPress afin que celui-ci ne vide pas l'e-mail de correspondance avant l'application de la politique dédiée. Une question ou réponse sans enfant est supprimée. Une question ayant des réponses d'autres membres devient un **tombstone** : auteur, e-mail, URL, IP, user-agent et `user_id` sont vidés, le corps est remplacé par un texte fixe et toutes ses lignes `wp_commentmeta` sont supprimées. Cette anonymisation préserve les réponses des autres personnes sans conserver de métadonnée personnelle sur le parent. Si une purge ou une écriture échoue, l'effaceur signale des données retenues, ne marque pas le traitement comme terminé et conserve l'e-mail de correspondance pour permettre une reprise après correction. Le bouton du panneau **WEAS → RGPD** appelle la même règle.
 
 Les contributions suivent la modération, les doublons, l'anti-flood et les notifications natifs WordPress ; aucune approbation n'est forcée. La fermeture des commentaires sur une vidéo ferme sa discussion. Traiter les éléments en attente ou signalés dans **Commentaires** avant une suppression de compte.
 
@@ -37,7 +37,7 @@ La présente documentation et les contrats source ne constituent pas une preuve 
 4. question, réponse de niveau 1, réponse à une réponse, parent d'une autre vidéo ou non approuvé ;
 5. limites 3/1 500 caractères, Unicode, HTML/entités, shortcode/bloc Gutenberg, toutes les formes de liens et leurs obfuscations, présence de `$_FILES` ;
 6. délai anti-flood, doublon natif, contribution approuvée et en attente, notifications/modération ;
-7. exporteur natif, effaceur WordPress et panneau Seoflix sur une feuille, une racine sans réponse et une racine avec réponses (tombstone) ;
+7. exporteur natif, effaceur WordPress et panneau WEAS sur une feuille, une racine sans réponse et une racine avec réponses (tombstone) ;
 8. rendu clavier/lecteur d'écran et absence de débordement à 320 px, puis purge des caches.
 
 Lors d'une suppression du compte, lancer d'abord l'export/effacement par e-mail, vérifier les tombstones, puis supprimer le compte depuis **Utilisateurs** sans réattribuer involontairement des contenus. Documenter les sauvegardes concernées ; après toute restauration, rejouer l'effacement. Purger ensuite les caches WordPress/CDN et vérifier la page en session connectée et déconnectée.
@@ -56,7 +56,7 @@ Lors d'une suppression du compte, lancer d'abord l'export/effacement par e-mail,
 
 ### 1. Réception de la demande
 
-E-mail reçu sur `contact@seoflix.fr`. Note immédiatement dans le **registre des demandes** (Google Sheet privé, Notion, ou fichier local) :
+E-mail reçu sur `contact@weas.fr`. Note immédiatement dans le **registre des demandes** (Google Sheet privé, Notion, ou fichier local) :
 
 - Date de réception
 - E-mail de la personne
@@ -79,9 +79,9 @@ Réponds en demandant :
 > Cordialement,
 > Anthony Russo
 
-### 3. Recherche dans la base Seoflix
+### 3. Recherche dans la base WEAS
 
-Va dans **WP Admin → Seoflix → RGPD**. Saisis l'e-mail et/ou l'IP fournie.
+Va dans **WP Admin → WEAS → RGPD**. Saisis l'e-mail et/ou l'IP fournie.
 
 Le panneau scanne :
 - `wp_users` (par e-mail) — vide en V1
@@ -106,7 +106,7 @@ Si un compte existe (V2 uniquement), va dans **Utilisateurs**, sélectionne le c
 
 ##### b) Logs Apache
 
-Connecte-toi à **cPanel → Raw Access Logs**. Télécharge le log brut du jour (ou des derniers 30 jours). Tu peux soit :
+Connecte-toi à **HestiaCP / logs Nginx-Apache**. Télécharge le log brut du jour (ou des derniers 30 jours). Tu peux soit :
 
 1. **Attendre la rotation automatique** (~30j) : c'est légitime de mentionner cette durée à la personne.
 2. **Purger immédiatement** : décompresse le `.gz`, ouvre dans un éditeur, supprime les lignes contenant l'IP, recompresse, ré-uploade. Ou via SSH :
@@ -120,7 +120,7 @@ Connecte-toi à **cPanel → Raw Access Logs**. Télécharge le log brut du jour
 
 ##### c) Mailbox
 
-Dans Roundcube / cPanel mail, supprime l'e-mail original de la personne (s'il y a) ainsi que la chaîne de réponse, **après avoir gardé une copie dans le registre**.
+Dans Roundcube / Hestia mail, supprime l'e-mail original de la personne (s'il y a) ainsi que la chaîne de réponse, **après avoir gardé une copie dans le registre**.
 
 ##### d) Backups
 
@@ -157,7 +157,7 @@ Réponds par e-mail :
 > - Logs serveur : suppression manuelle effectuée le [DATE] / suppression automatique programmée le [DATE]
 >
 > [Si export :]
-> En pièce jointe, l'export complet de tes données telles que conservées par Seoflix.
+> En pièce jointe, l'export complet de tes données telles que conservées par WEAS.
 >
 > Pour rappel, en cas de désaccord sur le traitement de ta demande, tu peux saisir la CNIL : https://www.cnil.fr/fr/plaintes
 >
@@ -190,7 +190,7 @@ Tu peux refuser tant que l'identité n'est pas vérifiée. Réponse type : *« C
 
 ### Demande non concernée
 
-Si la personne demande accès/effacement mais n'a aucune donnée chez toi (cas le plus fréquent en V1) : réponds explicitement *« Aucune donnée nominative te concernant n'est conservée par Seoflix. »* Note quand même la demande au registre.
+Si la personne demande accès/effacement mais n'a aucune donnée chez toi (cas le plus fréquent en V1) : réponds explicitement *« Aucune donnée nominative te concernant n'est conservée par WEAS. »* Note quand même la demande au registre.
 
 ### Demande abusive ou répétée
 

@@ -52,7 +52,7 @@ final class SEO {
 		// Réglages
 		add_action( 'admin_init',             [ self::class, 'register_settings' ] );
 
-		// Settings page (Seoflix → SEO)
+		// Settings page (WEAS → SEO)
 		add_action( 'admin_menu',             [ self::class, 'register_admin_page' ], 11 );
 	}
 
@@ -293,7 +293,7 @@ final class SEO {
 			if ( $title ) return $title;
 
 			// Default template ; pour les vidéos on a un template dédié plus riche
-			// avec la chaîne : "Titre — Chaîne | Seoflix" (signal différencié vs YouTube).
+			// avec la chaîne : "Titre — Chaîne | WEAS" (signal différencié vs YouTube).
 			if ( $post->post_type === CPT::VIDEO ) {
 				$tpl = (string) get_option( 'seoflix_seo_title_template_video', '%title% — %channel% | %site%' );
 				$channel_id = (int) get_post_meta( $post->ID, Meta_Keys::VIDEO_CHANNEL_ID, true );
@@ -393,7 +393,7 @@ final class SEO {
 		$robots = self::current_seo_robots();
 		$canon  = self::current_canonical();
 
-		echo "\n<!-- Seoflix SEO -->\n";
+		echo "\n<!-- WEAS SEO -->\n";
 		if ( $desc ) {
 			echo '<meta name="description" content="' . esc_attr( $desc ) . '">' . "\n";
 		}
@@ -591,10 +591,10 @@ final class SEO {
 			}
 		}
 
-		// Publisher = Seoflix
+		// Publisher = WEAS
 		$block['publisher'] = self::build_publisher_short();
 
-		// `isPartOf` la page Seoflix qui sert d'embed
+		// `isPartOf` la page WEAS qui sert d'embed
 		$block['url'] = get_permalink( $post );
 
 		return $block;
@@ -798,7 +798,7 @@ final class SEO {
 		return [
 			'@context'        => 'https://schema.org',
 			'@type'           => 'ItemList',
-			'name'            => 'Parcours MADIAS',
+			'name'            => 'Parcours WEAS',
 			'numberOfItems'   => count( $items ),
 			'itemListElement' => $items,
 		];
@@ -905,7 +905,7 @@ final class SEO {
 	}
 
 	/* ======================================================================
-	 *  Page admin Seoflix → SEO (templates titres + OG par défaut + outils)
+	 *  Page admin WEAS → SEO (templates titres + OG par défaut + outils)
 	 * ====================================================================== */
 
 	public static function register_admin_page(): void {
@@ -984,7 +984,7 @@ final class SEO {
 						<tr>
 							<th><label for="<?php echo esc_attr( self::OPTION_TWITTER_HANDLE ); ?>">Compte X / Twitter</label></th>
 							<td>
-								<input type="text" id="<?php echo esc_attr( self::OPTION_TWITTER_HANDLE ); ?>" name="<?php echo esc_attr( self::OPTION_TWITTER_HANDLE ); ?>" value="<?php echo esc_attr( get_option( self::OPTION_TWITTER_HANDLE, '' ) ); ?>" class="regular-text" placeholder="seoflix">
+								<input type="text" id="<?php echo esc_attr( self::OPTION_TWITTER_HANDLE ); ?>" name="<?php echo esc_attr( self::OPTION_TWITTER_HANDLE ); ?>" value="<?php echo esc_attr( get_option( self::OPTION_TWITTER_HANDLE, '' ) ); ?>" class="regular-text" placeholder="weas">
 								<p class="description">Sans le <code>@</code>. Optionnel.</p>
 							</td>
 						</tr>

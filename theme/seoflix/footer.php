@@ -7,7 +7,7 @@ if ( ! is_front_page()
 	&& ! ( function_exists( 'get_query_var' ) && ( get_query_var( 'seoflix_setpwd' ) || get_query_var( 'seoflix_activate' ) || get_query_var( 'seoflix_dashboard' ) ) )
 	&& function_exists( 'seoflix_render_newsletter' ) ) {
 	echo '<div class="sx-container sx-newsletter-footer-wrap">';
-	seoflix_render_newsletter( \seoflix\Newsletter::SOURCE_FOOTER, [ 'compact' => true, 'title' => 'Newsletter MADIAS' ] );
+	seoflix_render_newsletter( \seoflix\Newsletter::SOURCE_FOOTER, [ 'compact' => true, 'title' => 'Newsletter WEAS' ] );
 	echo '</div>';
 }
 ?>
@@ -20,7 +20,7 @@ if ( ! is_front_page()
 				<?php if ( is_active_sidebar( 'sx-footer-1' ) ) : ?>
 					<?php dynamic_sidebar( 'sx-footer-1' ); ?>
 				<?php else : ?>
-					<h3>MADIAS</h3>
+					<h3>WEAS</h3>
 					<p style="color: var(--sx-color-text-muted); font-size: 0.9rem; line-height: 1.5;">Les meilleures vidéos business web, sélectionnées et organisées pour apprendre sans perdre de temps.</p>
 				<?php endif; ?>
 			</div>
@@ -78,7 +78,7 @@ if ( ! is_front_page()
 		</div>
 
 		<div class="sx-site-footer__bottom">
-			<span>© <?php echo esc_html( date( 'Y' ) ); ?> MADIAS.</span>
+			<span>© <?php echo esc_html( date( 'Y' ) ); ?> WEAS.</span>
 			<span>Certains liens sont des liens d'affiliation. <a href="<?php echo esc_url( home_url( '/affiliation/' ) ); ?>">En savoir plus</a>.</span>
 		</div>
 	</div>

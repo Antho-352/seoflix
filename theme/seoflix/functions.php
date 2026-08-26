@@ -577,7 +577,7 @@ function seoflix_video_key_concepts( int $post_id ): array {
 }
 
 /**
- * Retourne uniquement l'URL d'embed MADIAS canonique validée par le plugin.
+ * Retourne uniquement l'URL d'embed WEAS canonique validée par le plugin.
  */
 function seoflix_video_editorial_embed_url( int $post_id ): string {
 	if ( ! class_exists( '\Seoflix\Meta_Keys' ) || ! class_exists( '\Seoflix\Video_Meta' ) ) {

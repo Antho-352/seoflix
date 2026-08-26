@@ -116,7 +116,7 @@ $error_text = $error_messages[ $error_code ] ?? '';
 
 			<label class="sx-form__label sx-form__label--check">
 				<input type="checkbox" name="newsletter_optin" value="1">
-				<span>Je m'inscris aussi à la newsletter Seoflix (~2 envois/mois, désinscription en 1 clic).</span>
+				<span>Je m'inscris aussi à la newsletter WEAS (~2 envois/mois, désinscription en 1 clic).</span>
 			</label>
 
 			<?php if ( $turnstile ) : ?>

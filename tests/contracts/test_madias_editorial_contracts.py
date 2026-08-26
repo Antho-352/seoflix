@@ -53,7 +53,7 @@ class MadiasEditorialMetadataContracts(unittest.TestCase):
             php,
             re.compile(
                 r"add_meta_box\(\s*'seoflix_video_editorial'\s*,\s*"
-                r"'Contenu éditorial MADIAS'\s*,\s*"
+                r"'Contenu éditorial WEAS'\s*,\s*"
                 r"\[\s*self::class\s*,\s*'render_editorial_metabox'\s*\]\s*,\s*"
                 r"CPT::VIDEO\s*,\s*'normal'\s*,\s*'high'\s*\)"
             ),
@@ -273,7 +273,7 @@ class MadiasEditorialMetadataContracts(unittest.TestCase):
 
     def test_import_document_defines_exact_new_shapes_and_legacy_compatibility(self) -> None:
         doc = source(IMPORT_DOC)
-        self.assertIn('"editorial_video_url": "https://youtu.be/MADIAS12345"', doc)
+        self.assertIn('"editorial_video_url": "https://youtu.be/WEASQA12345"', doc)
         self.assertIn(
             '"timestamps": [{"id": "UUID", "seconds": 95, "label": "Audit initial", "takeaway": "Prioriser les erreurs bloquantes."}]',
             doc,

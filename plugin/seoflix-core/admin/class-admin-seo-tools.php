@@ -69,7 +69,7 @@ final class Admin_SEO_Tools {
 				</form>
 
 				<details style="margin-top: 1rem;">
-					<summary style="cursor: pointer;">Modèle conseillé pour Seoflix</summary>
+					<summary style="cursor: pointer;">Modèle conseillé pour WEAS</summary>
 					<pre style="background: #f6f7f7; padding: 1rem; border-radius: 4px;"><?php echo esc_html( $default ); ?></pre>
 				</details>
 			</div>

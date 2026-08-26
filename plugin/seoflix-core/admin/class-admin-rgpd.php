@@ -77,7 +77,7 @@ final class Admin_Rgpd {
 			<?php endif; ?>
 
 			<div class="seoflix-card">
-				<p>Recherche dans la base Seoflix par adresse e-mail et/ou adresse IP. Tu peux fournir l'un, l'autre, ou les deux.</p>
+				<p>Recherche dans la base WEAS par adresse e-mail et/ou adresse IP. Tu peux fournir l'un, l'autre, ou les deux.</p>
 				<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 					<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE_SLUG ); ?>">
 					<table class="form-table">
@@ -106,7 +106,7 @@ final class Admin_Rgpd {
 				<p>Les éléments suivants ne sont <strong>pas accessibles depuis ce panneau</strong>. À traiter manuellement :</p>
 				<ol>
 					<li><strong>Logs Apache (cPanel → Raw Access Logs)</strong> : conserve l'IP en clair pendant ~30 jours. Pour purger une IP spécifique avant cette échéance, télécharge le log brut, supprime les lignes contenant l'IP, et ré-uploade-le. Ou attends la rotation automatique.</li>
-					<li><strong>Mailbox <code>contact@seoflix.fr</code></strong> : si la personne t'a écrit, supprime l'e-mail original et la chaîne de réponse.</li>
+					<li><strong>Mailbox <code>contact@weas.fr</code></strong> : si la personne t'a écrit, supprime l'e-mail original et la chaîne de réponse.</li>
 					<li><strong>Backups</strong> : la donnée peut subsister dans les sauvegardes pendant la durée de rétention. C'est conforme RGPD tant que les backups sont éphémères et la suppression effective dans les copies actives.</li>
 					<li><strong>Caches CDN / WP cache</strong> : purger après suppression pour éviter qu'une page contenant le commentaire reste servie depuis le cache.</li>
 				</ol>
@@ -275,7 +275,7 @@ final class Admin_Rgpd {
 				<p><em>Saisis une IP pour rechercher dans les clics affiliés.</em></p>
 			<?php endif; ?>
 
-			<h3>Activité du compte MADIAS</h3>
+			<h3>Activité du compte WEAS</h3>
 			<?php if ( $favorites || $watch_history ) : ?>
 				<p><strong><?php echo count( $favorites ); ?></strong> favori(s) et <strong><?php echo count( $watch_history ); ?></strong> entrée(s) d’historique trouvés.</p>
 			<?php elseif ( $user ) : ?>

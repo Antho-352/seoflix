@@ -157,7 +157,7 @@ if ( $is_submission && count( $eligible_paths ) >= 2 ) {
 	<?php if ( $recommendation ) : ?>
 		<section class="sx-finder-results" aria-labelledby="sx-finder-results-title">
 			<h2 id="sx-finder-results-title">Deux pistes à explorer</h2>
-			<p>Le classement repose sur la table MADIAS <?php echo esc_html( $recommendation['version'] ); ?> et sur les parcours réellement disponibles.</p>
+			<p>Le classement repose sur la table WEAS <?php echo esc_html( $recommendation['version'] ); ?> et sur les parcours réellement disponibles.</p>
 			<p>Ordre de départage en cas d’égalité&nbsp;: <?php echo esc_html( implode( ' → ', $recommendation['tie_break']['order'] ) ); ?>.</p>
 			<?php if ( $recommendation['tie_break']['primary_tie'] ) : ?>
 				<p>La piste principale et l’alternative avaient le même score&nbsp;: cet ordre stable a départagé la première place.</p>

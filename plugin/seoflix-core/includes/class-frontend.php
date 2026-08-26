@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Routes et vues dédiées côté public.
  *
  * /categories/ : index historique des catégories.
- * /parcours/   : index éditorial fixe des six parcours MADIAS.
+ * /parcours/   : index éditorial fixe des six parcours WEAS.
  * /commencer/  : questionnaire d’orientation business.
  */
 final class Frontend {

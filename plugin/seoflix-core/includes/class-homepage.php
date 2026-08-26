@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Configuration ciblée de la page d'accueil MADIAS.
+ * Configuration ciblée de la page d'accueil WEAS.
  *
  * L'option historique `seoflix_homepage_config` est conservée. Le rendu public
  * utilise désormais un assemblage fixe : seuls les textes du hero, les outils,

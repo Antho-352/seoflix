@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Menu admin principal de Seoflix.
+ * Menu admin principal de WEAS.
  */
 final class Admin_Menu {
 
@@ -18,8 +18,8 @@ final class Admin_Menu {
 
 	public static function register_menu(): void {
 		add_menu_page(
-			'Seoflix',
-			'Seoflix',
+			'WEAS',
+			'WEAS',
 			'manage_options',
 			self::SLUG,
 			[ Admin_Dashboard::class, 'render' ],

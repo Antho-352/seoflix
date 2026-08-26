@@ -1,154 +1,124 @@
-# Déploiement Seoflix
+# Déploiement WEAS
 
-## 1. Installer WordPress sur Kimsufi (cPanel)
+Ce document décrit le déploiement HestiaCP de `weas.fr`. Il complète le runbook fail-closed [`WEAS_DOMAIN_MIGRATION.md`](WEAS_DOMAIN_MIGRATION.md).
 
-1. Acheter `seoflix.fr`, configurer DNS chez le registrar pour pointer vers le serveur Kimsufi
-2. Dans cPanel → **Softaculous Apps Installer** → WordPress → installer sur `seoflix.fr`
-3. Réglages d'install :
-   - **Site name** : Seoflix
-   - **Tagline** : (vide)
-   - **Admin username** : NE PAS utiliser `admin`. Choisir un username obscur
-   - **Admin password** : 16+ caractères, généré aléatoirement
-   - **Admin email** : ton adresse réelle
+## Préconditions obligatoires
 
-## 2. Augmenter les limites PHP
+- candidat committé et worktree propre ;
+- contre-revue indépendante PASS ;
+- deux ZIP WEAS reproductibles avec SHA-256 et manifeste ;
+- sauvegarde vérifiée du webroot, de la base et des composants actifs ;
+- certificat TLS valide pour les hostnames servis ;
+- base MySQL/MariaDB dédiée et recette staging PASS ;
+- compte `contact@weas.fr` testé en émission et réception ;
+- validation explicite avant toute mutation publique ou redirection.
 
-cPanel → **Sélecteur PHP MultiPHP** ou **PHP Options** sur le domaine `seoflix.fr` :
+## Infrastructure cible
 
-| Paramètre | Valeur |
-|---|---|
-| `max_execution_time` | `120` |
-| `memory_limit` | `256M` |
-| `upload_max_filesize` | `8M` |
-| `post_max_size` | `16M` |
+- HestiaCP : serveur `54.36.62.104`
+- utilisateur : `weas`
+- domaine : `weas.fr`
+- webroot : `/home/weas/web/weas.fr/public_html/`
+- DNS/edge : Cloudflare
 
-## 3. Téléverser le plugin
+Ne jamais remplacer le placeholder HTTP tant que TLS, sauvegarde et rollback ne sont pas prêts : le domaine pointe déjà vers le serveur public.
 
-1. Connexion à `seoflix.fr/wp-admin`
-2. **Extensions → Ajouter → Téléverser une extension**
-3. Choisir le fichier `dist/seoflix-core.zip`
-4. **Installer maintenant** → **Activer**
+## 1. Sauvegarde et inventaire
 
-À l'activation, le plugin :
-- Crée les CPT (vidéos, chaînes, produits)
-- Crée les taxonomies (sujets, formats, parcours, catégories produits)
-- Crée 3 tables custom (favoris, historique, clics affiliés)
-- Pré-remplit les termes des taxonomies
+Avant chaque mutation :
 
-## 4. Téléverser le thème
-
-1. **Apparence → Thèmes → Ajouter → Téléverser un thème**
-2. Choisir le fichier `dist/seoflix-theme.zip`
-3. **Installer** → **Activer**
-
-## 5. Configurer le cron Linux (recommandé)
-
-WP-Cron par défaut dépend du trafic. Pour une exécution fiable, configurer un vrai cron :
-
-cPanel → **Tâches Cron** → ajouter :
-
-```
-0 * * * * wget -q -O - https://seoflix.fr/wp-cron.php?doing_wp_cron > /dev/null 2>&1
+```bash
+wp core version
+wp option get home
+wp option get siteurl
+wp option get blogname
+wp plugin list --format=json
+wp theme list --format=json
+wp db export /chemin-hors-webroot/weas-pre-deploy.sql
 ```
 
-Puis désactiver WP-Cron par défaut. Éditer `wp-config.php` (cPanel → Gestionnaire de fichiers) et ajouter avant `/* That's all, stop editing! */` :
+Archiver séparément le webroot, vérifier l’ouverture du dump et des archives, puis enregistrer tailles, propriétaires, modes et SHA-256.
+
+## 2. Installation WordPress et base
+
+Provisionner une base et un utilisateur MySQL dédiés dans Hestia. Installer WordPress 6.5+ avec PHP 8+ dans le webroot, sans utiliser `admin` comme identifiant administrateur.
+
+Avant exposition publique :
 
 ```php
 define( 'DISALLOW_FILE_EDIT', true );
-define( 'DISABLE_WP_CRON', true );
+define( 'WP_DEBUG', false );
+define( 'WP_DEBUG_LOG', false );
 ```
 
-## 6. Importer le backlog initial
+Conserver WP-Cron actif jusqu’à preuve qu’un cron système fonctionnel le remplace.
 
-1. WP Admin → **Seoflix → Ingestion**
-2. **Importer un backlog JSON** → choisir `backlog/seoflix-backlog-v1.json`
-3. **Importer**
-4. Rapport : 14 chaînes, 47 vidéos (statut « pending »), 34 produits
+## 3. Installation des artefacts vérifiés
 
-## 6 bis. Configurer le menu (Apparence → Menus)
+Les noms exacts sont fournis par le manifeste de release :
 
-Par défaut, le thème affiche un menu hardcodé : **SEO / Affiliation / YouTube / Vente de liens / Business / Toutes les catégories / Chaînes / Outils SEO**.
+```bash
+wp plugin install /chemin/release/weas-core-0.26.0-<HEAD>.zip --force --activate
+wp theme install /chemin/release/weas-theme-0.13.0-<HEAD>.zip --force --activate
+wp rewrite flush
+```
 
-Pour pouvoir le modifier (ajouter une entrée Blog, retirer/réordonner) :
+Ne jamais reconstruire les ZIP sur le serveur. Vérifier d’abord leurs SHA-256 contre `SHA256SUMS`.
 
-1. **Apparence → Menus**
-2. **Créer un nouveau menu** → nom : « Menu principal » → **Créer le menu**
-3. Ajouter les items dans l'ordre voulu :
-   - **Catégories** (panneau gauche, dérouler « Sujets ») → cocher : SEO technique, Affiliation, YouTube, Vente de liens, Business → **Ajouter au menu**
-   - **Liens personnalisés** :
-     - URL : `/categories/` — Texte : `Toutes les catégories`
-     - URL : `/chaines/` — Texte : `Chaînes`
-     - URL : `/outils/` — Texte : `Outils SEO`
-4. Réordonner par drag & drop si besoin
-5. **Réglages du menu** (en bas) → cocher **« Menu principal »**
-6. **Enregistrer le menu**
+## 4. Configuration WEAS
 
-Dès qu'un menu est assigné à l'emplacement « Menu principal », le fallback hardcodé disparaît et c'est ton menu qui s'affiche.
+```bash
+wp option update home 'https://weas.fr'
+wp option update siteurl 'https://weas.fr'
+wp option update blogname 'WEAS'
+wp option update blogdescription 'Apprends le business web sans perdre des heures sur YouTube.'
+wp option update permalink_structure '/%postname%/'
+wp rewrite flush
+```
 
-### Ajouter une entrée Blog
+Configurer ensuite la clé YouTube dans **WEAS → Réglages** et importer les données depuis **WEAS → Ingestion → Importer JSON**.
 
-WP a un module d'articles natif (CPT `post`). Pour l'utiliser et avoir une page Blog :
+Les options `seoflix_user_accounts_enabled` et `seoflix_video_discussions_enabled` restent à `0` jusqu’à validation séparée.
 
-1. **Pages → Ajouter** → titre : `Blog` → publier (la laisser vide, son contenu sera remplacé par la liste des articles)
-2. **Réglages → Lecture** → « Page des articles » → sélectionner **Blog** → enregistrer
-3. **Apparence → Menus** → ajouter un **Lien personnalisé** : URL `/blog/`, texte `Blog` → **Ajouter au menu**
-4. Tu peux maintenant créer des articles via **Articles → Ajouter**, ils apparaîtront automatiquement sur `/blog/`
+## 5. Cron Hestia
 
-Le template `index.php` du thème gère déjà l'affichage des articles WP en grille style Seoflix.
+Après vérification manuelle de `wp-cron.php`, créer dans Hestia un cron système sous l’utilisateur `weas` :
 
-## 7. Valider les vidéos
+```cron
+*/5 * * * * /usr/bin/php /home/weas/web/weas.fr/public_html/wp-cron.php >/dev/null 2>&1
+```
 
-1. **Seoflix → Vidéos à valider**
-2. Pour chaque vidéo : **Publier** / **Modifier** / **Rejeter**
-3. Vidéos potentiellement à rejeter (hors-sujet) :
-   - Areseo « +263% avec une action qui verse de Dividendes » (investissement, hors-sujet)
-   - BHC France « Hakim Benotmane VS Anthony Bourbon » / « Le live de 12h de Oussama Ammar » / « Antoine Blanco coachs pyramidaux » (réacts business plutôt que SEO)
-   - Wizards « Amazon KDP » (édition de livres, marginalement on-topic)
+Seulement après plusieurs exécutions réussies, définir `DISABLE_WP_CRON` à `true`.
 
-## 8. Saisir les URLs affiliées
+## 6. Recette staging MySQL/MariaDB
 
-Pour chaque produit (Linkuma, Semrush, Ereferer, etc.) :
+Vérifier au minimum :
 
-1. **Produits → un produit → Modifier**
-2. Champ « URL affiliée » (à venir en phase 4 — pour l'instant utiliser custom field `_seoflix_affiliate_url`)
+- activation/désactivation idempotente ;
+- tables et données `seoflix_*` intactes ;
+- migrations et rewrites ;
+- homepage, `/parcours/`, six parcours et `/commencer/` ;
+- source vidéo avant capsule WEAS ;
+- export/effacement Privacy paginés ;
+- purge affiliation et crons ;
+- erreurs SQL fail-closed ;
+- comptes et discussions OFF par défaut ;
+- aucun warning PHP, 5xx ou erreur SQL.
 
-## 9. Sécurité (à faire avant la mise en ligne publique)
+## 7. TLS, Cloudflare et QA publique
 
-- Plugin **Limit Login Attempts Reloaded** : limite des tentatives de login
-- Plugin **Two Factor** : activer 2FA pour ton compte admin
-- Plugin **Wordfence Security** (ou équivalent) : firewall + scan
-- Plugin **WP Cloudflare Super Page Cache** ou **WP Rocket** : cache + minif
-- Désactiver XML-RPC : ajouter dans `.htaccess` :
-  ```
-  <Files xmlrpc.php>
-      Order Allow,Deny
-      Deny from all
-  </Files>
-  ```
-- Désactiver l'édition de fichiers depuis l'admin WP (déjà fait via `DISALLOW_FILE_EDIT` à l'étape 5)
+Émettre le certificat Let’s Encrypt dans Hestia pour les hostnames réellement utilisés. Tester d’abord l’origine avec Host/SNI, puis le proxy Cloudflare.
 
-## 10. Sauvegardes
+La QA publique exige : HTTP→HTTPS correct, certificat valide, canonical/JSON-LD WEAS, robots/sitemap cohérents, 14 routes représentatives, mobile 320 px, formulaires, mail, cache et absence d’ancienne marque visible.
 
-Plugin **BackWPup** ou **UpdraftPlus** :
-- Sauvegarde quotidienne de la BDD
-- Sauvegarde hebdomadaire complète (fichiers + BDD)
-- Destination : Google Drive, Dropbox, ou FTP distant (pas le même serveur que la prod)
+## 8. Rollback
 
----
+En cas d’échec :
 
-## Mise à jour du plugin / thème
+1. désactiver les flags comptes/discussions ;
+2. remettre les ZIP rollback fournis ;
+3. restaurer les options et permaliens ;
+4. restaurer le dump MySQL seulement si nécessaire ;
+5. vérifier les logs et purger les caches uniquement après confirmation de la version servie.
 
-Pour livrer une nouvelle version :
-
-1. Modifier le code dans `plugin/seoflix-core/` ou `theme/seoflix/`
-2. Bumper la version dans `seoflix-core.php` (header `Version: X.Y.Z`) ou `theme/seoflix/style.css`
-3. Re-générer les zips :
-   ```bash
-   cd /Users/anthonyrusso/seoflix/plugin && zip -r /Users/anthonyrusso/seoflix/dist/seoflix-core.zip seoflix-core -x "*.DS_Store"
-   cd /Users/anthonyrusso/seoflix/theme && zip -r /Users/anthonyrusso/seoflix/dist/seoflix-theme.zip seoflix -x "*.DS_Store"
-   ```
-4. WP Admin → désactiver et supprimer l'ancien plugin/thème
-5. Téléverser le nouveau zip
-6. Activer
-
-> **NB** : le plugin et le thème sont **idempotents** sur l'activation/désactivation. Les données (CPT, taxonomies, post_meta, tables custom) ne sont PAS supprimées à la désactivation. Pour les supprimer complètement, il faudrait passer par un `uninstall.php` (à implémenter si besoin).
+Aucune redirection de l’ancien domaine ne doit être activée avant le PASS complet décrit dans `WEAS_DOMAIN_MIGRATION.md`.
