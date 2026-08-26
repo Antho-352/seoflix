@@ -15,6 +15,7 @@ final class Activator {
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-db-schema.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-affiliate.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-frontend.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-homepage.php';
 
 		// L'activation arrive après `init` : enregistrer immédiatement, sans hook tardif.
 		CPT::register_video();
@@ -31,7 +32,7 @@ final class Activator {
 
 		self::seed_default_terms();
 		self::seed_default_options();
-		update_option( 'seoflix_terms_seed_version', self::TERMS_SEED_VERSION );
+		self::set_seed_version_verified();
 
 		flush_rewrite_rules();
 	}
@@ -67,18 +68,7 @@ final class Activator {
 		];
 		self::insert_terms( 'seoflix_format', $formats );
 
-		$paths = [
-			'apprendre-le-seo'             => 'Apprendre le SEO',
-			'apprendre-le-netlinking'      => 'Apprendre le netlinking',
-			'apprendre-la-vente-de-liens'  => 'Vente de liens',
-			'apprendre-l-affiliation'      => 'Affiliation SEO',
-			'apprendre-la-vente-de-leads'  => 'Vente de leads',
-			'apprendre-le-business'        => 'Apprendre le business',
-			'apprendre-youtube'            => 'Youtube',
-			'apprendre-ia-automatisation'  => 'IA et automatisation',
-			'apprendre-le-freelancing'     => 'Freelancing',
-		];
-		self::insert_terms( 'seoflix_path', $paths );
+		self::normalize_path_terms();
 
 		$product_categories = [
 			'outils-seo'                  => 'Outils SEO',
@@ -108,6 +98,115 @@ final class Activator {
 		}
 	}
 
+	private static function set_term_meta_verified( int $term_id, string $meta_key, $value ): void {
+		update_term_meta( $term_id, $meta_key, $value );
+		if ( (string) get_term_meta( $term_id, $meta_key, true ) !== (string) $value ) {
+			throw new \RuntimeException( 'Impossible d’enregistrer la métadonnée de parcours ' . $meta_key . '.' );
+		}
+	}
+
+	private static function delete_term_meta_verified( int $term_id, string $meta_key ): void {
+		delete_term_meta( $term_id, $meta_key );
+		if ( metadata_exists( 'term', $term_id, $meta_key ) ) {
+			throw new \RuntimeException( 'Impossible de supprimer la métadonnée de parcours ' . $meta_key . '.' );
+		}
+	}
+
+	private static function set_post_meta_verified( int $post_id, string $meta_key, $value ): void {
+		update_post_meta( $post_id, $meta_key, $value );
+		if ( (string) get_post_meta( $post_id, $meta_key, true ) !== (string) $value ) {
+			throw new \RuntimeException( 'Impossible d’enregistrer la métadonnée vidéo ' . $meta_key . '.' );
+		}
+	}
+
+	private static function set_seed_version_verified(): void {
+		update_option( 'seoflix_terms_seed_version', self::TERMS_SEED_VERSION );
+		if ( (int) get_option( 'seoflix_terms_seed_version', 0 ) !== self::TERMS_SEED_VERSION ) {
+			throw new \RuntimeException( 'Impossible de confirmer la version de migration des parcours.' );
+		}
+	}
+
+	/**
+	 * Ramène le catalogue historique aux six parcours WEAS sans perdre les
+	 * relations ni les ordres éditoriaux attachés aux vidéos.
+	 */
+	private static function normalize_path_terms(): void {
+		$canonical_ids = [];
+		foreach ( Homepage::path_definitions() as $position => $definition ) {
+			$existing = term_exists( $definition['slug'], Taxonomies::PATH );
+			if ( ! $existing ) {
+				$existing = wp_insert_term( $definition['name'], Taxonomies::PATH, [
+					'slug'        => $definition['slug'],
+					'description' => $definition['description'],
+				] );
+			}
+			if ( is_wp_error( $existing ) ) {
+				throw new \RuntimeException( 'Impossible de créer le parcours ' . $definition['slug'] . '.' );
+			}
+
+			$term_id = is_array( $existing ) ? (int) $existing['term_id'] : (int) $existing;
+			$term    = get_term( $term_id, Taxonomies::PATH );
+			if ( ! $term instanceof \WP_Term ) {
+				throw new \RuntimeException( 'Parcours introuvable après création : ' . $definition['slug'] . '.' );
+			}
+			$update = [ 'name' => $definition['name'] ];
+			if ( '' === trim( (string) $term->description ) ) {
+				$update['description'] = $definition['description'];
+			}
+			$result = wp_update_term( $term_id, Taxonomies::PATH, $update );
+			if ( is_wp_error( $result ) ) {
+				throw new \RuntimeException( 'Impossible de normaliser le parcours ' . $definition['slug'] . '.' );
+			}
+
+			self::set_term_meta_verified( $term_id, Homepage::PATH_ORDER_META, $position + 1 );
+			self::set_term_meta_verified( $term_id, Homepage::FOCUS_ENABLED_META, $definition['focus_label'] !== '' ? '1' : '0' );
+			if ( $definition['focus_label'] !== '' ) {
+				self::set_term_meta_verified( $term_id, Homepage::FOCUS_LABEL_META, $definition['focus_label'] );
+			} else {
+				self::delete_term_meta_verified( $term_id, Homepage::FOCUS_LABEL_META );
+			}
+			$canonical_ids[ $definition['slug'] ] = $term_id;
+		}
+
+		$legacy_map = [
+			'apprendre-le-seo'                 => 'apprendre-l-affiliation',
+			'apprendre-le-netlinking'          => 'apprendre-la-vente-de-liens',
+			'apprendre-le-business'            => 'apprendre-l-affiliation',
+			'apprendre-lia-et-lautomatisation' => 'apprendre-ia-automatisation',
+		];
+		foreach ( $legacy_map as $legacy_slug => $target_slug ) {
+			$legacy = get_term_by( 'slug', $legacy_slug, Taxonomies::PATH );
+			if ( ! $legacy instanceof \WP_Term ) {
+				continue;
+			}
+			$target_id  = $canonical_ids[ $target_slug ];
+			$object_ids = get_objects_in_term( (int) $legacy->term_id, Taxonomies::PATH );
+			if ( is_wp_error( $object_ids ) ) {
+				throw new \RuntimeException( 'Impossible de lire les relations du parcours ' . $legacy_slug . '.' );
+			}
+			foreach ( array_map( 'intval', $object_ids ) as $object_id ) {
+				$assigned = wp_set_object_terms( $object_id, [ $target_id ], Taxonomies::PATH, true );
+				if ( is_wp_error( $assigned ) ) {
+					throw new \RuntimeException( 'Impossible de transférer une vidéo depuis ' . $legacy_slug . '.' );
+				}
+				$orders = Path_Order::sanitize_order_map( get_post_meta( $object_id, Meta_Keys::VIDEO_PATH_ORDERS, true ) );
+				if ( isset( $orders[ (int) $legacy->term_id ] ) ) {
+					$orders[ $target_id ] = $orders[ $target_id ] ?? $orders[ (int) $legacy->term_id ];
+					unset( $orders[ (int) $legacy->term_id ] );
+					$encoded = wp_json_encode( (object) $orders );
+					if ( false === $encoded ) {
+						throw new \RuntimeException( 'Impossible d’encoder l’ordre vidéo de ' . $legacy_slug . '.' );
+					}
+					self::set_post_meta_verified( $object_id, Meta_Keys::VIDEO_PATH_ORDERS, $encoded );
+				}
+			}
+			$deleted = wp_delete_term( (int) $legacy->term_id, Taxonomies::PATH );
+			if ( is_wp_error( $deleted ) || false === $deleted ) {
+				throw new \RuntimeException( 'Impossible de retirer le parcours historique ' . $legacy_slug . '.' );
+			}
+		}
+	}
+
 	private static function seed_default_options(): void {
 		add_option( 'seoflix_terms_seed_version', self::TERMS_SEED_VERSION );
 		add_option( 'seoflix_user_accounts_enabled', false );
@@ -120,7 +219,7 @@ final class Activator {
 	 * Bumper cette constante quand on ajoute / renomme des termes par défaut.
 	 * Le re-seed se fait automatiquement à chaque page chargée (tant que la version stockée < courante).
 	 */
-	public const TERMS_SEED_VERSION = 3;
+	public const TERMS_SEED_VERSION = 4;
 
 	/**
 	 * Re-seed idempotent (safe à exécuter à chaque page chargée).
@@ -129,7 +228,16 @@ final class Activator {
 		if ( (int) get_option( 'seoflix_terms_seed_version', 0 ) >= self::TERMS_SEED_VERSION ) {
 			return;
 		}
-		self::seed_default_terms();
-		update_option( 'seoflix_terms_seed_version', self::TERMS_SEED_VERSION );
+		if ( ! DB_Schema::acquire_path_order_lock( 10 ) ) {
+			return;
+		}
+		try {
+			self::seed_default_terms();
+			self::set_seed_version_verified();
+		} catch ( \Throwable $error ) {
+			error_log( 'WEAS path migration failed: ' . $error->getMessage() );
+		} finally {
+			DB_Schema::release_path_order_lock();
+		}
 	}
 }

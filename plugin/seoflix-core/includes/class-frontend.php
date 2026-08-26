@@ -31,7 +31,6 @@ final class Frontend {
 		add_filter( 'template_include', [ self::class, 'load_template' ] );
 		add_action( 'pre_get_posts', [ self::class, 'fix_404' ] );
 		add_filter( 'pre_handle_404', [ self::class, 'pre_handle_404' ], 10, 2 );
-		add_action( 'wp_head', [ self::class, 'render_canonical' ], 2 );
 		add_filter( 'document_title_parts', [ self::class, 'filter_title' ] );
 	}
 
@@ -137,12 +136,6 @@ final class Frontend {
 		return $template;
 	}
 
-	public static function render_canonical(): void {
-		if ( ! self::is_seoflix_view( 'business-finder' ) ) {
-			return;
-		}
-		echo '<link rel="canonical" href="' . esc_url( home_url( '/commencer/' ) ) . '">' . "\n";
-	}
 
 	public static function filter_title( array $parts ): array {
 		if ( self::is_seoflix_view( 'business-finder' ) ) {

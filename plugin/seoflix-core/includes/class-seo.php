@@ -46,6 +46,7 @@ final class SEO {
 		add_filter( 'document_title_parts',   [ self::class, 'filter_title_parts' ] );
 		add_filter( 'document_title_separator', static fn() => '|' );
 		add_filter( 'wp_robots',              [ self::class, 'filter_wp_robots' ], 99 );
+		remove_action( 'wp_head', 'rel_canonical' );
 		add_action( 'wp_head',                [ self::class, 'render_meta_tags' ], 1 );
 		add_action( 'wp_head',                [ self::class, 'render_open_graph' ], 5 );
 		add_action( 'wp_head',                [ self::class, 'render_jsonld' ], 7 );
@@ -351,6 +352,16 @@ final class SEO {
 		if ( (string) get_option( 'blog_public', '1' ) === '0' ) {
 			return 'noindex, follow';
 		}
+		if (
+			get_query_var( Auth_Pages::QV_LOGIN )
+			|| get_query_var( Auth_Pages::QV_REGISTER )
+			|| get_query_var( Auth_Pages::QV_LOSTPASS )
+			|| get_query_var( 'seoflix_dashboard' )
+			|| get_query_var( Custom_Auth::QV_ACTIVATE )
+			|| get_query_var( Custom_Auth::QV_SETPWD )
+		) {
+			return 'noindex, follow';
+		}
 		if ( is_search() || is_404() ) return 'noindex, follow';
 		if ( is_singular() ) {
 			$v = (string) get_post_meta( get_queried_object_id(), self::META_ROBOTS, true );
@@ -383,8 +394,32 @@ final class SEO {
 	}
 
 	private static function current_canonical(): string {
+		if ( Frontend::is_view( 'topics' ) ) {
+			return home_url( '/categories/' );
+		}
 		if ( Frontend::is_view( 'paths' ) ) {
 			return home_url( '/parcours/' );
+		}
+		if ( Frontend::is_view( 'business-finder' ) ) {
+			return home_url( '/commencer/' );
+		}
+		if ( get_query_var( Auth_Pages::QV_LOGIN ) ) {
+			return home_url( '/connexion/' );
+		}
+		if ( get_query_var( Auth_Pages::QV_REGISTER ) ) {
+			return home_url( '/inscription/' );
+		}
+		if ( get_query_var( Auth_Pages::QV_LOSTPASS ) ) {
+			return home_url( '/mot-de-passe-oublie/' );
+		}
+		if ( get_query_var( 'seoflix_dashboard' ) ) {
+			return home_url( '/mon-parcours/' );
+		}
+		if ( get_query_var( Custom_Auth::QV_ACTIVATE ) ) {
+			return home_url( '/connexion/' );
+		}
+		if ( get_query_var( Custom_Auth::QV_SETPWD ) ) {
+			return home_url( '/mot-de-passe-oublie/' );
 		}
 		if ( is_singular() ) {
 			$canon = (string) get_post_meta( get_queried_object_id(), self::META_CANONICAL, true );

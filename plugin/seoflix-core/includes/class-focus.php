@@ -21,14 +21,6 @@ final class Focus {
 	public const QUERY_VAR_BYPASS = 'seoflix_focus_bypass';
 	public const QUERY_VAR_ACTIVE = 'seoflix_focus_active';
 	public const COOKIE_TTL       = 7776000; // 90 jours.
-	public const PATH_SLUGS       = [
-		'apprendre-l-affiliation',
-		'apprendre-youtube',
-		'apprendre-la-vente-de-liens',
-		'apprendre-ia-automatisation',
-		'apprendre-la-vente-de-leads',
-		'apprendre-le-freelancing',
-	];
 
 	/** @var array<string, \WP_Term|null> */
 	private static array $validated_terms = [];
@@ -245,14 +237,34 @@ final class Focus {
 	}
 
 	/**
-	 * Retourne au maximum les six parcours réels possédant une vidéo publiée.
+	 * Retourne les choix FOCUS marqués dans la taxonomie, dans l'ordre public.
 	 *
 	 * @return array<int, \WP_Term>
 	 */
 	public static function available_paths(): array {
 		$valid = [];
-		foreach ( self::PATH_SLUGS as $slug ) {
-			$term = self::valid_term_for_slug( $slug );
+		$terms = get_terms( [
+			'taxonomy'   => Taxonomies::PATH,
+			'hide_empty' => false,
+			'meta_key'   => 'seoflix_path_public_order',
+			'orderby'    => 'meta_value_num',
+			'order'      => 'ASC',
+			'meta_query' => [
+				[
+					'key'     => 'seoflix_focus_enabled',
+					'value'   => '1',
+					'compare' => '=',
+				],
+			],
+		] );
+		if ( is_wp_error( $terms ) ) {
+			return [];
+		}
+		foreach ( $terms as $candidate ) {
+			if ( ! $candidate instanceof \WP_Term ) {
+				continue;
+			}
+			$term = self::valid_term_for_slug( $candidate->slug );
 			if ( $term ) {
 				$valid[] = $term;
 			}
@@ -264,15 +276,16 @@ final class Focus {
 		if ( '' === $slug || ! preg_match( '/^[a-z0-9-]{1,200}$/', $slug ) ) {
 			return null;
 		}
-		if ( ! in_array( $slug, self::PATH_SLUGS, true ) ) {
-			return null;
-		}
 		if ( array_key_exists( $slug, self::$validated_terms ) ) {
 			return self::$validated_terms[ $slug ];
 		}
 
 		$term = get_term_by( 'slug', $slug, Taxonomies::PATH );
 		if ( ! $term instanceof \WP_Term || Taxonomies::PATH !== $term->taxonomy ) {
+			self::$validated_terms[ $slug ] = null;
+			return null;
+		}
+		if ( (int) get_term_meta( (int) $term->term_id, 'seoflix_path_public_order', true ) < 1 ) {
 			self::$validated_terms[ $slug ] = null;
 			return null;
 		}

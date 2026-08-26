@@ -61,13 +61,13 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 						if ( $term && ! is_wp_error( $term ) ) :
 							$path_videos = $get_path_videos( (int) $term->term_id );
 							$count       = count( $path_videos );
-							$description = trim( wp_strip_all_tags( $term->description ) );
+							$description = trim( wp_strip_all_tags( $term->description ) ) ?: $definition['description'];
 							?>
 							<a class="sx-path-card" href="<?php echo esc_url( get_term_link( $term ) ); ?>" aria-label="<?php echo esc_attr( 'Ouvrir le parcours ' . $definition['name'] ); ?>">
 								<span class="sx-path-card__icon" aria-hidden="true"><?php echo esc_html( $definition['icon'] ); ?></span>
 								<span class="sx-path-card__body">
 									<strong class="sx-path-card__title"><?php echo esc_html( $definition['name'] ); ?></strong>
-									<span class="sx-path-card__description"><?php echo esc_html( $description ?: 'Description indisponible.' ); ?></span>
+									<span class="sx-path-card__description"><?php echo esc_html( $description ); ?></span>
 									<span class="sx-path-card__meta"><?php echo esc_html( sprintf( _n( '%d vidéo publiée', '%d vidéos publiées', $count, 'seoflix' ), $count ) ); ?></span>
 									<span class="sx-path-card__progress" aria-hidden="true"><span></span><span></span><span></span></span>
 								</span>
@@ -142,37 +142,38 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 			</section>
 		<?php endif; ?>
 
-		<?php if ( ! empty( $blocks['featured_paths'] ) ) : ?>
+		<?php if ( ! empty( $blocks['featured_paths'] ) ) :
+			$featured_rows = [];
+			foreach ( $cfg['featured_path_slugs'] as $featured_slug ) {
+				$featured_term = get_term_by( 'slug', $featured_slug, 'seoflix_path' );
+				if ( ! $featured_term instanceof WP_Term ) {
+					continue;
+				}
+				$featured_videos = $get_path_videos( (int) $featured_term->term_id, 12 );
+				if ( ! $featured_videos ) {
+					continue;
+				}
+				$featured_rows[] = [
+					'name'   => $path_names[ $featured_slug ] ?? $featured_slug,
+					'term'   => $featured_term,
+					'videos' => $featured_videos,
+				];
+			}
+			if ( $featured_rows ) : ?>
 			<section id="parcours-selectionnes" class="sx-home-section" aria-labelledby="home-featured-paths-title">
 				<header class="sx-home-section__header">
 					<h2 id="home-featured-paths-title">Commence par un parcours</h2>
 				</header>
-				<?php foreach ( $cfg['featured_path_slugs'] as $featured_slug ) :
-					$featured_name = $path_names[ $featured_slug ] ?? $featured_slug;
-					$featured_term = get_term_by( 'slug', $featured_slug, 'seoflix_path' );
-					if ( ! $featured_term || is_wp_error( $featured_term ) ) : ?>
-						<section class="sx-row sx-home-unavailable-row" aria-label="Parcours indisponible">
-							<h3>Parcours indisponible</h3>
-							<p>Le parcours configuré « <?php echo esc_html( $featured_slug ); ?> » n'existe pas.</p>
-						</section>
-						<?php continue; ?>
-					<?php endif;
-					$featured_videos = $get_path_videos( (int) $featured_term->term_id, 12 );
-					if ( $featured_videos ) : ?>
-						<?php seoflix_render_video_row( $featured_name, $featured_videos, get_term_link( $featured_term ) ); ?>
-					<?php else : ?>
-						<section class="sx-row sx-home-unavailable-row" aria-labelledby="featured-path-<?php echo (int) $featured_term->term_id; ?>">
-							<h3 id="featured-path-<?php echo (int) $featured_term->term_id; ?>"><?php echo esc_html( $featured_name ); ?></h3>
-							<p>Aucune vidéo publiée dans ce parcours.</p>
-						</section>
-					<?php endif; ?>
+				<?php foreach ( $featured_rows as $featured_row ) : ?>
+					<?php seoflix_render_video_row( $featured_row['name'], $featured_row['videos'], get_term_link( $featured_row['term'] ) ); ?>
 				<?php endforeach; ?>
 			</section>
+			<?php endif; ?>
 		<?php endif; ?>
 
 		<?php if ( ! empty( $blocks['paths_cta'] ) ) : ?>
 			<section id="tous-les-parcours" class="sx-home-paths-cta" aria-labelledby="home-paths-cta-title">
-				<h2 id="home-paths-cta-title">Tu sais déjà ce que tu veux apprendre ?</h2>
+				<h2 id="home-paths-cta-title">Explore les six parcours WEAS</h2>
 				<a class="sx-home-cta" href="<?php echo esc_url( home_url( '/parcours/' ) ); ?>">Voir tous les parcours</a>
 			</section>
 		<?php endif; ?>

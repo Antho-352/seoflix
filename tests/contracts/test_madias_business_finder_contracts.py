@@ -108,8 +108,10 @@ class MadiasBusinessFinderContracts(unittest.TestCase):
         self.assertEqual(upgrade.count("flush_rewrite_rules"), 1)
         self.assertIn("REWRITE_SCHEMA_VERSION", upgrade)
         self.assertIn("status_header( 200 )", frontend)
-        self.assertIn("home_url( '/commencer/' )", frontend)
-        self.assertIn("rel=\"canonical\"", frontend)
+        seo = source("plugin/seoflix-core/includes/class-seo.php")
+        self.assertIn("Frontend::is_view( 'business-finder' )", seo)
+        self.assertIn("home_url( '/commencer/' )", seo)
+        self.assertNotIn("render_canonical", frontend)
 
     def test_exact_eight_allowlists_and_complete_strict_validation_run_in_php(self) -> None:
         payload = php_eval(
@@ -205,9 +207,10 @@ class MadiasBusinessFinderContracts(unittest.TestCase):
         self.assertEqual(
             {key: value["slug"] for key, value in payload["paths"].items()}, paths
         )
+        homepage = source("plugin/seoflix-core/includes/class-homepage.php")
         activator = source("plugin/seoflix-core/includes/class-activator.php")
         for slug in paths.values():
-            self.assertIn(slug, activator)
+            self.assertIn(slug, homepage)
         seed = re.search(r"TERMS_SEED_VERSION\s*=\s*(\d+)", activator)
         self.assertIsNotNone(seed)
         self.assertGreaterEqual(int(seed.group(1)), 3)

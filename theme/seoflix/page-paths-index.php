@@ -48,7 +48,7 @@ $user_id       = $show_progress ? get_current_user_id() : 0;
 				'orderby'        => 'post__in',
 			] ) : [];
 			$count       = count( $videos );
-			$description = trim( wp_strip_all_tags( $term->description ) );
+			$description = trim( wp_strip_all_tags( $term->description ) ) ?: $definition['description'];
 			$total_seconds = 0;
 			$all_durations_known = $count > 0;
 			foreach ( $videos as $video ) {
@@ -87,7 +87,7 @@ $user_id       = $show_progress ? get_current_user_id() : 0;
 				<span class="sx-path-card__icon" aria-hidden="true"><?php echo esc_html( $definition['icon'] ); ?></span>
 				<div class="sx-path-card__body">
 					<h2 class="sx-path-card__title"><a href="<?php echo esc_url( get_term_link( $term ) ); ?>"><?php echo esc_html( $definition['name'] ); ?></a></h2>
-					<p class="sx-path-card__description"><?php echo esc_html( $description ?: 'Description indisponible.' ); ?></p>
+					<p class="sx-path-card__description"><?php echo esc_html( $description ); ?></p>
 					<p class="sx-path-card__meta">
 						<?php echo esc_html( sprintf( _n( '%d vidéo publiée', '%d vidéos publiées', $count, 'seoflix' ), $count ) ); ?>
 						<?php if ( $duration_label ) : ?>

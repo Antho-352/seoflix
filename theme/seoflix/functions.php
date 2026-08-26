@@ -335,48 +335,21 @@ class Seoflix_Nav_Walker extends Walker_Nav_Menu {
 }
 
 /**
- * Fallback : menu hardcodé utilisé tant qu'aucun menu n'est assigné à l'emplacement
- * « Menu principal » dans Apparence → Menus.
- *
- * Dès que tu crées un menu et que tu coches « Menu principal » dans son
- * affectation, ce fallback disparaît et c'est ton menu qui s'affiche.
- */
-/**
- * Rend le menu primaire avec fallback robuste :
- *   - Si un menu est assigné à "primary" ET contient des items → l'utilise
- *   - Sinon → fallback hardcodé (pour ne JAMAIS avoir un menu vide)
+ * Rend les six parcours administrables dans leur ordre taxonomique WEAS.
  */
 function seoflix_render_primary_menu(): void {
-	$rendered = '';
-	if ( has_nav_menu( 'primary' ) ) {
-		$rendered = wp_nav_menu( [
-			'theme_location' => 'primary',
-			'container'      => false,
-			'items_wrap'     => '%3$s',
-			'walker'         => new Seoflix_Nav_Walker(),
-			'depth'          => 1,
-			'fallback_cb'    => false,
-			'echo'           => false,
-		] );
-	}
-	if ( $rendered && trim( $rendered ) !== '' ) {
-		echo $rendered;
-		return;
-	}
 	seoflix_default_primary_menu();
 }
 
 function seoflix_default_primary_menu(): void {
-	?>
-	<a href="<?php echo esc_url( home_url( '/sujet/seo-technique/' ) ); ?>">SEO</a>
-	<a href="<?php echo esc_url( home_url( '/sujet/affiliation/' ) ); ?>">Affiliation</a>
-	<a href="<?php echo esc_url( home_url( '/sujet/youtube/' ) ); ?>">YouTube</a>
-	<a href="<?php echo esc_url( home_url( '/sujet/vente-de-liens/' ) ); ?>">Vente de liens</a>
-	<a href="<?php echo esc_url( home_url( '/sujet/business-general/' ) ); ?>">Business</a>
-	<a href="<?php echo esc_url( home_url( '/categories/' ) ); ?>">Toutes les catégories</a>
-	<a href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_channel' ) ?: home_url( '/chaines/' ) ); ?>">Chaînes</a>
-	<a href="<?php echo esc_url( get_post_type_archive_link( 'seoflix_product' ) ?: home_url( '/outils/' ) ); ?>">Outils SEO</a>
-	<?php
+	$terms = class_exists( '\\Seoflix\\Homepage' ) ? \Seoflix\Homepage::public_path_terms() : [];
+	foreach ( $terms as $term ) {
+		$url = get_term_link( $term );
+		if ( is_wp_error( $url ) ) {
+			continue;
+		}
+		printf( '<a href="%s">%s</a>', esc_url( $url ), esc_html( $term->name ) );
+	}
 }
 
 /* ============================================================
@@ -384,66 +357,67 @@ function seoflix_default_primary_menu(): void {
  * ============================================================ */
 
 /**
- * Rend le bandeau FOCUS partagé par toutes les pages du thème.
+ * Rend le menu FOCUS compact dans le header.
  */
 function seoflix_render_focus_banner(): void {
 	if ( ! class_exists( '\\Seoflix\\Focus' ) ) {
 		return;
 	}
-	if ( ! \Seoflix\Focus::is_focus_surface() ) {
-		return;
-	}
 
-	$active = \Seoflix\Focus::active_path();
-	$action = admin_url( 'admin-post.php' );
+	$active       = \Seoflix\Focus::active_path();
+	$paths        = \Seoflix\Focus::available_paths();
+	$action       = admin_url( 'admin-post.php' );
+	$active_label = $active instanceof WP_Term
+		? (string) ( get_term_meta( $active->term_id, 'seoflix_focus_label', true ) ?: $active->name )
+		: '';
 	$status = isset( $_GET['seoflix_focus_status'] ) && is_string( $_GET['seoflix_focus_status'] )
 		? sanitize_key( wp_unslash( $_GET['seoflix_focus_status'] ) )
 		: '';
 	?>
-	<aside class="sx-focus" aria-labelledby="sx-focus-title">
-		<div class="sx-container sx-focus__inner">
+	<details class="sx-focus-menu">
+		<summary class="sx-focus-menu__trigger" id="sx-focus-trigger">
+			<span>FOCUS</span>
+			<?php if ( $active_label ) : ?><small><?php echo esc_html( $active_label ); ?></small><?php endif; ?>
+		</summary>
+		<div class="sx-focus-menu__panel" aria-labelledby="sx-focus-trigger">
 			<?php if ( $active instanceof WP_Term ) :
 				$path_url = get_term_link( $active );
 				?>
-				<div class="sx-focus__active">
-					<strong class="sx-focus__status" id="sx-focus-title">FOCUS : <?php echo esc_html( $active->name ); ?></strong>
+				<strong class="sx-focus-menu__status">FOCUS : <?php echo esc_html( $active_label ); ?></strong>
+				<div class="sx-focus-menu__actions">
 					<?php if ( ! is_wp_error( $path_url ) ) : ?>
-						<a class="sx-focus__path-link" href="<?php echo esc_url( $path_url ); ?>">Voir le parcours</a>
+						<a href="<?php echo esc_url( $path_url ); ?>">Voir le parcours</a>
 					<?php endif; ?>
-					<form class="sx-focus__reset" method="post" action="<?php echo esc_url( $action ); ?>">
+					<form method="post" action="<?php echo esc_url( $action ); ?>">
 						<input type="hidden" name="action" value="seoflix_focus_reset">
 						<?php wp_nonce_field( \Seoflix\Focus::NONCE_ACTION, \Seoflix\Focus::NONCE_FIELD ); ?>
 						<button type="submit">Voir toutes les vidéos</button>
 					</form>
 				</div>
 				<?php seoflix_render_focus_empty_state( $active ); ?>
-			<?php else :
-				$paths = \Seoflix\Focus::available_paths();
-				?>
-				<form class="sx-focus__form" method="post" action="<?php echo esc_url( $action ); ?>">
+			<?php elseif ( $paths ) : ?>
+				<form class="sx-focus-menu__form" method="post" action="<?php echo esc_url( $action ); ?>">
 					<input type="hidden" name="action" value="seoflix_focus_set">
 					<?php wp_nonce_field( \Seoflix\Focus::NONCE_ACTION, \Seoflix\Focus::NONCE_FIELD ); ?>
-					<fieldset>
-						<legend id="sx-focus-title">Choisir mon FOCUS vidéo</legend>
-						<div class="sx-focus__choices">
-							<?php foreach ( $paths as $index => $path ) : ?>
-								<label>
-									<input type="radio" name="seoflix_focus_path" value="<?php echo esc_attr( $path->slug ); ?>" <?php checked( 0, $index ); ?> required>
-									<span><?php echo esc_html( $path->name ); ?></span>
-								</label>
-							<?php endforeach; ?>
-						</div>
-					</fieldset>
-					<?php if ( $paths ) : ?>
-						<button class="sx-focus__submit" type="submit">Activer ce FOCUS</button>
-					<?php endif; ?>
+					<label for="sx-focus-path">Choisir un parcours</label>
+					<select id="sx-focus-path" name="seoflix_focus_path" required>
+						<option value="" selected disabled>Choisir…</option>
+						<?php foreach ( $paths as $path ) :
+							$label = (string) ( get_term_meta( $path->term_id, 'seoflix_focus_label', true ) ?: $path->name );
+							?>
+							<option value="<?php echo esc_attr( $path->slug ); ?>"><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<button class="sx-focus-menu__submit" type="submit" disabled>Activer ce FOCUS</button>
 				</form>
-				<?php if ( 'invalid' === $status ) : ?>
-					<p class="sx-focus__notice" role="alert">Ce parcours ne contient aucune vidéo publiée.</p>
-				<?php endif; ?>
+			<?php else : ?>
+				<p>Aucun parcours FOCUS disponible.</p>
+			<?php endif; ?>
+			<?php if ( 'invalid' === $status ) : ?>
+				<p class="sx-focus-menu__notice" role="alert">Ce parcours ne contient aucune vidéo publiée.</p>
 			<?php endif; ?>
 		</div>
-	</aside>
+	</details>
 	<?php
 }
 
@@ -943,6 +917,7 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 	$opts = wp_parse_args( $opts, [
 		'show_pricing' => true,
 		'compact'      => false,
+		'catalog'      => false,
 		// Si true et que le produit a un lien d'affiliation, le card pointe
 		// directement sur /go/{slug}/ au lieu de la page produit interne.
 		// Si pas d'affilié, fallback sur la page produit.
@@ -973,6 +948,7 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 
 	$classes = [ 'sx-card-product' ];
 	if ( $opts['compact'] )  { $classes[] = 'sx-card-product--compact'; }
+	if ( $opts['catalog'] )  { $classes[] = 'sx-card-product--catalog'; }
 	if ( $thumb_url )        { $classes[] = 'sx-card-product--has-image'; }
 	?>
 	<article class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
@@ -983,14 +959,19 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 				</div>
 			<?php endif; ?>
 			<div class="sx-card-product__body">
-				<h3 class="sx-card-product__name"><?php echo esc_html( get_the_title( $product ) ); ?></h3>
-				<?php if ( $cat_name && ! $opts['compact'] ) : ?>
-					<div class="sx-card-product__category"><?php echo esc_html( $cat_name ); ?></div>
-				<?php endif; ?>
+				<div class="sx-card-product__identity">
+					<h3 class="sx-card-product__name"><?php echo esc_html( get_the_title( $product ) ); ?></h3>
+					<?php if ( $cat_name && ! $opts['compact'] ) : ?>
+						<div class="sx-card-product__category"><?php echo esc_html( $cat_name ); ?></div>
+					<?php endif; ?>
+				</div>
 				<p class="sx-card-product__excerpt"><?php echo esc_html( wp_trim_words( get_the_excerpt( $product ) ?: $product->post_content, $opts['compact'] ? 14 : 20 ) ); ?></p>
-				<?php if ( $opts['show_pricing'] && $pricing_label ) : ?>
-					<span class="sx-card-product__pricing sx-card-product__pricing--<?php echo esc_attr( $pricing ); ?>"><?php echo esc_html( $pricing_label ); ?></span>
-				<?php endif; ?>
+				<div class="sx-card-product__meta">
+					<?php if ( $opts['show_pricing'] && $pricing_label ) : ?>
+						<span class="sx-card-product__pricing sx-card-product__pricing--<?php echo esc_attr( $pricing ); ?>"><?php echo esc_html( $pricing_label ); ?></span>
+					<?php endif; ?>
+					<?php if ( $opts['catalog'] ) : ?><span class="sx-card-product__action" aria-hidden="true">Voir la fiche →</span><?php endif; ?>
+				</div>
 			</div>
 		</a>
 	</article>

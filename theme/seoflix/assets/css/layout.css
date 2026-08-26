@@ -30,6 +30,7 @@
 	gap: var(--sx-space-3);
 	padding-block: 6px;
 	padding-inline-end: var(--sx-space-3);
+	height: 40px;
 	min-height: 40px;
 }
 
@@ -224,11 +225,11 @@
 	gap: 5px;
 	background: transparent;
 	border: none;
-	padding: 8px;
+	padding: 3px;
 	cursor: pointer;
 	flex-shrink: 0;
-	width: 40px;
-	height: 40px;
+	width: 28px;
+	height: 28px;
 }
 
 .sx-burger span {

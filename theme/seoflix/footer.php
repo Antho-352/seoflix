@@ -39,27 +39,47 @@ if ( ! is_front_page()
 			</div>
 
 			<div class="sx-footer-col">
-				<?php if ( is_active_sidebar( 'sx-footer-3' ) ) : ?>
+				<h3>Parcours</h3>
+				<ul>
+					<?php
+					$path_terms = class_exists( '\\Seoflix\\Homepage' ) ? \Seoflix\Homepage::public_path_terms() : [];
+					foreach ( $path_terms as $path_term ) {
+						$path_url = get_term_link( $path_term );
+						if ( ! is_wp_error( $path_url ) ) {
+							echo '<li><a href="' . esc_url( $path_url ) . '">' . esc_html( $path_term->name ) . '</a></li>';
+						}
+					}
+					?>
+				</ul>
+			</div>
+
+			<?php
+			$has_subject_widgets = is_active_sidebar( 'sx-footer-3' );
+			$footer_topics = $has_subject_widgets ? [] : get_terms( [
+				'taxonomy'   => 'seoflix_topic',
+				'hide_empty' => true,
+				'number'     => 8,
+				'slug__in'   => [ 'seo-technique', 'netlinking', 'affiliation', 'vente-de-liens', 'youtube', 'business-general', 'black-hat', 'mindset-business' ],
+			] );
+			$footer_topics = is_wp_error( $footer_topics ) ? [] : $footer_topics;
+			if ( $has_subject_widgets || $footer_topics ) :
+			?>
+			<div class="sx-footer-col">
+				<?php if ( $has_subject_widgets ) : ?>
 					<?php dynamic_sidebar( 'sx-footer-3' ); ?>
 				<?php else : ?>
 					<h3>Sujets</h3>
 					<ul>
-						<?php
-						$topics = get_terms( [
-							'taxonomy'   => 'seoflix_topic',
-							'hide_empty' => true,
-							'number'     => 8,
-							'slug__in'   => [ 'seo-technique', 'netlinking', 'affiliation', 'vente-de-liens', 'youtube', 'business-general', 'black-hat', 'mindset-business' ],
-						] );
-						if ( ! is_wp_error( $topics ) ) {
-							foreach ( $topics as $t ) {
-								echo '<li><a href="' . esc_url( get_term_link( $t ) ) . '">' . esc_html( $t->name ) . '</a></li>';
-							}
-						}
-						?>
+						<?php foreach ( $footer_topics as $footer_topic ) : ?>
+							<?php $footer_topic_url = get_term_link( $footer_topic ); ?>
+							<?php if ( ! is_wp_error( $footer_topic_url ) ) : ?>
+								<li><a href="<?php echo esc_url( $footer_topic_url ); ?>"><?php echo esc_html( $footer_topic->name ); ?></a></li>
+							<?php endif; ?>
+						<?php endforeach; ?>
 					</ul>
 				<?php endif; ?>
 			</div>
+			<?php endif; ?>
 
 			<div class="sx-footer-col">
 				<?php if ( is_active_sidebar( 'sx-footer-4' ) ) : ?>

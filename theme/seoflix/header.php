@@ -29,6 +29,8 @@
 			<?php seoflix_render_primary_menu(); ?>
 		</nav>
 
+		<?php seoflix_render_focus_banner(); ?>
+
 		<form role="search" method="get" class="sx-search-form sx-search-form--desktop" action="<?php echo esc_url( home_url( '/' ) ); ?>">
 			<input type="search" name="s" placeholder="Rechercher…" value="<?php echo esc_attr( get_search_query() ); ?>" aria-label="Rechercher">
 		</form>
@@ -97,8 +99,22 @@
 	closeEls.forEach(el => el.addEventListener('click', close));
 	document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawer.classList.contains('is-open')) close(); });
 })();
+(function(){
+	const menu = document.querySelector('.sx-focus-menu');
+	if (!menu) return;
+	const select = menu.querySelector('select[name="seoflix_focus_path"]');
+	const submit = menu.querySelector('.sx-focus-menu__submit');
+	if (select && submit) {
+		select.addEventListener('change', () => { submit.disabled = !select.value; });
+	}
+	document.addEventListener('click', event => { if (menu.open && !menu.contains(event.target)) menu.removeAttribute('open'); });
+	document.addEventListener('keydown', event => {
+		if (event.key === 'Escape' && menu.open) {
+			menu.removeAttribute('open');
+			menu.querySelector('summary')?.focus();
+		}
+	});
+})();
 </script>
-
-<?php seoflix_render_focus_banner(); ?>
 
 <main class="sx-main">

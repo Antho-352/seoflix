@@ -9,7 +9,7 @@ global $wp_query;
 $total = (int) $wp_query->found_posts;
 ?>
 
-<div class="sx-container sx-page">
+<div class="sx-container sx-page sx-tools-page">
 
 	<header class="sx-archive-header">
 		<div class="sx-archive-header__kicker">Catégorie</div>
@@ -18,9 +18,9 @@ $total = (int) $wp_query->found_posts;
 	</header>
 
 	<?php if ( have_posts() ) : ?>
-		<div class="sx-grid sx-grid--products">
+		<div class="sx-grid sx-grid--products sx-tools-catalog">
 			<?php while ( have_posts() ) : the_post();
-				seoflix_render_product_card( get_post() );
+				seoflix_render_product_card( get_post(), [ 'catalog' => true ] );
 			endwhile; ?>
 		</div>
 

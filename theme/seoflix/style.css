@@ -3,7 +3,7 @@ Theme Name: WEAS
 Theme URI: https://weas.fr
 Author: Anthony Russo
 Description: Thème éditorial WEAS pour apprendre le business web à partir de vidéos sélectionnées et organisées.
-Version: 0.13.1
+Version: 0.14.0
 Requires at least: 6.5
 Requires PHP: 8.0
 License: Proprietary
@@ -522,7 +522,15 @@ Text Domain: seoflix
 
 .sx-home__content {
 	display: grid;
-	gap: clamp(4rem, 10vw, 8rem);
+	gap: var(--sx-space-16);
+}
+
+.sx-home__content > * {
+	margin-block: 0;
+}
+
+.sx-home-section .sx-row:last-child {
+	margin-bottom: 0;
 }
 
 .sx-home-section,
@@ -662,7 +670,7 @@ Text Domain: seoflix
 .sx-home-promise,
 .sx-home-about,
 .sx-home-paths-cta {
-	padding: clamp(1.5rem, 6vw, 4rem);
+	padding: var(--sx-space-8);
 	background: var(--sx-color-surface);
 	border: 1px solid var(--sx-color-border);
 	border-radius: var(--sx-radius-lg);
@@ -670,6 +678,18 @@ Text Domain: seoflix
 
 .sx-home-promise {
 	border-left: 4px solid var(--sx-color-accent);
+}
+
+.sx-home-paths-cta {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--sx-space-6);
+}
+
+.sx-home-paths-cta .sx-home-cta {
+	flex: 0 0 auto;
+	margin-top: 0;
 }
 
 .sx-home-promise p,
@@ -741,6 +761,11 @@ Text Domain: seoflix
 
 	.sx-home-section__header--row {
 		align-items: start;
+		flex-direction: column;
+	}
+
+	.sx-home-paths-cta {
+		align-items: flex-start;
 		flex-direction: column;
 	}
 }

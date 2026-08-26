@@ -6,6 +6,31 @@ from php_source import source
 
 
 class WeasIndexationContracts(unittest.TestCase):
+    def test_weas_seo_is_the_single_canonical_owner(self) -> None:
+        seo = source("plugin/seoflix-core/includes/class-seo.php")
+        frontend = source("plugin/seoflix-core/includes/class-frontend.php")
+        self.assertIn("remove_action( 'wp_head', 'rel_canonical' )", seo)
+        self.assertEqual((seo + frontend).count('rel="canonical"'), 1)
+        self.assertNotIn("render_canonical", frontend)
+        canonical = seo[seo.index("private static function current_canonical"):seo.index("private static function apply_template")]
+        for token in (
+            "Frontend::is_view( 'topics' )",
+            "home_url( '/categories/' )",
+            "Frontend::is_view( 'paths' )",
+            "home_url( '/parcours/' )",
+            "Frontend::is_view( 'business-finder' )",
+            "home_url( '/commencer/' )",
+            "Auth_Pages::QV_LOGIN",
+            "home_url( '/connexion/' )",
+            "Auth_Pages::QV_REGISTER",
+            "home_url( '/inscription/' )",
+            "Auth_Pages::QV_LOSTPASS",
+            "home_url( '/mot-de-passe-oublie/' )",
+            "get_query_var( 'seoflix_dashboard' )",
+            "home_url( '/mon-parcours/' )",
+        ):
+            self.assertIn(token, canonical)
+
     def test_seo_uses_the_native_wordpress_robots_pipeline_once(self) -> None:
         php = source("plugin/seoflix-core/includes/class-seo.php")
         self.assertIn("add_filter( 'wp_robots'", php)

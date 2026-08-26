@@ -58,8 +58,8 @@ Conserver WP-Cron actif jusqu’à preuve qu’un cron système fonctionnel le r
 Les noms exacts sont fournis par le manifeste de release :
 
 ```bash
-wp plugin install /chemin/release/weas-core-0.26.2-<HEAD>.zip --force --activate
-wp theme install /chemin/release/weas-theme-0.13.1-<HEAD>.zip --force --activate
+wp plugin install /chemin/release/weas-core-0.27.0-<HEAD>.zip --force --activate
+wp theme install /chemin/release/weas-theme-0.14.0-<HEAD>.zip --force --activate
 wp rewrite flush
 ```
 
@@ -109,7 +109,7 @@ Vérifier au minimum :
 
 Émettre le certificat Let’s Encrypt dans Hestia pour les hostnames réellement utilisés. Tester d’abord l’origine avec Host/SNI, puis le proxy Cloudflare.
 
-La QA publique exige : HTTP→HTTPS correct, certificat valide, canonical/JSON-LD WEAS, robots/sitemap cohérents, 14 routes représentatives, mobile 320 px, formulaires, mail, cache et absence d’ancienne marque visible.
+La QA publique exige : HTTP→HTTPS correct, certificat valide, canonical/JSON-LD WEAS, robots/sitemap cohérents, 15 routes représentatives, mobile 320 px, formulaires, mail, cache et absence d’ancienne marque visible.
 
 ## 8. Rollback
 

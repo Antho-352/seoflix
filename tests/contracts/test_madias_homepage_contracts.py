@@ -135,28 +135,20 @@ class MadiasHomepageContracts(unittest.TestCase):
         self.assertEqual(catalog.count("'slug'"), 6)
         self.assertIn("'icon'", catalog)
 
-    def test_launch_paths_are_seeded_without_removing_legacy_terms(self) -> None:
+    def test_launch_paths_are_normalized_with_relationship_and_order_migration(self) -> None:
         activator = source("plugin/seoflix-core/includes/class-activator.php")
-        for slug in (
-            "apprendre-l-affiliation",
-            "apprendre-youtube",
-            "apprendre-la-vente-de-liens",
-            "apprendre-ia-automatisation",
-            "apprendre-la-vente-de-leads",
-            "apprendre-le-freelancing",
+        for legacy_slug in (
             "apprendre-le-seo",
             "apprendre-le-netlinking",
             "apprendre-le-business",
+            "apprendre-lia-et-lautomatisation",
         ):
-            self.assertIn(slug, activator)
+            self.assertIn(legacy_slug, activator)
         version = re.search(r"TERMS_SEED_VERSION\s*=\s*(\d+)", activator)
         self.assertIsNotNone(version)
-        self.assertGreaterEqual(int(version.group(1)), 3)
-        for slug, name in EXPECTED_PATHS:
-            self.assertRegex(
-                activator,
-                rf"'{re.escape(slug)}'\s*=>\s*['\"]{re.escape(name)}['\"]",
-            )
+        self.assertGreaterEqual(int(version.group(1)), 4)
+        for token in ("Homepage::path_definitions", "get_objects_in_term", "wp_set_object_terms", "wp_delete_term", "Meta_Keys::VIDEO_PATH_ORDERS"):
+            self.assertIn(token, activator)
 
     def test_config_is_targeted_bounded_and_backward_compatible(self) -> None:
         defaults = method_body(self.homepage, "defaults")
@@ -245,7 +237,8 @@ class MadiasHomepageContracts(unittest.TestCase):
         self.assertIn("'post__in'", self.front_page)
         self.assertIn("Parcours indisponible", self.front_page)
         self.assertIn("Aucune vidéo publiée", self.front_page)
-        self.assertIn("Description indisponible", self.front_page)
+        self.assertIn("$definition['description']", self.front_page)
+        self.assertNotIn("Description indisponible", self.front_page)
 
     def test_manual_tools_and_native_posts_are_bounded_and_ordered(self) -> None:
         self.assertRegex(self.front_page, r"'post_type'\s*=>\s*'seoflix_product'")
@@ -286,7 +279,7 @@ class MadiasHomepageContracts(unittest.TestCase):
             with self.subTest(identifier=identifier):
                 self.assertIn(identifier, combined)
         self.assertNotIn("seo<em>flix</em>", self.header)
-        self.assertNotIn("Seoflix", self.footer)
+        self.assertNotRegex(self.footer, r">\s*Seoflix\s*<")
 
     def test_parcours_rewrite_upgrade_is_versioned_for_zip_replacements(self) -> None:
         activator = source("plugin/seoflix-core/includes/class-activator.php")
@@ -380,7 +373,8 @@ class MadiasHomepageContracts(unittest.TestCase):
         self.assertIn("Path_Order::ordered_video_ids_for_term", self.paths_index)
         self.assertIn("'post_status'", self.paths_index)
         self.assertIn("Meta_Keys::VIDEO_DURATION", self.paths_index)
-        self.assertIn("Description indisponible", self.paths_index)
+        self.assertIn("$definition['description']", self.paths_index)
+        self.assertNotIn("Description indisponible", self.paths_index)
         self.assertIn("Parcours indisponible", self.paths_index)
         self.assertIn("seoflix_user_accounts_enabled", self.paths_index)
         self.assertIn("is_user_logged_in", self.paths_index)

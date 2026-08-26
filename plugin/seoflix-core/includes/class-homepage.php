@@ -15,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Homepage {
 
 	public const OPTION = 'seoflix_homepage_config';
+	public const PATH_ORDER_META    = 'seoflix_path_public_order';
+	public const FOCUS_ENABLED_META = 'seoflix_focus_enabled';
+	public const FOCUS_LABEL_META   = 'seoflix_focus_label';
 
 	/** Constantes historiques conservées pour les intégrations existantes. */
 	public const TYPE_NEW          = 'new_videos';
@@ -29,17 +32,34 @@ final class Homepage {
 	/**
 	 * Catalogue public intentionnel. L'ordre est un contrat éditorial.
 	 *
-	 * @return array<int,array{slug:string,name:string,hero_label:string,icon:string,description:string}>
+	 * @return array<int,array{slug:string,name:string,hero_label:string,focus_label:string,icon:string,description:string}>
 	 */
 	public static function path_definitions(): array {
 		return [
-			[ 'slug' => 'apprendre-l-affiliation', 'name' => 'Affiliation SEO', 'hero_label' => 'Affiliation SEO', 'icon' => '◎', 'description' => 'Construire des actifs éditoriaux et monétiser une audience qualifiée.' ],
-			[ 'slug' => 'apprendre-youtube', 'name' => 'Youtube', 'hero_label' => 'YouTube', 'icon' => '▶', 'description' => 'Choisir un angle, publier régulièrement et développer une audience vidéo.' ],
-			[ 'slug' => 'apprendre-la-vente-de-liens', 'name' => 'Vente de liens', 'hero_label' => 'Vente de liens', 'icon' => '↗', 'description' => 'Créer et exploiter un portefeuille de sites avec méthode.' ],
-			[ 'slug' => 'apprendre-ia-automatisation', 'name' => 'IA et automatisation', 'hero_label' => 'IA et automatisation', 'icon' => '◇', 'description' => 'Utiliser les outils IA pour accélérer des tâches réellement utiles.' ],
-			[ 'slug' => 'apprendre-la-vente-de-leads', 'name' => 'Vente de leads', 'hero_label' => 'Vente de leads', 'icon' => '＋', 'description' => 'Générer, qualifier et transmettre des contacts à des partenaires.' ],
-			[ 'slug' => 'apprendre-le-freelancing', 'name' => 'Freelancing', 'hero_label' => 'Freelancing', 'icon' => '◆', 'description' => 'Vendre une compétence, cadrer ses missions et construire une activité durable.' ],
+			[ 'slug' => 'apprendre-l-affiliation', 'name' => 'Affiliation SEO', 'hero_label' => 'Affiliation SEO', 'focus_label' => "Apprendre l'affiliation", 'icon' => '◎', 'description' => 'Construire des actifs éditoriaux et monétiser une audience qualifiée.' ],
+			[ 'slug' => 'apprendre-youtube', 'name' => 'Youtube', 'hero_label' => 'YouTube', 'focus_label' => '', 'icon' => '▶', 'description' => 'Choisir un angle, publier régulièrement et développer une audience vidéo.' ],
+			[ 'slug' => 'apprendre-la-vente-de-liens', 'name' => 'Vente de liens', 'hero_label' => 'Vente de liens', 'focus_label' => 'Apprendre la vente de liens', 'icon' => '↗', 'description' => 'Créer et exploiter un portefeuille de sites avec méthode.' ],
+			[ 'slug' => 'apprendre-ia-automatisation', 'name' => 'IA et automatisation', 'hero_label' => 'IA et automatisation', 'focus_label' => '', 'icon' => '◇', 'description' => 'Utiliser les outils IA pour accélérer des tâches réellement utiles.' ],
+			[ 'slug' => 'apprendre-la-vente-de-leads', 'name' => 'Vente de leads', 'hero_label' => 'Vente de leads', 'focus_label' => 'Apprendre la vente de leads', 'icon' => '＋', 'description' => 'Générer, qualifier et transmettre des contacts à des partenaires.' ],
+			[ 'slug' => 'apprendre-le-freelancing', 'name' => 'Freelancing', 'hero_label' => 'Freelancing', 'focus_label' => '', 'icon' => '◆', 'description' => 'Vendre une compétence, cadrer ses missions et construire une activité durable.' ],
 		];
+	}
+
+	/** @return array<int,\WP_Term> */
+	public static function public_path_terms(): array {
+		$terms = get_terms( [
+			'taxonomy'   => Taxonomies::PATH,
+			'hide_empty' => false,
+			'meta_key'   => self::PATH_ORDER_META,
+			'orderby'    => 'meta_value_num',
+			'order'      => 'ASC',
+		] );
+		return is_wp_error( $terms ) ? [] : array_values( array_filter( $terms, static fn( $term ) => $term instanceof \WP_Term ) );
+	}
+
+	/** @return string[] */
+	public static function public_path_slugs(): array {
+		return array_values( array_map( static fn( \WP_Term $term ): string => $term->slug, self::public_path_terms() ) );
 	}
 
 	/** @return array<string,mixed> */

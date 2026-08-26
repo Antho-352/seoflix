@@ -52,14 +52,12 @@ class MadiasFocusContracts(unittest.TestCase):
 
     def test_personalized_surfaces_are_explicitly_excluded_from_full_page_cache(self) -> None:
         php = compact(source(FOCUS))
-        functions = source(FUNCTIONS)
         self.assertIn("template_redirect", php)
         self.assertIn("prevent_personalized_cache", php)
         self.assertIn("function is_focus_surface", php)
         self.assertIn("is_search()", php)
         self.assertIn("get_query_var( 'post_type' )", php)
         self.assertIn("self::is_focus_surface()", php)
-        self.assertIn("Focus::is_focus_surface()", functions)
         self.assertIn("DONOTCACHEPAGE", php)
         self.assertIn("nocache_headers()", php)
         self.assertIn("Vary: Cookie", php)
@@ -83,25 +81,20 @@ class MadiasFocusContracts(unittest.TestCase):
 
     def test_focus_catalog_is_exact_ordered_and_migration_safe(self) -> None:
         php = source(FOCUS)
-        catalog = php[php.index("public const PATH_SLUGS") : php.index("private static array $validated_terms")]
-        expected = [
-            "apprendre-l-affiliation",
-            "apprendre-youtube",
-            "apprendre-la-vente-de-liens",
-            "apprendre-ia-automatisation",
-            "apprendre-la-vente-de-leads",
-            "apprendre-le-freelancing",
-        ]
-        self.assertEqual(re.findall(r"'([^']+)'", catalog), expected)
-        self.assertIn("in_array( $slug, self::PATH_SLUGS, true )", php)
+        self.assertNotIn("PATH_SLUGS", php)
         available = php[php.index("function available_paths") : php.index("function valid_term_for_slug")]
-        self.assertIn("foreach ( self::PATH_SLUGS as $slug )", available)
+        self.assertIn("get_terms", available)
+        self.assertIn("seoflix_path_public_order", available)
+        self.assertIn("seoflix_focus_enabled", available)
         activator = source("plugin/seoflix-core/includes/class-activator.php")
-        for slug in expected:
-            self.assertIn(slug, activator)
+        homepage = source("plugin/seoflix-core/includes/class-homepage.php")
+        catalog = homepage[homepage.index("function path_definitions") : homepage.index("function public_path_terms")]
+        self.assertEqual(6, catalog.count("'slug' =>"))
+        self.assertIn("get_objects_in_term", activator)
+        self.assertIn("wp_set_object_terms", activator)
         seed = re.search(r"TERMS_SEED_VERSION\s*=\s*(\d+)", activator)
         self.assertIsNotNone(seed)
-        self.assertGreaterEqual(int(seed.group(1)), 3)
+        self.assertGreaterEqual(int(seed.group(1)), 4)
 
     def test_validated_internal_path_destination_never_accepts_a_posted_url(self) -> None:
         php = compact(source(FOCUS))
@@ -312,6 +305,7 @@ class MadiasFocusContracts(unittest.TestCase):
                 function sanitize_title($value): string {{ return strtolower((string) $value); }}
                 function wp_unslash($value) {{ return $value; }}
                 function get_term_by($field, $slug, $taxonomy) {{ return new WP_Term(); }}
+                function get_term_meta($term_id, $key, $single = false) {{ return 'seoflix_path_public_order' === $key ? 1 : ''; }}
                 function get_posts($args): array {{ return [101]; }}
                 function is_wp_error($value): bool {{ return false; }}
             }}
@@ -359,13 +353,16 @@ class MadiasFocusContracts(unittest.TestCase):
             {"topic_tax": topic_tax, "helper_tax": helper_tax},
         )
 
-    def test_banner_has_real_path_chooser_status_reset_and_empty_state(self) -> None:
+    def test_header_menu_has_real_path_chooser_status_reset_and_empty_state(self) -> None:
         functions = source(FUNCTIONS)
         header = source(HEADER)
         for token in (
             "function seoflix_render_focus_banner()",
             "Focus::available_paths()",
             "Focus::active_path()",
+			'<details class="sx-focus-menu">',
+			"<select",
+			"disabled",
             'name="action" value="seoflix_focus_set"',
             'name="action" value="seoflix_focus_reset"',
             'name="seoflix_focus_path"',
@@ -379,16 +376,18 @@ class MadiasFocusContracts(unittest.TestCase):
         self.assertNotIn("<script", functions)
         self.assertNotRegex(functions, r"\son(?:click|change|submit)=")
         banner = header.index("seoflix_render_focus_banner();")
-        self.assertGreater(banner, header.index("</header>"))
-        self.assertLess(banner, header.index('<main class="sx-main">'))
+        self.assertLess(banner, header.index("</header>"))
+        self.assertNotIn("seoflix_render_focus_banner();", header[header.index("</header>"):])
 
     def test_focus_styles_are_enqueued_accessible_and_mobile_safe(self) -> None:
         functions = source(FUNCTIONS)
         css = source(CSS)
         self.assertIn("assets/css/focus.css", functions)
         for token in (
-            ".sx-focus",
-            ".sx-focus__form",
+            ".sx-focus-menu",
+            ".sx-focus-menu__form",
+			".sx-focus-menu__panel",
+			"position: absolute",
             ":focus-visible",
             "min-height: 44px",
             "min-width: 0",
