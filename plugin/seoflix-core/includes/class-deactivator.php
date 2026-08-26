@@ -12,6 +12,8 @@ final class Deactivator {
 		// Seul l'utilitaire `uninstall.php` supprimerait les données (à implémenter si besoin).
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-cron.php';
 		Cron::unschedule();
+		wp_clear_scheduled_hook( 'seoflix_purge_affiliate_clicks' );
+		wp_clear_scheduled_hook( 'seoflix_purge_affiliate_clicks', [ 'catchup' ] );
 		flush_rewrite_rules();
 	}
 }

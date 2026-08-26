@@ -17,15 +17,50 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Affiliate {
 
 	private const QUERY_VAR = 'seoflix_go';
+	private const PURGE_HOOK = 'seoflix_purge_affiliate_clicks';
+	private const RETENTION_DAYS = 730;
+	private const PURGE_BATCH = 500;
 
 	public static function init(): void {
 		add_action( 'init',           [ self::class, 'register_rewrite' ] );
 		add_filter( 'query_vars',     [ self::class, 'add_query_var' ] );
 		add_action( 'template_redirect', [ self::class, 'handle_go_redirect' ], 1 );
+		add_action( self::PURGE_HOOK, [ self::class, 'purge_expired_clicks' ], 10, 1 );
+		add_action( 'init', [ self::class, 'ensure_purge_scheduled' ], 40 );
 
 		// Champ "URL affiliée" sur l'écran d'édition produit
 		add_action( 'add_meta_boxes', [ self::class, 'register_metabox' ] );
 		add_action( 'save_post_seoflix_product', [ self::class, 'save_metabox' ], 10, 2 );
+	}
+
+	public static function ensure_purge_scheduled(): void {
+		if ( ! wp_next_scheduled( self::PURGE_HOOK ) ) {
+			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', self::PURGE_HOOK );
+		}
+	}
+
+	/** Purge bornée conformément à la durée publiée de 24 mois. */
+	public static function purge_expired_clicks( string $run = 'daily' ): void {
+		unset( $run );
+		global $wpdb;
+		$table      = DB_Schema::table_affiliate_clicks();
+		$identifier = '`' . str_replace( '`', '``', $table ) . '`';
+		$deleted = $wpdb->query( $wpdb->prepare(
+			"DELETE FROM {$identifier}
+			WHERE id IN (
+				SELECT id FROM (
+					SELECT id FROM {$identifier}
+					WHERE clicked_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL %d DAY)
+					ORDER BY id ASC LIMIT %d
+				) expired
+			)",
+			self::RETENTION_DAYS,
+			self::PURGE_BATCH
+		) );
+		if ( self::PURGE_BATCH === $deleted
+			&& ! wp_next_scheduled( self::PURGE_HOOK, [ 'catchup' ] ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, self::PURGE_HOOK, [ 'catchup' ] );
+		}
 	}
 
 	public static function register_rewrite(): void {
@@ -85,10 +120,9 @@ final class Affiliate {
 
 		$ip          = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : '';
 		$ip_hash     = $ip ? hash( 'sha256', $ip . wp_salt() ) : null;
-		$user_agent  = isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( (string) $_SERVER['HTTP_USER_AGENT'], 0, 255 ) : null;
-		$referer     = isset( $_SERVER['HTTP_REFERER'] ) ? substr( (string) wp_get_referer(), 0, 255 ) : null;
+		$referer = wp_get_referer();
 
-		// Détection de la vidéo source via referer (si referer = page vidéo Seoflix)
+		// Détection de la vidéo source sans conserver l'URL référente.
 		$source_video_id = null;
 		if ( $referer ) {
 			$ref_post_id = url_to_postid( $referer );
@@ -100,11 +134,11 @@ final class Affiliate {
 		$wpdb->insert( $table, [
 			'product_id'      => $product_id,
 			'source_video_id' => $source_video_id,
-			'source_page'     => $referer ? esc_url_raw( $referer ) : null,
+			'source_page'     => null,
 			'ip_hash'         => $ip_hash,
-			'user_agent'      => $user_agent,
-			'referer'         => $referer,
-			'clicked_at'      => current_time( 'mysql' ),
+			'user_agent'      => null,
+			'referer'         => null,
+			'clicked_at'      => current_time( 'mysql', true ),
 		], [ '%d', '%d', '%s', '%s', '%s', '%s', '%s' ] );
 	}
 

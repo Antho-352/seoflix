@@ -21,15 +21,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class User_Accounts {
 
 	public const ROLE      = 'subscriber';
+	private const PRIVACY_BATCH = 100;
+	private const EXPORT_STATE_TTL = HOUR_IN_SECONDS;
 
 	public static function init(): void {
-		// Tout est conditionnel au feature flag : si OFF, on ne fait rien
+		// Le cycle de vie et la confidentialité restent actifs même si les comptes sont fermés.
+		self::enforce_registration_state();
+		add_action( 'delete_user', [ self::class, 'delete_user_data' ] );
+		add_filter( 'wp_privacy_personal_data_exporters', [ self::class, 'register_privacy_exporter' ] );
+		add_filter( 'wp_privacy_personal_data_erasers', [ self::class, 'register_privacy_eraser' ] );
+
 		if ( ! FeatureFlags::user_accounts_enabled() ) {
 			return;
 		}
-
-		// Ouvre les inscriptions
-		add_action( 'init', [ self::class, 'enable_registration' ], 5 );
 
 		// Endpoints AJAX (loggés uniquement)
 		add_action( 'wp_ajax_seoflix_toggle_favorite', [ self::class, 'ajax_toggle_favorite' ] );
@@ -55,8 +59,288 @@ final class User_Accounts {
 	}
 
 	public static function enable_registration(): void {
-		update_option( 'users_can_register', 1 );
-		update_option( 'default_role', self::ROLE );
+		self::enforce_registration_state();
+	}
+
+	public static function enforce_registration_state(): void {
+		if ( FeatureFlags::user_accounts_enabled() ) {
+			update_option( 'users_can_register', 1 );
+			update_option( 'default_role', self::ROLE );
+			return;
+		}
+		update_option( 'users_can_register', 0 );
+	}
+
+	/** Supprime les lignes métier avant que WordPress ne supprime un utilisateur. */
+	public static function delete_user_data( int $user_id ): void {
+		global $wpdb;
+		$failed = [];
+		foreach ( [ DB_Schema::table_favorites(), DB_Schema::table_watch() ] as $table ) {
+			$result = $wpdb->delete( $table, [ 'user_id' => $user_id ], [ '%d' ] );
+			if ( false === $result ) {
+				$failed[] = $table;
+			}
+		}
+		if ( $failed ) {
+			wp_die(
+				'Les données d’activité MADIAS n’ont pas pu être supprimées. La suppression du compte est interrompue.',
+				'Suppression du compte interrompue',
+				[ 'response' => 500 ]
+			);
+		}
+	}
+
+	public static function register_privacy_exporter( array $exporters ): array {
+		$exporters['seoflix-account-activity'] = [
+			'exporter_friendly_name' => 'Favoris et historique vidéo MADIAS',
+			'callback'               => [ self::class, 'personal_data_exporter' ],
+		];
+		return $exporters;
+	}
+
+	public static function register_privacy_eraser( array $erasers ): array {
+		$erasers['seoflix-account-activity'] = [
+			'eraser_friendly_name' => 'Favoris et historique vidéo MADIAS',
+			'callback'             => [ self::class, 'personal_data_eraser' ],
+		];
+		return $erasers;
+	}
+
+	private static function privacy_export_request_id(): int {
+		if ( ! isset( $_POST['id'] ) || ( ! is_string( $_POST['id'] ) && ! is_int( $_POST['id'] ) ) ) {
+			return 0;
+		}
+		return absint( wp_unslash( $_POST['id'] ) );
+	}
+
+	private static function privacy_export_state_key( int $user_id, int $page, int $request_id ): string {
+		return 'seoflix_privacy_export_' . substr( wp_hash( $request_id . '|' . $user_id . '|' . $page, 'nonce' ), 0, 40 );
+	}
+
+	private static function privacy_subject_state_key( string $operation, int $request_id ): string {
+		return 'seoflix_privacy_subject_' . substr( wp_hash( $operation . '|' . $request_id, 'nonce' ), 0, 40 );
+	}
+
+	private static function privacy_export_failure(): array {
+		return [ 'data' => [], 'done' => false ];
+	}
+
+	/** Distingue un utilisateur absent d’un échec SQL masqué par get_user_by(). */
+	private static function lookup_user_by_email( string $email_address ): array {
+		global $wpdb;
+		$wpdb->last_error = '';
+		$user = get_user_by( 'email', $email_address );
+		return [
+			'user'   => $user,
+			'failed' => '' !== $wpdb->last_error,
+		];
+	}
+
+	public static function personal_data_exporter( string $email_address, int $page = 1 ): array {
+		$request_id = self::privacy_export_request_id();
+		if ( $request_id < 1 ) {
+			return self::privacy_export_failure();
+		}
+		$page        = max( 1, $page );
+		$subject_key = self::privacy_subject_state_key( 'export', $request_id );
+		if ( 1 === $page ) {
+			$lookup = self::lookup_user_by_email( $email_address );
+			if ( $lookup['failed'] ) {
+				return self::privacy_export_failure();
+			}
+			$user = $lookup['user'];
+			if ( ! $user ) {
+				return [ 'data' => [], 'done' => true ];
+			}
+			$user_id = (int) $user->ID;
+		} else {
+			$user_id = absint( get_transient( $subject_key ) );
+			if ( $user_id < 1 ) {
+				return self::privacy_export_failure();
+			}
+		}
+
+		global $wpdb;
+		$favorites = DB_Schema::table_favorites();
+		$watch     = DB_Schema::table_watch();
+		$sources   = [
+			[ 'kind' => 'favorite', 'table' => $favorites, 'event' => 'created_at' ],
+			[ 'kind' => 'watch', 'table' => $watch, 'event' => 'watched_at' ],
+		];
+
+		if ( 1 === $page ) {
+			$max_ids = [];
+			foreach ( $sources as $source ) {
+				$max_id = $wpdb->get_var( $wpdb->prepare(
+					"SELECT COALESCE(MAX(id), 0) FROM {$source['table']} WHERE user_id = %d",
+					$user_id
+				) );
+				if ( null === $max_id || '' !== $wpdb->last_error ) {
+					return self::privacy_export_failure();
+				}
+				$max_ids[] = (int) $max_id;
+			}
+			$state = [ 'source' => 0, 'cursors' => [ 0, 0 ], 'max_ids' => $max_ids ];
+		} else {
+			$state = get_transient( self::privacy_export_state_key( $user_id, $page, $request_id ) );
+			if ( ! is_array( $state )
+				|| ! isset( $state['source'], $state['cursors'], $state['max_ids'] )
+				|| ! is_array( $state['cursors'] )
+				|| ! is_array( $state['max_ids'] ) ) {
+				return self::privacy_export_failure();
+			}
+		}
+
+		$data = [];
+		while ( (int) $state['source'] < count( $sources ) && count( $data ) < self::PRIVACY_BATCH ) {
+			$source_index = (int) $state['source'];
+			$source       = $sources[ $source_index ];
+			$remaining    = self::PRIVACY_BATCH - count( $data );
+			$cursor       = (int) ( $state['cursors'][ $source_index ] ?? 0 );
+			$max_id       = (int) ( $state['max_ids'][ $source_index ] ?? 0 );
+			$extra        = $remaining + 1;
+			$progress_sql = 'watch' === $source['kind']
+				? 'progress_seconds, completed'
+				: 'NULL AS progress_seconds, NULL AS completed';
+			$rows = $wpdb->get_results( $wpdb->prepare(
+				"SELECT id, video_id, {$source['event']} AS event_at, {$progress_sql}
+				FROM {$source['table']}
+				WHERE user_id = %d AND id > %d AND id <= %d
+				ORDER BY id ASC LIMIT %d",
+				$user_id,
+				$cursor,
+				$max_id,
+				$extra
+			), ARRAY_A );
+			if ( ! is_array( $rows ) || '' !== $wpdb->last_error ) {
+				return self::privacy_export_failure();
+			}
+
+			$has_more = count( $rows ) > $remaining;
+			$rows     = array_slice( $rows, 0, $remaining );
+			foreach ( $rows as $row ) {
+				$row_id = (int) $row['id'];
+				$state['cursors'][ $source_index ] = $row_id;
+				$data[] = [
+					'group_id'    => 'seoflix-account-activity',
+					'group_label' => 'Activité vidéo MADIAS',
+					'item_id'     => $source['kind'] . '-' . $row_id,
+					'data'        => array_map(
+						static fn( $key, $value ) => [ 'name' => (string) $key, 'value' => (string) $value ],
+						array_keys( $row ),
+						array_values( $row )
+					),
+				];
+			}
+			if ( ! $has_more ) {
+				$state['source'] = $source_index + 1;
+			}
+		}
+
+		$done = (int) $state['source'] >= count( $sources );
+		if ( ! $done ) {
+			set_transient( $subject_key, $user_id, self::EXPORT_STATE_TTL );
+			set_transient(
+				self::privacy_export_state_key( $user_id, $page + 1, $request_id ),
+				$state,
+				self::EXPORT_STATE_TTL
+			);
+		} else {
+			delete_transient( $subject_key );
+		}
+		return [ 'data' => $data, 'done' => $done ];
+	}
+
+	private static function privacy_eraser_failure( string $message ): array {
+		return [
+			'items_removed'  => false,
+			'items_retained' => true,
+			'messages'       => [ $message ],
+			'done'           => false,
+			'removed_count'  => 0,
+		];
+	}
+
+	public static function personal_data_eraser( string $email_address, int $page = 1 ): array {
+		$request_id = self::privacy_export_request_id();
+		if ( $request_id < 1 ) {
+			return self::privacy_eraser_failure( 'L’identifiant de la demande Privacy est absent ou invalide.' );
+		}
+		$page        = max( 1, $page );
+		$subject_key = self::privacy_subject_state_key( 'erase', $request_id );
+		if ( 1 === $page ) {
+			$lookup = self::lookup_user_by_email( $email_address );
+			if ( $lookup['failed'] ) {
+				return self::privacy_eraser_failure( 'La recherche du compte a échoué ; aucune fin d’effacement n’est déclarée.' );
+			}
+			$user = $lookup['user'];
+			if ( ! $user ) {
+				return [ 'items_removed' => false, 'items_retained' => false, 'messages' => [], 'done' => true, 'removed_count' => 0 ];
+			}
+			$user_id = (int) $user->ID;
+		} else {
+			$user_id = absint( get_transient( $subject_key ) );
+			if ( $user_id < 1 ) {
+				return self::privacy_eraser_failure( 'L’état de la demande Privacy est absent ou expiré.' );
+			}
+		}
+
+		$result = self::erase_user_activity_batch( $user_id );
+		if ( $result['done'] ) {
+			delete_transient( $subject_key );
+		} else {
+			set_transient( $subject_key, $user_id, self::EXPORT_STATE_TTL );
+		}
+		return $result;
+	}
+
+	/** Efface au plus un lot d’activité pour un user_id déjà résolu. */
+	public static function erase_user_activity_batch( int $user_id ): array {
+		if ( $user_id < 1 ) {
+			return self::privacy_eraser_failure( 'L’identifiant du compte à effacer est invalide.' );
+		}
+		global $wpdb;
+		$removed   = 0;
+		$processed = 0;
+		$failed    = false;
+		$messages  = [];
+		foreach ( [ DB_Schema::table_favorites(), DB_Schema::table_watch() ] as $table ) {
+			$remaining = self::PRIVACY_BATCH - $processed;
+			if ( $remaining <= 0 ) {
+				break;
+			}
+			$ids = $wpdb->get_col( $wpdb->prepare(
+				"SELECT id FROM {$table} WHERE user_id = %d ORDER BY id ASC LIMIT %d",
+				$user_id,
+				$remaining
+			) );
+			if ( ! is_array( $ids ) || '' !== $wpdb->last_error ) {
+				$failed     = true;
+				$messages[] = 'La lecture des données d’activité a échoué ; aucune fin d’effacement n’est déclarée.';
+				break;
+			}
+			$ids = array_map( 'intval', $ids );
+			$processed += count( $ids );
+			foreach ( $ids as $id ) {
+				$result = $wpdb->delete( $table, [ 'id' => $id, 'user_id' => $user_id ], [ '%d', '%d' ] );
+				if ( false === $result ) {
+					$failed = true;
+				} elseif ( 1 === $result ) {
+					$removed++;
+				}
+			}
+		}
+
+		if ( $failed && ! $messages ) {
+			$messages[] = 'Certaines données d’activité n’ont pas pu être supprimées.';
+		}
+		return [
+			'items_removed'  => $removed > 0,
+			'items_retained' => $failed,
+			'messages'       => $messages,
+			'done'           => ! $failed && $processed < self::PRIVACY_BATCH,
+			'removed_count'  => $removed,
+		];
 	}
 
 	public static function register_rewrites(): void {
@@ -93,7 +377,7 @@ final class User_Accounts {
 	public static function validate_registration( $errors, $sanitized_user_login, $user_email ) {
 		// Rate limit : 3 inscriptions / heure / IP
 		$ip       = Security::client_ip();
-		$rate_key = 'seoflix_register_rate_' . md5( $ip );
+		$rate_key = 'seoflix_register_rate_' . substr( wp_hash( $ip, 'nonce' ), 0, 40 );
 		$count    = (int) get_transient( $rate_key );
 		if ( $count >= 3 ) {
 			$errors->add( 'seoflix_rate_limit', '<strong>Erreur :</strong> Trop d\'inscriptions depuis cette adresse. Réessaye dans 1 heure.' );

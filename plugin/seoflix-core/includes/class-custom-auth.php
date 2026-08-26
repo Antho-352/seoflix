@@ -177,6 +177,9 @@ final class Custom_Auth {
 
 	public static function handle_register(): void {
 		$back = home_url( '/inscription/' );
+		if ( ! FeatureFlags::user_accounts_enabled() ) {
+			self::redirect_error( $back, 'registration_closed' );
+		}
 
 		if ( ! isset( $_POST['_seoflix_register_nonce'] ) || ! wp_verify_nonce( $_POST['_seoflix_register_nonce'], 'seoflix_register' ) ) {
 			self::redirect_error( $back, 'session_expired' );
@@ -197,7 +200,7 @@ final class Custom_Auth {
 		}
 
 		$ip          = Security::client_ip();
-		$rate_key    = 'seoflix_register_rate_' . md5( $ip );
+		$rate_key    = 'seoflix_register_rate_' . substr( wp_hash( $ip, 'nonce' ), 0, 40 );
 		$rate_count  = (int) get_transient( $rate_key );
 		if ( $rate_count >= 3 ) {
 			self::redirect_error( $back, 'rate_limit' );
@@ -294,27 +297,14 @@ final class Custom_Auth {
 			. home_url();
 		wp_mail( $user_email, $user_subject, $user_body );
 
-		// Notification admin
-		$strip_crlf    = static fn( $v ) => preg_replace( '/[\r\n\t\0]/', '', (string) $v );
+		// Notification administrative unique et minimale : aucune IP ou adresse utilisateur dans l'e-mail.
+		$strip_crlf    = static fn( $v ) => preg_replace( '/[\r\n	\0]/', '', (string) $v );
 		$admin_to      = (string) get_option( Contact::OPTION_RECIPIENT, '' ) ?: get_option( 'admin_email' );
-		$admin_subject = sprintf( '[%s] Nouvelle inscription : %s', $strip_crlf( $site_name ), $strip_crlf( $user_email ) );
+		$admin_subject = sprintf( '[%s] Nouvelle inscription en attente', $strip_crlf( $site_name ) );
 		$admin_body    = "Nouvel utilisateur inscrit sur " . $strip_crlf( $site_name ) . ".\n\n"
-			. "Login : " . $strip_crlf( $user_login ) . "\n"
-			. "E-mail : " . $strip_crlf( $user_email ) . "\n"
-			. "IP : " . $strip_crlf( $ip ) . "\n"
-			. "Statut : en attente d'activation par e-mail";
-		wp_mail( $admin_to, $admin_subject, $admin_body );
-
-		// Notification admin (anti email-header injection : strip CRLF dans tout user input)
-		$strip_crlf    = static fn( $v ) => preg_replace( '/[\r\n\t\0]/', '', (string) $v );
-		$admin_to      = (string) get_option( Contact::OPTION_RECIPIENT, '' ) ?: get_option( 'admin_email' );
-		$admin_subject = sprintf( '[%s] Nouvelle inscription : %s', $strip_crlf( $site_name ), $strip_crlf( $user_email ) );
-		$admin_body    = "Nouvel utilisateur inscrit sur " . $strip_crlf( $site_name ) . ".\n\n"
-			. "Login : " . $strip_crlf( $user_login ) . "\n"
-			. "E-mail : " . $strip_crlf( $user_email ) . "\n"
-			. "Date : " . current_time( 'd/m/Y H:i' ) . "\n"
-			. "IP : " . $strip_crlf( $ip ) . "\n"
-			. "Statut : en attente d'activation par e-mail";
+			. "Identifiant interne : " . (int) $user_id . "\n"
+			. "Statut : en attente d'activation par e-mail\n"
+			. admin_url( 'user-edit.php?user_id=' . (int) $user_id );
 		wp_mail( $admin_to, $admin_subject, $admin_body );
 
 		exit;

@@ -2,6 +2,7 @@
 namespace Seoflix\Admin;
 
 use Seoflix\DB_Schema;
+use Seoflix\User_Accounts;
 use Seoflix\Video_Comments;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -23,8 +24,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Admin_Rgpd {
 
-	private const PAGE_SLUG = 'seoflix-rgpd';
-	private const NONCE     = 'seoflix_rgpd';
+	private const PAGE_SLUG          = 'seoflix-rgpd';
+	private const NONCE              = 'seoflix_rgpd';
+	private const ADMIN_EXPORT_LIMIT = 1000;
+	private const ADMIN_DELETE_BATCH = 100;
 
 	public static function init(): void {
 		add_action( 'admin_menu',                            [ self::class, 'register_page' ], 11 );
@@ -56,11 +59,19 @@ final class Admin_Rgpd {
 			<h1>Demandes RGPD</h1>
 
 			<?php if ( isset( $_GET['rgpd_deleted_comments'] ) || isset( $_GET['rgpd_deleted_clicks'] ) ) : ?>
-				<div class="notice notice-success is-dismissible">
+				<?php $delete_failed = ! empty( $_GET['rgpd_delete_failed'] ); ?>
+				<div class="notice <?php echo $delete_failed ? 'notice-error' : 'notice-success'; ?> is-dismissible">
 					<p>
-						<strong><?php echo (int) ( $_GET['rgpd_deleted_comments'] ?? 0 ); ?></strong> commentaire(s) et
-						<strong><?php echo (int) ( $_GET['rgpd_deleted_clicks'] ?? 0 ); ?></strong> clic(s) affilié(s) supprimé(s).
-						N'oublie pas la procédure manuelle (logs Apache, mailbox, backups).
+						<strong><?php echo (int) ( $_GET['rgpd_deleted_comments'] ?? 0 ); ?></strong> commentaire(s),
+						<strong><?php echo (int) ( $_GET['rgpd_deleted_clicks'] ?? 0 ); ?></strong> clic(s) affilié(s) et
+						<strong><?php echo (int) ( $_GET['deleted_account_rows'] ?? 0 ); ?></strong> ligne(s) de favoris ou d’historique supprimée(s).
+						<?php if ( $delete_failed ) : ?>
+							<strong>Une opération SQL a échoué : la suppression n’est pas déclarée terminée.</strong>
+						<?php elseif ( ! empty( $_GET['rgpd_more'] ) ) : ?>
+							<strong>D’autres données subsistent ; relance la suppression pour traiter le lot suivant.</strong>
+						<?php else : ?>
+							N'oublie pas la procédure manuelle (logs Apache, mailbox, backups).
+						<?php endif; ?>
 					</p>
 				</div>
 			<?php endif; ?>
@@ -119,13 +130,20 @@ final class Admin_Rgpd {
 	}
 
 	private static function render_results( string $email, string $ip ): void {
+		global $wpdb;
 		$ip_hash = $ip ? hash( 'sha256', $ip . wp_salt() ) : '';
 
 		// 1. WP Users
-		$user = $email ? get_user_by( 'email', $email ) : null;
+		$user = null;
+		if ( $email ) {
+			$wpdb->last_error = '';
+			$user = get_user_by( 'email', $email );
+			if ( '' !== $wpdb->last_error ) {
+				wp_die( 'La recherche RGPD du compte a échoué.', 'Recherche RGPD interrompue', [ 'response' => 500 ] );
+			}
+		}
 
 		// 2. WP Comments — par e-mail ou IP en clair
-		global $wpdb;
 		$comment_clauses = [];
 		$comment_args    = [];
 		if ( $email ) {
@@ -138,19 +156,49 @@ final class Admin_Rgpd {
 		}
 		$comments = [];
 		if ( $comment_clauses ) {
-			$where    = implode( ' OR ', $comment_clauses );
-			$sql      = "SELECT comment_ID, comment_post_ID, comment_author, comment_author_email, comment_author_IP, comment_date, comment_content FROM {$wpdb->comments} WHERE {$where} ORDER BY comment_date DESC LIMIT 200";
-			$comments = $wpdb->get_results( $wpdb->prepare( $sql, ...$comment_args ) );
+			$where             = implode( ' OR ', $comment_clauses );
+			$sql               = "SELECT comment_ID, comment_post_ID, comment_author, comment_author_email, comment_author_IP, comment_date, comment_content FROM {$wpdb->comments} WHERE {$where} ORDER BY comment_date DESC LIMIT 200";
+			$wpdb->last_error  = '';
+			$comments          = $wpdb->get_results( $wpdb->prepare( $sql, ...$comment_args ) );
+			if ( ! is_array( $comments ) || '' !== $wpdb->last_error ) {
+				wp_die( 'La recherche RGPD des commentaires a échoué.', 'Recherche RGPD interrompue', [ 'response' => 500 ] );
+			}
 		}
 
 		// 3. Affiliate clicks — par hash recomputé
 		$clicks = [];
 		if ( $ip_hash ) {
-			$table  = DB_Schema::table_affiliate_clicks();
-			$clicks = $wpdb->get_results( $wpdb->prepare(
+			$table             = DB_Schema::table_affiliate_clicks();
+			$wpdb->last_error  = '';
+			$clicks            = $wpdb->get_results( $wpdb->prepare(
 				"SELECT id, product_id, source_video_id, source_page, user_agent, clicked_at FROM {$table} WHERE ip_hash = %s ORDER BY clicked_at DESC LIMIT 500",
 				$ip_hash
 			) );
+			if ( ! is_array( $clicks ) || '' !== $wpdb->last_error ) {
+				wp_die( 'La recherche RGPD des clics affiliés a échoué.', 'Recherche RGPD interrompue', [ 'response' => 500 ] );
+			}
+		}
+
+		// 4. Données de compte métier — favoris et historique vidéo.
+		$favorites     = [];
+		$watch_history = [];
+		if ( $user ) {
+			$wpdb->last_error = '';
+			$favorites = $wpdb->get_results( $wpdb->prepare(
+				'SELECT * FROM ' . DB_Schema::table_favorites() . ' WHERE user_id = %d ORDER BY id ASC LIMIT 500',
+				(int) $user->ID
+			) );
+			if ( ! is_array( $favorites ) || '' !== $wpdb->last_error ) {
+				wp_die( 'La recherche RGPD des favoris a échoué.', 'Recherche RGPD interrompue', [ 'response' => 500 ] );
+			}
+			$wpdb->last_error = '';
+			$watch_history = $wpdb->get_results( $wpdb->prepare(
+				'SELECT * FROM ' . DB_Schema::table_watch() . ' WHERE user_id = %d ORDER BY id ASC LIMIT 500',
+				(int) $user->ID
+			) );
+			if ( ! is_array( $watch_history ) || '' !== $wpdb->last_error ) {
+				wp_die( 'La recherche RGPD de l’historique a échoué.', 'Recherche RGPD interrompue', [ 'response' => 500 ] );
+			}
 		}
 
 		?>
@@ -227,7 +275,16 @@ final class Admin_Rgpd {
 				<p><em>Saisis une IP pour rechercher dans les clics affiliés.</em></p>
 			<?php endif; ?>
 
-			<?php if ( $user || $comments || $clicks ) : ?>
+			<h3>Activité du compte MADIAS</h3>
+			<?php if ( $favorites || $watch_history ) : ?>
+				<p><strong><?php echo count( $favorites ); ?></strong> favori(s) et <strong><?php echo count( $watch_history ); ?></strong> entrée(s) d’historique trouvés.</p>
+			<?php elseif ( $user ) : ?>
+				<p><em>Aucun favori ni historique vidéo.</em></p>
+			<?php else : ?>
+				<p><em>Saisis l’e-mail du compte pour rechercher son activité.</em></p>
+			<?php endif; ?>
+
+			<?php if ( $user || $comments || $clicks || $favorites || $watch_history ) : ?>
 				<h3>Actions</h3>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block; margin-right: 1rem;">
 					<input type="hidden" name="action" value="seoflix_rgpd_export">
@@ -237,14 +294,14 @@ final class Admin_Rgpd {
 					<button type="submit" class="button">📥 Exporter en JSON (droit de portabilité)</button>
 				</form>
 
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;" onsubmit="return confirm('SUPPRIMER toutes les données ci-dessus ? Cette action est IRRÉVERSIBLE.\n\nSeront supprimés : commentaires, clics affiliés. Le compte utilisateur ne sera PAS supprimé automatiquement (à faire manuellement dans Utilisateurs si nécessaire).');">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;" onsubmit="return confirm('SUPPRIMER toutes les données ci-dessus ? Cette action est IRRÉVERSIBLE.\n\nSeront supprimés : commentaires, clics affiliés, favoris et historique vidéo (par lots de 100). Le compte utilisateur ne sera PAS supprimé automatiquement.');">
 					<input type="hidden" name="action" value="seoflix_rgpd_delete">
 					<input type="hidden" name="email" value="<?php echo esc_attr( $email ); ?>">
 					<input type="hidden" name="ip" value="<?php echo esc_attr( $ip ); ?>">
 					<?php wp_nonce_field( self::NONCE ); ?>
-					<button type="submit" class="button button-link-delete" style="color: #b32d2e;">🗑️ Supprimer commentaires + clics affiliés</button>
+					<button type="submit" class="button button-link-delete" style="color: #b32d2e;">🗑️ Supprimer commentaires, clics, favoris et historique</button>
 				</form>
-				<p class="description">L'export JSON inclut toutes les données ci-dessus. La suppression efface commentaires et lignes de clics. Le compte utilisateur reste intact (à supprimer via Utilisateurs si demandé).</p>
+				<p class="description">L'export JSON inclut toutes les données ci-dessus. La suppression traite commentaires, clics affiliés, favoris et historique vidéo par lots de 100 ; relance-la tant que le panneau signale des données restantes. Le compte utilisateur reste intact.</p>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -260,10 +317,15 @@ final class Admin_Rgpd {
 		$ip    = isset( $_POST['ip'] )    ? trim( (string) wp_unslash( $_POST['ip'] ) )    : '';
 
 		global $wpdb;
-		$deleted_comments = 0;
-		$deleted_clicks   = 0;
+		$deleted_comments     = 0;
+		$deleted_clicks       = 0;
+		$deleted_account_rows = 0;
+		$delete_failed        = false;
+		$comments_more        = false;
+		$clicks_more          = false;
+		$account_more         = false;
 
-		// Commentaires : par e-mail ou IP en clair
+		// Commentaires : par e-mail ou IP en clair.
 		$where_parts = [];
 		$where_args  = [];
 		if ( $email ) {
@@ -275,43 +337,115 @@ final class Admin_Rgpd {
 			$where_args[]  = $ip;
 		}
 		if ( $where_parts ) {
+			$bounded_args   = $where_args;
+			$bounded_args[] = self::ADMIN_DELETE_BATCH + 1;
 			$ids = $wpdb->get_col( $wpdb->prepare(
-				"SELECT comment_ID FROM {$wpdb->comments} WHERE " . implode( ' OR ', $where_parts ),
-				...$where_args
+				"SELECT comment_ID FROM {$wpdb->comments} WHERE " . implode( ' OR ', $where_parts ) . ' ORDER BY comment_ID ASC LIMIT %d',
+				...$bounded_args
 			) );
-			foreach ( $ids as $cid ) {
-				$comment = get_comment( (int) $cid );
-				if ( ! $comment ) {
-					continue;
-				}
-				$erased = $comment->comment_type === Video_Comments::COMMENT_TYPE
-					? Video_Comments::erase_comment( $comment )
-					: wp_delete_comment( (int) $cid, true );
-				if ( $erased ) {
-					$deleted_comments++;
+			if ( ! is_array( $ids ) || '' !== $wpdb->last_error ) {
+				$delete_failed = true;
+			} else {
+				$comments_more = count( $ids ) > self::ADMIN_DELETE_BATCH;
+				$ids = array_slice( $ids, 0, self::ADMIN_DELETE_BATCH );
+				foreach ( $ids as $cid ) {
+					$wpdb->last_error = '';
+					$comment = get_comment( (int) $cid );
+					if ( '' !== $wpdb->last_error ) {
+						$delete_failed = true;
+						break;
+					}
+					if ( ! $comment ) {
+						continue;
+					}
+					$erased = $comment->comment_type === Video_Comments::COMMENT_TYPE
+						? Video_Comments::erase_comment( $comment )
+						: wp_delete_comment( (int) $cid, true );
+					if ( $erased ) {
+						$deleted_comments++;
+					} else {
+						$delete_failed = true;
+					}
 				}
 			}
 		}
 
-		// Clics affiliés : par hash recomputé
+		// Clics affiliés : par hash recomputé.
 		if ( $ip ) {
 			$ip_hash = hash( 'sha256', $ip . wp_salt() );
 			$table   = DB_Schema::table_affiliate_clicks();
-			$deleted_clicks = (int) $wpdb->query( $wpdb->prepare(
-				"DELETE FROM {$table} WHERE ip_hash = %s",
-				$ip_hash
+			$result  = $wpdb->query( $wpdb->prepare(
+				"DELETE FROM {$table} WHERE ip_hash = %s LIMIT %d",
+				$ip_hash,
+				self::ADMIN_DELETE_BATCH
 			) );
+			if ( false === $result ) {
+				$delete_failed = true;
+			} else {
+				$deleted_clicks = (int) $result;
+				$clicks_more    = $deleted_clicks >= self::ADMIN_DELETE_BATCH;
+			}
 		}
 
+		// Activité du compte : un lot borné sur l’identité résolue immédiatement.
+		if ( $email ) {
+			$wpdb->last_error = '';
+			$user = get_user_by( 'email', $email );
+			if ( '' !== $wpdb->last_error ) {
+				$delete_failed = true;
+			} elseif ( $user ) {
+				$account_result       = User_Accounts::erase_user_activity_batch( (int) $user->ID );
+				$deleted_account_rows = (int) ( $account_result['removed_count'] ?? 0 );
+				$account_more         = empty( $account_result['done'] );
+				if ( ! empty( $account_result['items_retained'] ) ) {
+					$delete_failed = true;
+				}
+			}
+		}
+
+		$more = $comments_more || $clicks_more || $account_more;
 		$redirect = add_query_arg( [
-			'page'                  => self::PAGE_SLUG,
-			'rgpd_email'            => $email,
-			'rgpd_ip'               => $ip,
-			'rgpd_deleted_comments' => $deleted_comments,
-			'rgpd_deleted_clicks'   => $deleted_clicks,
+			'page'                      => self::PAGE_SLUG,
+			'rgpd_email'                => $email,
+			'rgpd_ip'                   => $ip,
+			'rgpd_deleted_comments'     => $deleted_comments,
+			'rgpd_deleted_clicks'       => $deleted_clicks,
+			'deleted_account_rows'      => $deleted_account_rows,
+			'rgpd_delete_failed'        => $delete_failed ? 1 : 0,
+			'rgpd_more'                 => $more ? 1 : 0,
+			'rgpd_account_more'         => $account_more ? 1 : 0,
 		], admin_url( 'admin.php' ) );
 		wp_safe_redirect( $redirect );
 		exit;
+	}
+
+	/**
+	 * Lit une source d’export sans dépasser la mémoire prévue et échoue fermé.
+	 *
+	 * @param string $sql  Requête sans clause LIMIT finale.
+	 * @param array  $args Paramètres destinés à wpdb::prepare().
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function bounded_export_rows( string $sql, array $args = [] ): array {
+		global $wpdb;
+		$args[]   = self::ADMIN_EXPORT_LIMIT + 1;
+		$prepared = $wpdb->prepare( $sql . ' LIMIT %d', ...$args );
+		$rows     = $wpdb->get_results( $prepared, ARRAY_A );
+		if ( ! is_array( $rows ) || '' !== $wpdb->last_error ) {
+			wp_die(
+				'La lecture des données RGPD a échoué. Aucun fichier incomplet n’a été généré.',
+				'Export RGPD interrompu',
+				[ 'response' => 500 ]
+			);
+		}
+		if ( count( $rows ) > self::ADMIN_EXPORT_LIMIT ) {
+			wp_die(
+				'L’export dépasse la limite de sécurité de 1 000 lignes pour une source. Aucun fichier incomplet n’a été généré.',
+				'Export RGPD trop volumineux',
+				[ 'response' => 413 ]
+			);
+		}
+		return $rows;
 	}
 
 	public static function handle_export(): void {
@@ -332,18 +466,37 @@ final class Admin_Rgpd {
 		];
 
 		if ( $email ) {
+			$wpdb->last_error = '';
 			$user = get_user_by( 'email', $email );
+			if ( '' !== $wpdb->last_error ) {
+				wp_die(
+					'La recherche du compte a échoué. Aucun fichier incomplet n’a été généré.',
+					'Export RGPD interrompu',
+					[ 'response' => 500 ]
+				);
+			}
 			if ( $user ) {
+				$user_meta = self::bounded_export_rows(
+					"SELECT umeta_id, meta_key, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d ORDER BY umeta_id ASC",
+					[ (int) $user->ID ]
+				);
 				$data['data']['user'] = [
-					'id'              => $user->ID,
-					'login'           => $user->user_login,
-					'email'           => $user->user_email,
-					'display_name'    => $user->display_name,
-					'registered_at'   => $user->user_registered,
-					'roles'           => $user->roles,
-					// Garde les valeurs sérialisées telles quelles (évite unserialize attack si export ré-importé plus tard)
-				'meta'            => array_map( static fn( $v ) => $v[0] ?? '', get_user_meta( $user->ID ) ),
+					'id'            => $user->ID,
+					'login'         => $user->user_login,
+					'email'         => $user->user_email,
+					'display_name'  => $user->display_name,
+					'registered_at' => $user->user_registered,
+					'roles'         => $user->roles,
+					'meta'          => $user_meta,
 				];
+				$data['data']['favorites'] = self::bounded_export_rows(
+					'SELECT * FROM ' . DB_Schema::table_favorites() . ' WHERE user_id = %d ORDER BY id ASC',
+					[ (int) $user->ID ]
+				);
+				$data['data']['watch_history'] = self::bounded_export_rows(
+					'SELECT * FROM ' . DB_Schema::table_watch() . ' WHERE user_id = %d ORDER BY id ASC',
+					[ (int) $user->ID ]
+				);
 			}
 		}
 
@@ -359,29 +512,35 @@ final class Admin_Rgpd {
 			$where_args[]  = $ip;
 		}
 		if ( $where_parts ) {
-			$rows = $wpdb->get_results( $wpdb->prepare(
-				"SELECT * FROM {$wpdb->comments} WHERE " . implode( ' OR ', $where_parts ),
-				...$where_args
-			), ARRAY_A );
-			$data['data']['comments'] = $rows;
+			$data['data']['comments'] = self::bounded_export_rows(
+				"SELECT * FROM {$wpdb->comments} WHERE " . implode( ' OR ', $where_parts ) . ' ORDER BY comment_ID ASC',
+				$where_args
+			);
 		}
 
 		// Affiliate clicks
 		if ( $ip ) {
 			$ip_hash = hash( 'sha256', $ip . wp_salt() );
 			$table   = DB_Schema::table_affiliate_clicks();
-			$rows = $wpdb->get_results( $wpdb->prepare(
-				"SELECT * FROM {$table} WHERE ip_hash = %s",
-				$ip_hash
-			), ARRAY_A );
-			$data['data']['affiliate_clicks'] = $rows;
+			$data['data']['affiliate_clicks'] = self::bounded_export_rows(
+				"SELECT * FROM {$table} WHERE ip_hash = %s ORDER BY id ASC",
+				[ $ip_hash ]
+			);
 		}
 
+		$json = wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+		if ( false === $json ) {
+			wp_die(
+				'L’encodage de l’export RGPD a échoué. Aucun fichier incomplet n’a été généré.',
+				'Export RGPD interrompu',
+				[ 'response' => 500 ]
+			);
+		}
 		$filename = 'seoflix-rgpd-export-' . gmdate( 'Y-m-d-His' ) . '.json';
 		nocache_headers();
 		header( 'Content-Type: application/json; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
-		echo wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+		echo $json;
 		exit;
 	}
 }
