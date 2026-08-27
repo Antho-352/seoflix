@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="profile" href="https://gmpg.org/xfn/11">
 	<?php if ( ! has_site_icon() ) : ?>
-		<link rel="icon" type="image/svg+xml" href="<?php echo esc_url( get_theme_file_uri( 'assets/images/favicon.svg' ) ); ?>">
+		<link rel="icon" href="<?php echo esc_url( get_theme_file_uri( 'assets/images/favicon.ico' ) ); ?>" sizes="any">
 		<link rel="icon" type="image/png" sizes="32x32" href="<?php echo esc_url( get_theme_file_uri( 'assets/images/favicon-32.png' ) ); ?>">
 		<link rel="apple-touch-icon" sizes="180x180" href="<?php echo esc_url( get_theme_file_uri( 'assets/images/favicon-180.png' ) ); ?>">
 	<?php endif; ?>
@@ -18,10 +18,7 @@
 <header class="sx-site-header">
 	<div class="sx-container sx-site-header__inner">
 		<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="sx-logo" aria-label="WEAS — accueil">
-			<svg class="sx-logo__mark" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true">
-				<rect width="100" height="100" rx="22" fill="#16161D"/>
-				<path d="M50 28 L74 72 L26 72 Z" fill="#FF2D3F"/>
-			</svg>
+			<img class="sx-logo__image" src="<?php echo esc_url( get_theme_file_uri( 'assets/images/logo-weas.png' ) ); ?>" width="942" height="168" alt="" aria-hidden="true">
 		</a>
 
 		<nav class="sx-nav sx-nav--desktop" aria-label="Navigation principale">
@@ -56,10 +53,7 @@
 	<aside class="sx-drawer__panel" role="dialog" aria-modal="true" aria-label="Menu de navigation">
 		<div class="sx-drawer__head">
 			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="sx-logo" aria-label="WEAS — accueil" data-sx-close>
-				<svg class="sx-logo__mark" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true">
-					<rect width="100" height="100" rx="22" fill="#16161D"/>
-					<path d="M50 28 L74 72 L26 72 Z" fill="#FF2D3F"/>
-				</svg>
+				<img class="sx-logo__image" src="<?php echo esc_url( get_theme_file_uri( 'assets/images/logo-weas.png' ) ); ?>" width="942" height="168" alt="" aria-hidden="true">
 			</a>
 			<button type="button" class="sx-drawer__close" aria-label="Fermer le menu" data-sx-close>×</button>
 		</div>

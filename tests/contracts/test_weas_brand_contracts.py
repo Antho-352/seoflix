@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import re
 import struct
 import unittest
@@ -50,7 +51,7 @@ class WeasBrandContracts(unittest.TestCase):
         self.assertRegex(theme, r"Theme Name:\s+WEAS\b")
         self.assertRegex(theme, r"Theme URI:\s+https://weas\.fr\b")
         self.assertRegex(theme, r"Description:\s+.*\bWEAS\b")
-        self.assertRegex(theme, r"Version:\s+0\.14\.3\b")
+        self.assertRegex(theme, r"Version:\s+0\.14\.4\b")
 
     def test_every_runtime_brand_surface_has_dropped_visible_madias_copy(self) -> None:
         combined = "\n".join(source(path) for path in RUNTIME_BRAND_FILES)
@@ -131,6 +132,27 @@ class WeasBrandContracts(unittest.TestCase):
         self.assertTrue(png.startswith(b"\x89PNG\r\n\x1a\n"))
         width, height = struct.unpack(">II", png[16:24])
         self.assertEqual((1200, 630), (width, height))
+
+    def test_supplied_wordmark_and_favicon_are_integrated_exactly(self) -> None:
+        asset_dir = REPO_ROOT / "theme/seoflix/assets/images"
+        header = source("theme/seoflix/header.php")
+        layout = source("theme/seoflix/assets/css/layout.css")
+        favicon = (asset_dir / "favicon.ico").read_bytes()
+        logo = (asset_dir / "logo-weas.png").read_bytes()
+
+        self.assertEqual(
+            "e4a711d5300f92360d1e19a54570a1e7ed822117661facd81dd074ff91a37064",
+            hashlib.sha256(favicon).hexdigest(),
+        )
+        self.assertTrue(logo.startswith(b"\x89PNG\r\n\x1a\n"))
+        self.assertEqual((942, 168), struct.unpack(">II", logo[16:24]))
+        self.assertEqual(2, header.count("assets/images/logo-weas.png"))
+        self.assertEqual(2, header.count('class="sx-logo__image"'))
+        self.assertIn("assets/images/favicon.ico", header)
+        self.assertNotIn("<svg class=\"sx-logo__mark\"", header)
+        self.assertIn(".sx-logo__image", layout)
+        self.assertIn("width: 80px", layout)
+        self.assertIn("height: auto", layout)
 
     def test_weas_cutover_document_is_fail_closed(self) -> None:
         path = REPO_ROOT / "docs/WEAS_DOMAIN_MIGRATION.md"

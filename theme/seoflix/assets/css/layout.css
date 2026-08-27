@@ -47,19 +47,16 @@
 	flex-shrink: 0;
 }
 
-.sx-logo__mark {
-	width: 24px !important;
-	height: 24px !important;
+.sx-logo__image {
+	width: 80px !important;
+	height: auto !important;
+	display: block;
+	flex-shrink: 0;
 }
 
 .sx-logo:hover {
 	color: var(--sx-color-text);
 	opacity: 0.85;
-}
-
-.sx-logo__mark {
-	flex-shrink: 0;
-	border-radius: 7px;
 }
 
 .sx-logo__text {
