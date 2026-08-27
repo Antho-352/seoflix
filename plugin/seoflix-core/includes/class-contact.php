@@ -79,7 +79,7 @@ final class Contact {
 				<script>document.getElementById('sx-contact-notice')?.scrollIntoView({behavior:'smooth',block:'center'});</script>
 			<?php endif; ?>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="sx-form">
+			<form method="post" action="<?php echo esc_url( home_url( '/sx-auth/contact/' ) ); ?>" class="sx-form">
 				<input type="hidden" name="action" value="seoflix_contact_submit">
 				<?php wp_nonce_field( self::NONCE, '_seoflix_contact_nonce' ); ?>
 				<input type="hidden" name="_t" value="<?php echo esc_attr( (string) time() ); ?>">

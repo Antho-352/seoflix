@@ -93,6 +93,7 @@ final class Custom_Auth {
 			return;
 		}
 		$handlers = [
+			'contact'    => [ Contact::class, 'handle_submit' ],
 			'register'   => [ self::class, 'handle_register' ],
 			'login'      => [ self::class, 'handle_login' ],
 			'lostpass'   => [ self::class, 'handle_lostpass' ],

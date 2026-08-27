@@ -26,10 +26,10 @@ class MadiasPathOrderContracts(unittest.TestCase):
     def test_release_and_database_versions_are_bumped(self) -> None:
         bootstrap = source("plugin/seoflix-core/seoflix-core.php")
 
-        self.assertRegex(bootstrap, r"Version:\s+0\.27\.0\b")
+        self.assertRegex(bootstrap, r"Version:\s+0\.27\.1\b")
         self.assertRegex(
             bootstrap,
-            r"define\s*\(\s*'SEOFLIX_VERSION'\s*,\s*'0\.27\.0'\s*\)",
+            r"define\s*\(\s*'SEOFLIX_VERSION'\s*,\s*'0\.27\.1'\s*\)",
         )
         self.assertRegex(
             bootstrap,

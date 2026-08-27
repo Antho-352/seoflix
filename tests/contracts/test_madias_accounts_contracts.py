@@ -9,6 +9,7 @@ import unittest
 from php_source import REPO_ROOT, source
 
 CUSTOM_AUTH = "plugin/seoflix-core/includes/class-custom-auth.php"
+CONTACT = "plugin/seoflix-core/includes/class-contact.php"
 USER_ACCOUNTS = "plugin/seoflix-core/includes/class-user-accounts.php"
 ADMIN_RGPD = "plugin/seoflix-core/admin/class-admin-rgpd.php"
 AFFILIATE = "plugin/seoflix-core/includes/class-affiliate.php"
@@ -20,6 +21,15 @@ def compact(text: str) -> str:
 
 
 class MadiasAccountsContracts(unittest.TestCase):
+    def test_public_contact_uses_frontend_route_instead_of_hidden_wp_admin(self) -> None:
+        contact = compact(source(CONTACT))
+        custom_auth = compact(source(CUSTOM_AUTH))
+        render = contact[contact.index("function render_shortcode") : contact.index("function handle_submit")]
+        route = custom_auth[custom_auth.index("function route_frontend_action(") : custom_auth.index("function frontend_action_url(")]
+        self.assertIn("home_url( '/sx-auth/contact/' )", render)
+        self.assertNotIn("admin_url( 'admin-post.php' )", render)
+        self.assertIn("'contact' => [ Contact::class, 'handle_submit' ]", route)
+
     def test_flag_off_closes_registration_and_cleanup_is_always_registered(self) -> None:
         php = compact(source(USER_ACCOUNTS))
         init = php[php.index("function init") : php.index("function enable_registration")]
