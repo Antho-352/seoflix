@@ -223,10 +223,14 @@ final class Activator {
 		}
 
 		if ( trim( (string) get_post_meta( $linkquiver->ID, Meta_Keys::PRODUCT_LOGO_URL, true ) ) === '' ) {
+			$canonical_scheme = wp_parse_url( home_url( '/' ), PHP_URL_SCHEME );
+			if ( ! in_array( $canonical_scheme, [ 'http', 'https' ], true ) ) {
+				throw new \RuntimeException( 'Schéma canonique invalide pour le logo LinkQuiver.' );
+			}
 			self::set_post_meta_verified(
 				$linkquiver->ID,
 				Meta_Keys::PRODUCT_LOGO_URL,
-				SEOFLIX_PLUGIN_URL . 'assets/images/linkquiver-icon.svg'
+				set_url_scheme( SEOFLIX_PLUGIN_URL . 'assets/images/linkquiver-icon.svg', $canonical_scheme )
 			);
 		}
 

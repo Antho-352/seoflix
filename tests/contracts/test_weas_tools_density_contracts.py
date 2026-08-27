@@ -198,6 +198,8 @@ class WeasToolsDensityContracts(unittest.TestCase):
         self.assertIn("seed_product_catalog_metadata", activator)
         self.assertIn("get_page_by_path( 'linkquiver'", activator)
         self.assertIn("assets/images/linkquiver-icon.svg", activator)
+        self.assertIn("wp_parse_url( home_url( '/' ), PHP_URL_SCHEME )", activator)
+        self.assertIn("set_url_scheme", activator)
         self.assertIn("Meta_Keys::PRODUCT_LOGO_URL", activator)
         self.assertIn("get_page_by_path( 'cuik'", activator)
         self.assertIn("Meta_Keys::PRODUCT_PRICING", activator)
