@@ -38,4 +38,6 @@ final class Meta_Keys {
 	public const PRODUCT_AFFILIATE_URL    = '_seoflix_affiliate_url';
 	public const PRODUCT_PRICING          = '_seoflix_pricing';
 	public const PRODUCT_LOGO_URL         = '_seoflix_logo_url';
+	public const PRODUCT_PROMO_CODE       = '_seoflix_promo_code';
+	public const PRODUCT_PROMO_OFFER      = '_seoflix_promo_offer';
 }

@@ -46,11 +46,11 @@ class WeasBrandContracts(unittest.TestCase):
         self.assertRegex(plugin, r"Plugin Name:\s+WEAS Core\b")
         self.assertRegex(plugin, r"Plugin URI:\s+https://weas\.fr\b")
         self.assertRegex(plugin, r"Description:\s+.*\bWEAS\b")
-        self.assertRegex(plugin, r"Version:\s+0\.27\.1\b")
+        self.assertRegex(plugin, r"Version:\s+0\.27\.2\b")
         self.assertRegex(theme, r"Theme Name:\s+WEAS\b")
         self.assertRegex(theme, r"Theme URI:\s+https://weas\.fr\b")
         self.assertRegex(theme, r"Description:\s+.*\bWEAS\b")
-        self.assertRegex(theme, r"Version:\s+0\.14\.0\b")
+        self.assertRegex(theme, r"Version:\s+0\.14\.1\b")
 
     def test_every_runtime_brand_surface_has_dropped_visible_madias_copy(self) -> None:
         combined = "\n".join(source(path) for path in RUNTIME_BRAND_FILES)
@@ -99,7 +99,8 @@ class WeasBrandContracts(unittest.TestCase):
         footer = source("theme/seoflix/footer.php")
         homepage = source("theme/seoflix/front-page.php")
         video = source("theme/seoflix/single-seoflix_video.php")
-        self.assertGreaterEqual(header.count("WEAS"), 3)
+        self.assertGreaterEqual(header.count("WEAS"), 1)
+        self.assertNotIn('class="sx-logo__text">WEAS', header)
         self.assertGreaterEqual(footer.count("WEAS"), 3)
         self.assertIn("Pourquoi WEAS", homepage)
         self.assertIn("L’essentiel par WEAS", video)

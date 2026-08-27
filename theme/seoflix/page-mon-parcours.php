@@ -32,6 +32,14 @@ $paths     = get_terms( [ 'taxonomy' => 'seoflix_path', 'hide_empty' => false ] 
 		<p class="sx-dashboard__lead">Voici ton tableau de bord d'apprentissage. Reprends là où tu t'étais arrêté ou explore un nouveau parcours.</p>
 	</header>
 
+	<section class="sx-dashboard-focus" aria-labelledby="sx-dashboard-focus-title">
+		<div>
+			<h2 id="sx-dashboard-focus-title">Ton FOCUS</h2>
+			<p>Choisis le parcours qui filtrera tes sélections de vidéos.</p>
+		</div>
+		<?php seoflix_render_focus_banner(); ?>
+	</section>
+
 	<?php
 	// Cartes des parcours avec progression
 	if ( ! is_wp_error( $paths ) && $paths ) : ?>

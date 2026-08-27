@@ -224,6 +224,21 @@ final class Importer {
 		if ( ! empty( $p['pricing'] ) ) {
 			update_post_meta( $id, Meta_Keys::PRODUCT_PRICING, sanitize_text_field( $p['pricing'] ) );
 		}
+		foreach ( [
+			'promo_code'  => [ Meta_Keys::PRODUCT_PROMO_CODE, 40 ],
+			'promo_offer' => [ Meta_Keys::PRODUCT_PROMO_OFFER, 80 ],
+		] as $field => [ $meta_key, $limit ] ) {
+			if ( ! array_key_exists( $field, $p ) || ! is_string( $p[ $field ] ) ) {
+				continue;
+			}
+			$value = sanitize_text_field( $p[ $field ] );
+			$value = function_exists( 'mb_substr' ) ? mb_substr( $value, 0, $limit ) : substr( $value, 0, $limit );
+			if ( '' !== $value ) {
+				update_post_meta( $id, $meta_key, $value );
+			} else {
+				delete_post_meta( $id, $meta_key );
+			}
+		}
 
 		// Catégorie produit (taxonomie hiérarchique)
 		if ( ! empty( $p['category'] ) ) {

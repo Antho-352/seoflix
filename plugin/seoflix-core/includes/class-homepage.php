@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Homepage {
 
 	public const OPTION = 'seoflix_homepage_config';
+	public const LEGACY_HERO_TITLE = 'Apprends le business web sans perdre des heures sur YouTube.';
 	public const PATH_ORDER_META    = 'seoflix_path_public_order';
 	public const FOCUS_ENABLED_META = 'seoflix_focus_enabled';
 	public const FOCUS_LABEL_META   = 'seoflix_focus_label';
@@ -36,12 +37,12 @@ final class Homepage {
 	 */
 	public static function path_definitions(): array {
 		return [
-			[ 'slug' => 'apprendre-l-affiliation', 'name' => 'Affiliation SEO', 'hero_label' => 'Affiliation SEO', 'focus_label' => "Apprendre l'affiliation", 'icon' => '◎', 'description' => 'Construire des actifs éditoriaux et monétiser une audience qualifiée.' ],
-			[ 'slug' => 'apprendre-youtube', 'name' => 'Youtube', 'hero_label' => 'YouTube', 'focus_label' => '', 'icon' => '▶', 'description' => 'Choisir un angle, publier régulièrement et développer une audience vidéo.' ],
-			[ 'slug' => 'apprendre-la-vente-de-liens', 'name' => 'Vente de liens', 'hero_label' => 'Vente de liens', 'focus_label' => 'Apprendre la vente de liens', 'icon' => '↗', 'description' => 'Créer et exploiter un portefeuille de sites avec méthode.' ],
-			[ 'slug' => 'apprendre-ia-automatisation', 'name' => 'IA et automatisation', 'hero_label' => 'IA et automatisation', 'focus_label' => '', 'icon' => '◇', 'description' => 'Utiliser les outils IA pour accélérer des tâches réellement utiles.' ],
-			[ 'slug' => 'apprendre-la-vente-de-leads', 'name' => 'Vente de leads', 'hero_label' => 'Vente de leads', 'focus_label' => 'Apprendre la vente de leads', 'icon' => '＋', 'description' => 'Générer, qualifier et transmettre des contacts à des partenaires.' ],
-			[ 'slug' => 'apprendre-le-freelancing', 'name' => 'Freelancing', 'hero_label' => 'Freelancing', 'focus_label' => '', 'icon' => '◆', 'description' => 'Vendre une compétence, cadrer ses missions et construire une activité durable.' ],
+			[ 'slug' => 'apprendre-l-affiliation', 'name' => 'Affiliation SEO', 'hero_label' => 'l’affiliation', 'focus_label' => "Apprendre l'affiliation", 'icon' => '◎', 'description' => 'Construire des actifs éditoriaux et monétiser une audience qualifiée.' ],
+			[ 'slug' => 'apprendre-youtube', 'name' => 'Youtube', 'hero_label' => 'le business YouTube', 'focus_label' => '', 'icon' => '▶', 'description' => 'Choisir un angle, publier régulièrement et développer une audience vidéo.' ],
+			[ 'slug' => 'apprendre-la-vente-de-liens', 'name' => 'Vente de liens', 'hero_label' => 'la vente de liens', 'focus_label' => 'Apprendre la vente de liens', 'icon' => '↗', 'description' => 'Créer et exploiter un portefeuille de sites avec méthode.' ],
+			[ 'slug' => 'apprendre-ia-automatisation', 'name' => 'IA et automatisation', 'hero_label' => 'l’IA et l’automatisation', 'focus_label' => '', 'icon' => '◇', 'description' => 'Utiliser les outils IA pour accélérer des tâches réellement utiles.' ],
+			[ 'slug' => 'apprendre-la-vente-de-leads', 'name' => 'Vente de leads', 'hero_label' => 'la vente de leads', 'focus_label' => 'Apprendre la vente de leads', 'icon' => '＋', 'description' => 'Générer, qualifier et transmettre des contacts à des partenaires.' ],
+			[ 'slug' => 'apprendre-le-freelancing', 'name' => 'Freelancing', 'hero_label' => 'le freelancing', 'focus_label' => '', 'icon' => '◆', 'description' => 'Vendre une compétence, cadrer ses missions et construire une activité durable.' ],
 		];
 	}
 
@@ -66,7 +67,7 @@ final class Homepage {
 	public static function defaults(): array {
 		return [
 			'hero' => [
-				'title'     => 'Apprends le business web sans perdre des heures sur YouTube.',
+				'title'     => 'Apprends l’affiliation sans perdre des heures sur YouTube.',
 				'subtitle'  => 'Des vidéos utiles, sélectionnées et organisées pour avancer sans bruit inutile.',
 				'cta_text'  => 'Commencer à apprendre',
 			],
@@ -139,6 +140,9 @@ final class Homepage {
 				if ( isset( $saved['hero'][ $field ] ) && is_string( $saved['hero'][ $field ] ) ) {
 					$config['hero'][ $field ] = $saved['hero'][ $field ];
 				}
+			}
+			if ( self::LEGACY_HERO_TITLE === $config['hero']['title'] ) {
+				$config['hero']['title'] = $defaults['hero']['title'];
 			}
 		}
 

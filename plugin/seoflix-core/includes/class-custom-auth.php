@@ -41,9 +41,17 @@ final class Custom_Auth {
 	public const QV_AUTH_ACTION     = 'seoflix_auth_action';
 
 	public static function init(): void {
+		// Les routes publiques contact/newsletter doivent rester disponibles
+		// même lorsque les fonctionnalités de compte sont désactivées.
+		add_action( 'parse_request', [ self::class, 'route_frontend_action' ], 1 );
+		add_action( 'init',          [ self::class, 'register_public_rewrite' ] );
+		add_filter( 'query_vars',    [ self::class, 'register_public_query_vars' ] );
+
 		if ( ! FeatureFlags::user_accounts_enabled() ) {
 			return;
 		}
+		add_action( 'init',       [ self::class, 'register_account_rewrites' ] );
+		add_filter( 'query_vars', [ self::class, 'register_account_query_vars' ] );
 
 		// Handlers via admin-post.php (ancienne route, gardée pour compat)
 		add_action( 'admin_post_nopriv_seoflix_register', [ self::class, 'handle_register' ] );
@@ -55,13 +63,6 @@ final class Custom_Auth {
 		add_action( 'admin_post_nopriv_seoflix_resend',    [ self::class, 'handle_resend_activation' ] );
 		add_action( 'admin_post_nopriv_seoflix_setpwd',    [ self::class, 'handle_setpwd' ] );
 
-		// NOUVEAU : route frontend /sx-auth/{action}/ qui contourne WPS Hide Login
-		// (les plugins type WPS Hide Login interceptent /wp-admin/* y compris admin-post.php)
-		add_action( 'parse_request',     [ self::class, 'route_frontend_action' ], 1 );
-
-		// Rewrite /activer/{token}/ + /definir-mot-de-passe/{token}/ + /sx-auth/{action}/
-		add_action( 'init',              [ self::class, 'register_rewrites' ] );
-		add_filter( 'query_vars',        [ self::class, 'register_query_vars' ] );
 		add_action( 'template_redirect', [ self::class, 'handle_activate' ] );
 		add_filter( 'template_include',  [ self::class, 'load_setpwd_template' ] );
 
@@ -69,17 +70,23 @@ final class Custom_Auth {
 		add_filter( 'wp_authenticate_user', [ self::class, 'block_pending_login' ], 10, 2 );
 	}
 
-	public static function register_rewrites(): void {
-		add_rewrite_rule( '^activer/([a-f0-9]{32,64})/?$',                'index.php?' . self::QV_ACTIVATE . '=$matches[1]', 'top' );
-		add_rewrite_rule( '^definir-mot-de-passe/([a-f0-9]{32,64})/?$',   'index.php?' . self::QV_SETPWD . '=$matches[1]',   'top' );
-		// Endpoint frontend qui ne passe PAS par /wp-admin/ → bypass WPS Hide Login
-		add_rewrite_rule( '^sx-auth/([a-z_]+)/?$',                        'index.php?' . self::QV_AUTH_ACTION . '=$matches[1]', 'top' );
+	public static function register_public_rewrite(): void {
+		add_rewrite_rule( '^sx-auth/([a-z_]+)/?$', 'index.php?' . self::QV_AUTH_ACTION . '=$matches[1]', 'top' );
 	}
 
-	public static function register_query_vars( array $vars ): array {
+	public static function register_account_rewrites(): void {
+		add_rewrite_rule( '^activer/([a-f0-9]{32,64})/?$',                'index.php?' . self::QV_ACTIVATE . '=$matches[1]', 'top' );
+		add_rewrite_rule( '^definir-mot-de-passe/([a-f0-9]{32,64})/?$',   'index.php?' . self::QV_SETPWD . '=$matches[1]',   'top' );
+	}
+
+	public static function register_public_query_vars( array $vars ): array {
+		$vars[] = self::QV_AUTH_ACTION;
+		return $vars;
+	}
+
+	public static function register_account_query_vars( array $vars ): array {
 		$vars[] = self::QV_ACTIVATE;
 		$vars[] = self::QV_SETPWD;
-		$vars[] = self::QV_AUTH_ACTION;
 		return $vars;
 	}
 
@@ -88,23 +95,43 @@ final class Custom_Auth {
 	 * Tourne sur parse_request priorité 1 (avant que WP fasse le main query).
 	 */
 	public static function route_frontend_action( \WP $wp ): void {
+		$request = trim( (string) ( $wp->request ?? '' ), '/' );
+		if ( ! FeatureFlags::user_accounts_enabled() && preg_match( '#^(?:activer|definir-mot-de-passe)(?:/|$)#', $request ) ) {
+			status_header( 404 );
+			nocache_headers();
+			exit;
+		}
+
 		$action = $wp->query_vars[ self::QV_AUTH_ACTION ] ?? '';
-		if ( ! $action || $_SERVER['REQUEST_METHOD'] !== 'POST' ) {
+		if ( ! $action ) {
 			return;
+		}
+		if ( $_SERVER['REQUEST_METHOD'] !== 'POST' ) {
+			status_header( 405 );
+			header( 'Allow: POST' );
+			nocache_headers();
+			exit;
 		}
 		$handlers = [
 			'contact'    => [ Contact::class, 'handle_submit' ],
-			'register'   => [ self::class, 'handle_register' ],
-			'login'      => [ self::class, 'handle_login' ],
-			'lostpass'   => [ self::class, 'handle_lostpass' ],
-			'resend'     => [ self::class, 'handle_resend_activation' ],
-			'setpwd'     => [ self::class, 'handle_setpwd' ],
 			'newsletter' => [ Newsletter::class, 'handle_subscribe' ],
 		];
-		if ( isset( $handlers[ $action ] ) ) {
-			call_user_func( $handlers[ $action ] );
+		if ( FeatureFlags::user_accounts_enabled() ) {
+			$handlers += [
+				'register' => [ self::class, 'handle_register' ],
+				'login'    => [ self::class, 'handle_login' ],
+				'lostpass' => [ self::class, 'handle_lostpass' ],
+				'resend'   => [ self::class, 'handle_resend_activation' ],
+				'setpwd'   => [ self::class, 'handle_setpwd' ],
+			];
+		}
+		if ( ! isset( $handlers[ $action ] ) ) {
+			status_header( 404 );
+			nocache_headers();
 			exit;
 		}
+		call_user_func( $handlers[ $action ] );
+		exit;
 	}
 
 	public static function frontend_action_url( string $action ): string {

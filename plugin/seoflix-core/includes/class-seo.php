@@ -46,6 +46,7 @@ final class SEO {
 		add_filter( 'document_title_parts',   [ self::class, 'filter_title_parts' ] );
 		add_filter( 'document_title_separator', static fn() => '|' );
 		add_filter( 'wp_robots',              [ self::class, 'filter_wp_robots' ], 99 );
+		add_filter( 'robots_txt',             [ self::class, 'filter_robots_txt' ], 99, 2 );
 		remove_action( 'wp_head', 'rel_canonical' );
 		add_action( 'wp_head',                [ self::class, 'render_meta_tags' ], 1 );
 		add_action( 'wp_head',                [ self::class, 'render_open_graph' ], 5 );
@@ -359,6 +360,7 @@ final class SEO {
 			|| get_query_var( 'seoflix_dashboard' )
 			|| get_query_var( Custom_Auth::QV_ACTIVATE )
 			|| get_query_var( Custom_Auth::QV_SETPWD )
+			|| get_query_var( Custom_Auth::QV_AUTH_ACTION )
 		) {
 			return 'noindex, follow';
 		}
@@ -375,6 +377,19 @@ final class SEO {
 			}
 		}
 		return 'index, follow';
+	}
+
+	public static function filter_robots_txt( string $output, $public ): string {
+		if ( (string) get_option( 'blog_public', '1' ) === '0' ) {
+			return "User-agent: *\nDisallow: /\n";
+		}
+
+		$custom = (string) get_option( 'seoflix_robots_txt', '' );
+		if ( trim( $custom ) !== '' ) {
+			return $custom;
+		}
+
+		return rtrim( $output ) . "\n\nSitemap: " . home_url( '/wp-sitemap.xml' ) . "\n";
 	}
 
 	public static function filter_wp_robots( array $robots ): array {

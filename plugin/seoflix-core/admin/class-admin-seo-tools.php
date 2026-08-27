@@ -16,7 +16,6 @@ final class Admin_SEO_Tools {
 
 	public static function init(): void {
 		add_action( 'admin_menu',   [ self::class, 'register_pages' ], 12 );
-		add_filter( 'robots_txt',   [ self::class, 'filter_robots_txt' ], 99, 2 );
 
 		add_action( 'admin_post_seoflix_save_robots',   [ self::class, 'handle_save_robots' ] );
 		add_action( 'admin_post_seoflix_save_htaccess', [ self::class, 'handle_save_htaccess' ] );

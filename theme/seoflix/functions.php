@@ -58,6 +58,9 @@ add_action( 'wp_enqueue_scripts', static function () {
 	wp_enqueue_style( 'seoflix-pages',      get_theme_file_uri( 'assets/css/pages.css' ),      [ 'seoflix-components' ], $ver );
 	wp_enqueue_style( 'seoflix-focus',      get_theme_file_uri( 'assets/css/focus.css' ),      [ 'seoflix-pages' ], $ver );
 	wp_enqueue_style( 'seoflix-blog',       get_stylesheet_uri(),                              [ 'seoflix-focus' ], $ver );
+	if ( is_user_logged_in() ) {
+		wp_enqueue_script( 'seoflix-focus', get_theme_file_uri( 'assets/js/focus.js' ), [], $ver, true );
+	}
 
 	if ( class_exists( '\Seoflix\Frontend' ) && \Seoflix\Frontend::is_seoflix_view( 'business-finder' ) ) {
 		wp_enqueue_style( 'seoflix-business-finder', get_theme_file_uri( 'assets/css/business-finder.css' ), [ 'seoflix-pages' ], $ver );
@@ -357,10 +360,10 @@ function seoflix_default_primary_menu(): void {
  * ============================================================ */
 
 /**
- * Rend le menu FOCUS compact dans le header.
+ * Rend le menu FOCUS sur une surface authentifiée.
  */
 function seoflix_render_focus_banner(): void {
-	if ( ! class_exists( '\\Seoflix\\Focus' ) ) {
+	if ( ! is_user_logged_in() || ! class_exists( '\\Seoflix\\Focus' ) ) {
 		return;
 	}
 
@@ -937,6 +940,9 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 		'paid'     => 'Payant',
 		default    => '',
 	};
+	$promo_code  = trim( (string) get_post_meta( $product->ID, \Seoflix\Meta_Keys::PRODUCT_PROMO_CODE, true ) );
+	$promo_offer = trim( (string) get_post_meta( $product->ID, \Seoflix\Meta_Keys::PRODUCT_PROMO_OFFER, true ) );
+	$promotion   = $promo_code ?: $promo_offer;
 
 	$has_aff = (bool) seoflix_product_affiliate_url( $product->ID );
 	$link_url = ( $opts['affiliate_link'] && $has_aff )
@@ -950,6 +956,7 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 	if ( $opts['compact'] )  { $classes[] = 'sx-card-product--compact'; }
 	if ( $opts['catalog'] )  { $classes[] = 'sx-card-product--catalog'; }
 	if ( $thumb_url )        { $classes[] = 'sx-card-product--has-image'; }
+	if ( $opts['catalog'] && $promotion ) { $classes[] = 'sx-card-product--has-promotion'; }
 	?>
 	<article class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
 		<a href="<?php echo esc_url( $link_url ); ?>"<?php echo $link_attrs; ?> class="sx-card-product__link">
@@ -961,18 +968,25 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 			<div class="sx-card-product__body">
 				<div class="sx-card-product__identity">
 					<h3 class="sx-card-product__name"><?php echo esc_html( get_the_title( $product ) ); ?></h3>
-					<?php if ( $cat_name && ! $opts['compact'] ) : ?>
+					<?php if ( $cat_name && ! $opts['compact'] && ! $opts['catalog'] ) : ?>
 						<div class="sx-card-product__category"><?php echo esc_html( $cat_name ); ?></div>
 					<?php endif; ?>
 				</div>
 				<p class="sx-card-product__excerpt"><?php echo esc_html( wp_trim_words( get_the_excerpt( $product ) ?: $product->post_content, $opts['compact'] ? 14 : 20 ) ); ?></p>
 				<div class="sx-card-product__meta">
-					<?php if ( $opts['show_pricing'] && $pricing_label ) : ?>
+					<?php if ( $opts['catalog'] && $cat_name ) : ?>
+						<span class="sx-card-product__category"><?php echo esc_html( $cat_name ); ?></span>
+					<?php elseif ( $opts['show_pricing'] && $pricing_label ) : ?>
 						<span class="sx-card-product__pricing sx-card-product__pricing--<?php echo esc_attr( $pricing ); ?>"><?php echo esc_html( $pricing_label ); ?></span>
 					<?php endif; ?>
-					<?php if ( $opts['catalog'] ) : ?><span class="sx-card-product__action" aria-hidden="true">Voir la fiche →</span><?php endif; ?>
 				</div>
 			</div>
+			<?php if ( $opts['catalog'] && $promotion ) : ?>
+				<span class="sx-card-product__promotion">
+					<?php if ( $promo_code ) : ?><small>Code</small><?php endif; ?>
+					<strong><?php echo esc_html( $promotion ); ?></strong>
+				</span>
+			<?php endif; ?>
 		</a>
 	</article>
 	<?php

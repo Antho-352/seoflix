@@ -97,10 +97,11 @@ class WeasUxCorrectionsContracts(unittest.TestCase):
         for legacy in legacy_map:
             self.assertNotIn(f"`{legacy}`", path_docs)
 
-    def test_focus_is_a_discrete_dynamic_three_choice_header_menu(self) -> None:
+    def test_focus_is_a_discrete_dynamic_three_choice_account_menu(self) -> None:
         focus = source("plugin/seoflix-core/includes/class-focus.php")
         functions = source("theme/seoflix/functions.php")
         header = source("theme/seoflix/header.php")
+        dashboard = source("theme/seoflix/page-mon-parcours.php")
         css = source("theme/seoflix/assets/css/focus.css")
         self.assertNotIn("PATH_SLUGS", focus)
         self.assertIn("seoflix_focus_enabled", focus)
@@ -110,9 +111,9 @@ class WeasUxCorrectionsContracts(unittest.TestCase):
         self.assertIn("<select", functions)
         self.assertIn('disabled', functions)
         self.assertNotIn("Choisir mon FOCUS vidéo", functions)
-        call = header.index("seoflix_render_focus_banner();")
-        self.assertLess(call, header.index("</header>"))
-        self.assertNotIn("seoflix_render_focus_banner();", header[header.index("</header>"):])
+        self.assertNotIn("seoflix_render_focus_banner();", header)
+        self.assertIn("seoflix_render_focus_banner();", dashboard)
+        self.assertIn("is_user_logged_in()", functions[functions.index("function seoflix_render_focus_banner"):])
         self.assertIn(".sx-focus-menu__panel", css)
         self.assertIn("position: absolute", css)
         self.assertNotRegex(css, r"\.sx-focus\s*\{[^}]*width:\s*100%")

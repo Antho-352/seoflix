@@ -21,15 +21,17 @@ FOOTER = "theme/seoflix/footer.php"
 STYLE = "theme/seoflix/style.css"
 TOKENS = "theme/seoflix/assets/css/tokens.css"
 
-PROMISE = "Apprends le business web sans perdre des heures sur YouTube."
-PANEL_TITLE = "Apprends l’édition de sites sans y laisser 500€."
+PROMISE = "Apprends l’affiliation sans perdre des heures sur YouTube."
+LEGACY_PROMISE = "Apprends le business web sans perdre des heures sur YouTube."
+PANEL_TITLE = "Choisis le business en ligne qui te correspond gratuitement"
+PANEL_EDITING = "Apprends l’édition de sites sans y laisser 500€."
 PANEL_PARAGRAPH = (
-    "La sélection complète des meilleures vidéos SEO, affiliation, vente de liens "
-    "et YouTube business, déjà triées et organisées en parcours."
+	"Crée ta compétence et développe ton business à partir d'une sélection complète "
+	"des meilleures vidéos. Affiliation, YouTube, vente de liens, IA &amp; automatisation, "
+	"vente de leads, freelancing."
 )
-PANEL_DISCLAIMER = (
-    "Sans formation à vendre à la fin, sans code obligatoire, sans compte premium caché."
-)
+PANEL_STEP = "Suis le parcours qui te permettra de générer tes premiers euros en ligne."
+PANEL_DISCLAIMER = "Des ressources vidéos sélectionnées et organisées pour se former à son rythme et gratuitement."
 ABOUT = (
     "Cela fait plus de 5 ans que je fais du freelancing et de l'édition de sites "
     "(SEO, Affiliation, Youtube) et que je regarde tous les contenus sur ces sujets. "
@@ -154,6 +156,8 @@ class MadiasHomepageContracts(unittest.TestCase):
         defaults = method_body(self.homepage, "defaults")
         config = method_body(self.homepage, "get_config")
         self.assertIn(PROMISE, defaults)
+        self.assertIn(LEGACY_PROMISE, self.homepage)
+        self.assertIn("LEGACY_HERO_TITLE", config)
         self.assertIn("'cta_text'", defaults)
         self.assertIn("Commencer à apprendre", defaults)
         self.assertIn("'best_tool_ids'", defaults)
@@ -251,12 +255,12 @@ class MadiasHomepageContracts(unittest.TestCase):
         self.assertIn("seoflix_render_post_card", self.front_page)
 
     def test_exact_promise_about_copy_and_single_homepage_newsletter(self) -> None:
-        for copy in (PANEL_TITLE, PANEL_PARAGRAPH, PANEL_DISCLAIMER, ABOUT):
+        for copy in (PANEL_TITLE, PANEL_EDITING, PANEL_PARAGRAPH, PANEL_STEP, PANEL_DISCLAIMER, ABOUT):
             with self.subTest(copy=copy[:24]):
                 self.assertIn(copy, self.front_page)
         self.assertRegex(
             self.front_page,
-            re.compile(rf"<em[^>]*>\s*{re.escape(PANEL_DISCLAIMER)}\s*</em>", re.S),
+            re.compile(rf"<p[^>]*>\s*{re.escape(PANEL_DISCLAIMER)}\s*</p>", re.S),
         )
         self.assertEqual(self.front_page.count("seoflix_render_newsletter("), 1)
         self.assertIn("! empty( $blocks['newsletter'] )", self.front_page)
@@ -264,7 +268,8 @@ class MadiasHomepageContracts(unittest.TestCase):
         self.assertEqual(self.footer.count("seoflix_render_newsletter("), 1)
 
     def test_visible_brand_is_weas_without_internal_renames(self) -> None:
-        self.assertGreaterEqual(self.header.count("WEAS"), 2)
+        self.assertGreaterEqual(self.header.count("WEAS"), 1)
+        self.assertNotIn('class="sx-logo__text">WEAS', self.header)
         self.assertGreaterEqual(self.footer.count("WEAS"), 2)
         self.assertRegex(self.style, r"Theme Name:\s*WEAS\b")
         self.assertIn("Text Domain: seoflix", self.style)

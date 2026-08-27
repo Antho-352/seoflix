@@ -12,7 +12,7 @@
 
 .sx-focus-menu__trigger {
 	display: inline-flex;
-	min-height: 28px;
+	min-height: 44px;
 	align-items: center;
 	gap: var(--sx-space-2);
 	padding: 4px 9px;
@@ -147,11 +147,11 @@
 	}
 
 	.sx-focus-menu__panel {
-		position: fixed;
-		top: calc(40px + var(--sx-space-2));
-		left: var(--sx-space-4);
-		right: var(--sx-space-4);
-		width: auto;
-		max-width: none;
+		position: absolute;
+		top: calc(100% + var(--sx-space-2));
+		left: 0;
+		right: auto;
+		width: min(22rem, calc(100vw - var(--sx-space-8)));
+		max-width: calc(100vw - var(--sx-space-8));
 	}
 }

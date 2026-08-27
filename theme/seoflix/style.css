@@ -3,7 +3,7 @@ Theme Name: WEAS
 Theme URI: https://weas.fr
 Author: Anthony Russo
 Description: Thème éditorial WEAS pour apprendre le business web à partir de vidéos sélectionnées et organisées.
-Version: 0.14.0
+Version: 0.14.1
 Requires at least: 6.5
 Requires PHP: 8.0
 License: Proprietary
@@ -460,8 +460,8 @@ Text Domain: seoflix
 .sx-home-hero {
 	position: relative;
 	display: grid;
-	min-height: clamp(30rem, 76vh, 48rem);
-	align-items: end;
+	min-height: 0;
+	align-items: center;
 	background:
 		radial-gradient(circle at 82% 18%, rgb(255 45 63 / 18%), transparent 36rem),
 		linear-gradient(150deg, var(--sx-color-bg) 20%, var(--sx-color-surface-2));
@@ -469,7 +469,7 @@ Text Domain: seoflix
 }
 
 .sx-home-hero__inner {
-	padding-block: clamp(5rem, 12vw, 9rem) clamp(4rem, 10vw, 7rem);
+	padding-block: clamp(3.5rem, 7vw, 5.5rem) clamp(2.5rem, 5vw, 4rem);
 }
 
 .sx-home-hero__brand,
@@ -483,11 +483,18 @@ Text Domain: seoflix
 }
 
 .sx-home-hero__title {
-	max-width: 18ch;
-	font-size: clamp(2.65rem, 8vw, 6.5rem);
-	line-height: 0.98;
+	max-width: none;
+	font-size: clamp(2.5rem, 4.6vw, 4.5rem);
+	line-height: 1.02;
 	letter-spacing: -0.055em;
-	overflow-wrap: anywhere;
+	overflow-wrap: normal;
+}
+
+.sx-home-hero__line {
+	display: block;
+	width: max-content;
+	max-width: 100%;
+	white-space: nowrap;
 }
 
 .sx-home-hero__subtitle {
@@ -753,7 +760,18 @@ Text Domain: seoflix
 	outline-offset: 3px;
 }
 
+@media (max-width: 60rem) {
+	.sx-home-hero__line {
+		width: auto;
+		white-space: normal;
+	}
+}
+
 @media (max-width: 48rem) {
+	.sx-home-hero__title {
+		font-size: clamp(2.35rem, 11vw, 3.5rem);
+	}
+
 	.sx-home-paths__grid,
 	.sx-paths-index__grid {
 		grid-template-columns: minmax(0, 1fr);

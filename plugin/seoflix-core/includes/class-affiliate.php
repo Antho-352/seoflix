@@ -169,6 +169,8 @@ final class Affiliate {
 		wp_nonce_field( 'seoflix_product_meta', 'seoflix_product_nonce' );
 		$affiliate = (string) get_post_meta( $post->ID, Meta_Keys::PRODUCT_AFFILIATE_URL, true );
 		$official  = (string) get_post_meta( $post->ID, Meta_Keys::PRODUCT_OFFICIAL_URL, true );
+		$promo_code  = (string) get_post_meta( $post->ID, Meta_Keys::PRODUCT_PROMO_CODE, true );
+		$promo_offer = (string) get_post_meta( $post->ID, Meta_Keys::PRODUCT_PROMO_OFFER, true );
 		?>
 		<table class="form-table">
 			<tr>
@@ -190,6 +192,20 @@ final class Affiliate {
 				<td>
 					<code><?php echo esc_html( home_url( '/go/' . $post->post_name . '/' ) ); ?></code>
 					<p class="description">Lien à utiliser dans les contenus (ajoute automatiquement <code>rel="sponsored nofollow"</code> et tracke les clics).</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="seoflix_promo_code">Code promo</label></th>
+				<td>
+					<input type="text" id="seoflix_promo_code" name="seoflix_promo_code" value="<?php echo esc_attr( $promo_code ); ?>" class="regular-text code" maxlength="40" placeholder="WEAS20">
+					<p class="description">Code exact à afficher dans L’ARSENAL. Laisser vide si l’offre ne nécessite pas de code.</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="seoflix_promo_offer">Offre sans code</label></th>
+				<td>
+					<input type="text" id="seoflix_promo_offer" name="seoflix_promo_offer" value="<?php echo esc_attr( $promo_offer ); ?>" class="regular-text" maxlength="80" placeholder="-20% ou 2 mois offerts">
+					<p class="description">Texte affiché lorsqu’il n’existe pas de code. Le code promo reste prioritaire si les deux champs sont remplis.</p>
 				</td>
 			</tr>
 		</table>
@@ -253,6 +269,21 @@ final class Affiliate {
 				update_post_meta( $post_id, Meta_Keys::PRODUCT_PRICING, $pricing );
 			} else {
 				delete_post_meta( $post_id, Meta_Keys::PRODUCT_PRICING );
+			}
+		}
+		foreach ( [
+			'seoflix_promo_code'  => Meta_Keys::PRODUCT_PROMO_CODE,
+			'seoflix_promo_offer' => Meta_Keys::PRODUCT_PROMO_OFFER,
+		] as $field => $meta_key ) {
+			if ( ! isset( $_POST[ $field ] ) || ! is_string( $_POST[ $field ] ) ) {
+				continue;
+			}
+			$value = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+			$value = function_exists( 'mb_substr' ) ? mb_substr( $value, 0, 'seoflix_promo_code' === $field ? 40 : 80 ) : substr( $value, 0, 'seoflix_promo_code' === $field ? 40 : 80 );
+			if ( '' !== $value ) {
+				update_post_meta( $post_id, $meta_key, $value );
+			} else {
+				delete_post_meta( $post_id, $meta_key );
 			}
 		}
 	}

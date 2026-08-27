@@ -9,8 +9,8 @@ $hero         = $cfg['hero'];
 $blocks       = $cfg['fixed_blocks'];
 $path_catalog = \Seoflix\Homepage::path_definitions();
 $path_names   = array_column( $path_catalog, 'name', 'slug' );
-$default_title = \Seoflix\Homepage::defaults()['hero']['title'] ?: 'Apprends le business web sans perdre des heures sur YouTube.';
-$rotate_hero   = $hero['title'] === $default_title;
+$default_title = \Seoflix\Homepage::defaults()['hero']['title'] ?: 'Apprends l’affiliation sans perdre des heures sur YouTube.';
+$rotate_hero   = in_array( $hero['title'], [ $default_title, \Seoflix\Homepage::LEGACY_HERO_TITLE ], true );
 $hero_labels   = array_values( array_filter( array_column( $path_catalog, 'hero_label' ) ) );
 
 $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
@@ -32,11 +32,13 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 <div class="sx-home">
 	<section class="sx-home-hero" aria-labelledby="madias-home-title">
 		<div class="sx-container sx-home-hero__inner">
-			<p class="sx-home-hero__brand">WEAS</p>
 			<h1 id="madias-home-title" class="sx-home-hero__title">
 				<?php if ( $rotate_hero && $hero_labels ) : ?>
 					<span class="screen-reader-text"><?php echo esc_html( $default_title ); ?></span>
-					<span aria-hidden="true"><span>Apprends le business web — </span><span id="sx-rotate" class="sx-rotate"><?php echo esc_html( $hero_labels[0] ); ?></span><span> — sans perdre des heures sur YouTube.</span></span>
+					<span aria-hidden="true">
+						<span class="sx-home-hero__line sx-home-hero__line--business"><span>Apprends </span><span id="sx-rotate" class="sx-rotate"><?php echo esc_html( $hero_labels[0] ); ?></span></span>
+						<span class="sx-home-hero__line sx-home-hero__line--promise">sans perdre des heures sur YouTube.</span>
+					</span>
 				<?php else : ?>
 					<?php echo esc_html( $hero['title'] ?: $default_title ); ?>
 				<?php endif; ?>
@@ -52,8 +54,7 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 		<?php if ( ! empty( $blocks['paths'] ) ) : ?>
 			<section id="parcours" class="sx-home-section sx-home-paths" aria-labelledby="home-paths-title">
 				<header class="sx-home-section__header">
-					<p class="sx-home-section__kicker">Choisis ton cap</p>
-					<h2 id="home-paths-title">Six parcours pour apprendre dans le bon ordre</h2>
+					<h2 id="home-paths-title">Six business en ligne à apprendre gratuitement</h2>
 				</header>
 				<div class="sx-home-paths__grid">
 					<?php foreach ( $path_catalog as $definition ) :
@@ -135,10 +136,11 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 
 		<?php if ( ! empty( $blocks['promise'] ) ) : ?>
 			<section id="promesse" class="sx-home-promise" aria-labelledby="home-promise-title">
-				<p class="sx-home-section__kicker">Une sélection gratuite</p>
-				<h2 id="home-promise-title">Apprends l’édition de sites sans y laisser 500€.</h2>
-				<p>La sélection complète des meilleures vidéos SEO, affiliation, vente de liens et YouTube business, déjà triées et organisées en parcours.</p>
-				<em>Sans formation à vendre à la fin, sans code obligatoire, sans compte premium caché.</em>
+				<h2 id="home-promise-title">Choisis le business en ligne qui te correspond gratuitement</h2>
+				<p>Apprends l’édition de sites sans y laisser 500€.</p>
+				<p>Crée ta compétence et développe ton business à partir d'une sélection complète des meilleures vidéos. Affiliation, YouTube, vente de liens, IA &amp; automatisation, vente de leads, freelancing.</p>
+				<p>Suis le parcours qui te permettra de générer tes premiers euros en ligne.</p>
+				<p>Des ressources vidéos sélectionnées et organisées pour se former à son rythme et gratuitement.</p>
 			</section>
 		<?php endif; ?>
 

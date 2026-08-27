@@ -58,8 +58,8 @@ Conserver WP-Cron actif jusqu’à preuve qu’un cron système fonctionnel le r
 Les noms exacts sont fournis par le manifeste de release :
 
 ```bash
-wp plugin install /chemin/release/weas-core-0.27.1-<HEAD>.zip --force --activate
-wp theme install /chemin/release/weas-theme-0.14.0-<HEAD>.zip --force --activate
+wp plugin install /chemin/release/weas-core-0.27.2-<HEAD>.zip --force --activate
+wp theme install /chemin/release/weas-theme-0.14.1-<HEAD>.zip --force --activate
 wp rewrite flush
 ```
 

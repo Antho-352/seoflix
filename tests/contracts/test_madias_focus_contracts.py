@@ -353,9 +353,10 @@ class MadiasFocusContracts(unittest.TestCase):
             {"topic_tax": topic_tax, "helper_tax": helper_tax},
         )
 
-    def test_header_menu_has_real_path_chooser_status_reset_and_empty_state(self) -> None:
+    def test_account_menu_has_real_path_chooser_status_reset_and_empty_state(self) -> None:
         functions = source(FUNCTIONS)
         header = source(HEADER)
+        dashboard = source("theme/seoflix/page-mon-parcours.php")
         for token in (
             "function seoflix_render_focus_banner()",
             "Focus::available_paths()",
@@ -375,9 +376,9 @@ class MadiasFocusContracts(unittest.TestCase):
             self.assertIn(token, functions)
         self.assertNotIn("<script", functions)
         self.assertNotRegex(functions, r"\son(?:click|change|submit)=")
-        banner = header.index("seoflix_render_focus_banner();")
-        self.assertLess(banner, header.index("</header>"))
-        self.assertNotIn("seoflix_render_focus_banner();", header[header.index("</header>"):])
+        self.assertNotIn("seoflix_render_focus_banner();", header)
+        self.assertIn("seoflix_render_focus_banner();", dashboard)
+        self.assertIn("assets/js/focus.js", functions)
 
     def test_focus_styles_are_enqueued_accessible_and_mobile_safe(self) -> None:
         functions = source(FUNCTIONS)
