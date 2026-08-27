@@ -46,6 +46,7 @@ final class Plugin {
 
 		// Re-seed des termes si la version a bumpé (ajout du topic « youtube » par exemple).
 		add_action( 'init', [ Activator::class, 'ensure_terms_seeded' ], 20 );
+		add_action( 'init', [ Activator::class, 'ensure_product_catalog_seeded' ], 21 );
 
 		if ( is_admin() ) {
 			require_once SEOFLIX_PLUGIN_DIR . 'admin/class-admin.php';

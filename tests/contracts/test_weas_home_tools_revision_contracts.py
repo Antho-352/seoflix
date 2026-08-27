@@ -168,18 +168,18 @@ class WeasHomeToolsRevisionContracts(unittest.TestCase):
         self.assertNotIn("$footer_topics", footer)
         self.assertNotIn("sx-footer-3", functions)
 
-    def test_arsenal_rows_are_fully_clickable_hoverable_spaced_and_pricing_badge_free(self) -> None:
+    def test_arsenal_rows_are_fully_clickable_dense_and_show_right_hand_pricing(self) -> None:
         functions = source("theme/seoflix/functions.php")
         css = source("theme/seoflix/assets/css/components.css")
         block = functions[functions.index("function seoflix_render_product_card"):functions.index("function seoflix_render_video_row")]
         catalog = css[css.index(".sx-tools-catalog"):css.index("/* Variante compacte")]
         self.assertLess(block.index('class="sx-card-product__link"'), block.index('class="sx-card-product__body"'))
-        self.assertGreater(block.rindex("</a>"), block.index('class="sx-card-product__promotion"'))
-        self.assertRegex(catalog, re.compile(r"\.sx-card-product--catalog:hover\s*\{[^}]*(?:background|border-color):", re.S))
-        self.assertRegex(catalog, re.compile(r"\.sx-card-product--catalog \.sx-card-product__link\s*\{[^}]*width:\s*100%[^}]*padding:\s*28px", re.S))
-        self.assertIn("if ( $opts['catalog'] )", block)
-        catalog_branch = block[block.index("if ( $opts['catalog'] )"):block.index("</div>", block.index("if ( $opts['catalog'] )"))]
-        self.assertNotIn("sx-card-product__pricing", catalog_branch)
+        self.assertGreater(block.rindex("</a>"), block.index('class="sx-card-product__promotion'))
+        self.assertRegex(catalog, re.compile(r"\.sx-card-product--catalog:hover\s*\{[^}]*background:", re.S))
+        self.assertRegex(catalog, re.compile(r"\.sx-card-product--catalog \.sx-card-product__link\s*\{[^}]*width:\s*100%[^}]*padding:\s*\.75rem \.5rem", re.S))
+        self.assertIn("$opts['catalog'] && $pricing_label", block)
+        self.assertIn('class="sx-card-product__aside"', block)
+        self.assertIn("sx-card-product__pricing", block[block.index('class="sx-card-product__aside"'):])
 
     def test_header_removes_wordmark_adds_arsenal_and_focus_moves_to_authenticated_dashboard(self) -> None:
         header = source("theme/seoflix/header.php")

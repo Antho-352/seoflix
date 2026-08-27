@@ -928,6 +928,10 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 
 	$thumb_id  = get_post_thumbnail_id( $product->ID );
 	$thumb_url = $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium' ) : '';
+	$logo_url  = trim( (string) get_post_meta( $product->ID, \Seoflix\Meta_Keys::PRODUCT_LOGO_URL, true ) );
+	if ( $opts['catalog'] && ! $thumb_url && $logo_url && wp_http_validate_url( $logo_url ) ) {
+		$thumb_url = $logo_url;
+	}
 
 	$category = wp_get_object_terms( $product->ID, 'seoflix_product_category', [ 'number' => 1 ] );
 	$cat_name = ( ! is_wp_error( $category ) && $category ) ? $category[0]->name : '';
@@ -941,7 +945,8 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 	};
 	$promo_code  = trim( (string) get_post_meta( $product->ID, \Seoflix\Meta_Keys::PRODUCT_PROMO_CODE, true ) );
 	$promo_offer = trim( (string) get_post_meta( $product->ID, \Seoflix\Meta_Keys::PRODUCT_PROMO_OFFER, true ) );
-	$promotion   = $promo_code ?: $promo_offer;
+	$promotion = $promo_code ?: $promo_offer;
+	$has_aside = $opts['catalog'] && ( $pricing_label || $promotion );
 
 	$has_aff = (bool) seoflix_product_affiliate_url( $product->ID );
 	$link_url = ( $opts['affiliate_link'] && $has_aff )
@@ -955,6 +960,7 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 	if ( $opts['compact'] )  { $classes[] = 'sx-card-product--compact'; }
 	if ( $opts['catalog'] )  { $classes[] = 'sx-card-product--catalog'; }
 	if ( $thumb_url )        { $classes[] = 'sx-card-product--has-image'; }
+	if ( $has_aside )        { $classes[] = 'sx-card-product--has-aside'; }
 	if ( $opts['catalog'] && $promotion ) { $classes[] = 'sx-card-product--has-promotion'; }
 	?>
 	<article class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
@@ -973,19 +979,22 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 				</div>
 				<p class="sx-card-product__excerpt"><?php echo esc_html( wp_trim_words( get_the_excerpt( $product ) ?: $product->post_content, $opts['compact'] ? 14 : 20 ) ); ?></p>
 				<div class="sx-card-product__meta">
-					<?php if ( $opts['catalog'] ) : ?>
-						<?php if ( $cat_name ) : ?>
-							<span class="sx-card-product__category"><?php echo esc_html( $cat_name ); ?></span>
-						<?php endif; ?>
-					<?php elseif ( $opts['show_pricing'] && $pricing_label ) : ?>
+					<?php if ( ! $opts['catalog'] && $opts['show_pricing'] && $pricing_label ) : ?>
 						<span class="sx-card-product__pricing sx-card-product__pricing--<?php echo esc_attr( $pricing ); ?>"><?php echo esc_html( $pricing_label ); ?></span>
 					<?php endif; ?>
 				</div>
 			</div>
-			<?php if ( $opts['catalog'] && $promotion ) : ?>
-				<span class="sx-card-product__promotion">
-					<?php if ( $promo_code ) : ?><small>Code</small><?php endif; ?>
-					<strong><?php echo esc_html( $promotion ); ?></strong>
+			<?php if ( $has_aside ) : ?>
+				<span class="sx-card-product__aside">
+					<?php if ( $opts['catalog'] && $pricing_label ) : ?>
+						<span class="sx-card-product__pricing sx-card-product__pricing--<?php echo esc_attr( $pricing ); ?>"><?php echo esc_html( $pricing_label ); ?></span>
+					<?php endif; ?>
+					<?php if ( $promotion ) : ?>
+						<span class="sx-card-product__promotion<?php echo $promo_code ? ' sx-card-product__promotion--code' : ''; ?>">
+							<?php if ( $promo_code ) : ?><small>Code</small><?php endif; ?>
+							<strong><?php echo esc_html( $promotion ); ?></strong>
+						</span>
+					<?php endif; ?>
 				</span>
 			<?php endif; ?>
 		</a>

@@ -33,6 +33,7 @@ final class Activator {
 		self::seed_default_terms();
 		self::seed_default_options();
 		self::set_seed_version_verified();
+		self::ensure_product_catalog_seeded();
 
 		flush_rewrite_rules();
 	}
@@ -116,6 +117,13 @@ final class Activator {
 		update_post_meta( $post_id, $meta_key, $value );
 		if ( (string) get_post_meta( $post_id, $meta_key, true ) !== (string) $value ) {
 			throw new \RuntimeException( 'Impossible d’enregistrer la métadonnée vidéo ' . $meta_key . '.' );
+		}
+	}
+
+	private static function set_product_catalog_seed_version_verified(): void {
+		update_option( 'seoflix_product_catalog_seed_version', self::PRODUCT_CATALOG_SEED_VERSION, false );
+		if ( (int) get_option( 'seoflix_product_catalog_seed_version', 0 ) !== self::PRODUCT_CATALOG_SEED_VERSION ) {
+			throw new \RuntimeException( 'Impossible de confirmer la version de migration du catalogue produits.' );
 		}
 	}
 
@@ -207,8 +215,31 @@ final class Activator {
 		}
 	}
 
+	private static function seed_product_catalog_metadata(): bool {
+		$linkquiver = get_page_by_path( 'linkquiver', OBJECT, CPT::PRODUCT );
+		$cuik       = get_page_by_path( 'cuik', OBJECT, CPT::PRODUCT );
+		if ( ! ( $linkquiver instanceof \WP_Post ) || ! ( $cuik instanceof \WP_Post ) ) {
+			return false;
+		}
+
+		if ( trim( (string) get_post_meta( $linkquiver->ID, Meta_Keys::PRODUCT_LOGO_URL, true ) ) === '' ) {
+			self::set_post_meta_verified(
+				$linkquiver->ID,
+				Meta_Keys::PRODUCT_LOGO_URL,
+				SEOFLIX_PLUGIN_URL . 'assets/images/linkquiver-icon.svg'
+			);
+		}
+
+		if ( trim( (string) get_post_meta( $cuik->ID, Meta_Keys::PRODUCT_PRICING, true ) ) === '' ) {
+			self::set_post_meta_verified( $cuik->ID, Meta_Keys::PRODUCT_PRICING, 'paid' );
+		}
+
+		return true;
+	}
+
 	private static function seed_default_options(): void {
 		add_option( 'seoflix_terms_seed_version', self::TERMS_SEED_VERSION );
+		add_option( 'seoflix_product_catalog_seed_version', 0 );
 		add_option( 'seoflix_user_accounts_enabled', false );
 		add_option( 'seoflix_auto_publish_ai', false );
 		add_option( 'seoflix_youtube_api_key', '' );
@@ -220,6 +251,7 @@ final class Activator {
 	 * Le re-seed se fait automatiquement à chaque page chargée (tant que la version stockée < courante).
 	 */
 	public const TERMS_SEED_VERSION = 4;
+	public const PRODUCT_CATALOG_SEED_VERSION = 1;
 
 	/**
 	 * Re-seed idempotent (safe à exécuter à chaque page chargée).
@@ -236,6 +268,24 @@ final class Activator {
 			self::set_seed_version_verified();
 		} catch ( \Throwable $error ) {
 			error_log( 'WEAS path migration failed: ' . $error->getMessage() );
+		} finally {
+			DB_Schema::release_path_order_lock();
+		}
+	}
+
+	public static function ensure_product_catalog_seeded(): void {
+		if ( (int) get_option( 'seoflix_product_catalog_seed_version', 0 ) >= self::PRODUCT_CATALOG_SEED_VERSION ) {
+			return;
+		}
+		if ( ! DB_Schema::acquire_path_order_lock( 10 ) ) {
+			return;
+		}
+		try {
+			if ( self::seed_product_catalog_metadata() ) {
+				self::set_product_catalog_seed_version_verified();
+			}
+		} catch ( \Throwable $error ) {
+			error_log( 'WEAS product catalog migration failed: ' . $error->getMessage() );
 		} finally {
 			DB_Schema::release_path_order_lock();
 		}
