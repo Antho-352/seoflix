@@ -132,13 +132,14 @@ class WeasUxCorrectionsContracts(unittest.TestCase):
         self.assertNotIn("<h3>Sujets</h3>", footer)
         self.assertNotIn("$footer_topics", footer)
 
-    def test_home_uses_real_description_fallback_and_hides_empty_rows(self) -> None:
+    def test_home_uses_real_description_fallback_and_keeps_featured_empty_rows(self) -> None:
         front = source("theme/seoflix/front-page.php")
         css = source("theme/seoflix/style.css")
         self.assertIn("$definition['description']", front)
         self.assertNotIn("Description indisponible.", front)
         self.assertNotIn("Aucune vidéo publiée dans ce parcours.", front)
-        self.assertRegex(front, re.compile(r"if \( ! \$featured_videos \).*?continue;", re.S))
+        self.assertNotRegex(front, re.compile(r"if \( ! \$featured_videos \).*?continue;", re.S))
+        self.assertIn("'Tout voir', true", front)
         self.assertNotIn("Explore les six parcours WEAS", front)
         self.assertNotIn("Voir tous les parcours", front)
         content = re.search(r"\.sx-home__content\s*\{([^}]*)\}", css, re.S)

@@ -50,7 +50,7 @@ class WeasBrandContracts(unittest.TestCase):
         self.assertRegex(theme, r"Theme Name:\s+WEAS\b")
         self.assertRegex(theme, r"Theme URI:\s+https://weas\.fr\b")
         self.assertRegex(theme, r"Description:\s+.*\bWEAS\b")
-        self.assertRegex(theme, r"Version:\s+0\.14\.2\b")
+        self.assertRegex(theme, r"Version:\s+0\.14\.3\b")
 
     def test_every_runtime_brand_surface_has_dropped_visible_madias_copy(self) -> None:
         combined = "\n".join(source(path) for path in RUNTIME_BRAND_FILES)

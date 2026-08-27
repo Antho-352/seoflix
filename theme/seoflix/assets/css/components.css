@@ -57,6 +57,16 @@
 	border-radius: 3px;
 }
 
+.sx-row__empty {
+	min-width: 100%;
+	margin: 0;
+	padding: var(--sx-space-5) var(--sx-space-4);
+	border: 1px dashed var(--sx-color-border);
+	border-radius: var(--sx-radius-sm);
+	color: var(--sx-color-text-muted);
+	background: color-mix(in srgb, var(--sx-color-surface) 72%, transparent);
+}
+
 .sx-row__rail > * {
 	scroll-snap-align: start;
 }

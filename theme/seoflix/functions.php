@@ -993,9 +993,9 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 	<?php
 }
 
-function seoflix_render_video_row( string $title, array $videos, ?string $see_more_url = null, ?string $see_more_label = 'Tout voir' ): void {
+function seoflix_render_video_row( string $title, array $videos, ?string $see_more_url = null, ?string $see_more_label = 'Tout voir', bool $show_empty = false ): void {
 	static $row_count = 0;
-	if ( ! $videos ) {
+	if ( ! $videos && ! $show_empty ) {
 		return;
 	}
 	$is_first_row = ( $row_count === 0 );
@@ -1009,16 +1009,20 @@ function seoflix_render_video_row( string $title, array $videos, ?string $see_mo
 			<?php endif; ?>
 		</div>
 		<div class="sx-row__rail">
-			<?php
-			$idx = 0;
-			foreach ( $videos as $v ) {
-				// Priority loading uniquement sur la 1re vidéo de la 1re rangée affichée
-				// (heuristique LCP). Les autres images chargent en lazy.
-				$priority = ( $is_first_row && $idx === 0 );
-				seoflix_render_video_card( $v, [ 'priority' => $priority ] );
-				$idx++;
-			}
-			?>
+			<?php if ( ! $videos ) : ?>
+				<p class="sx-row__empty" role="status">Les premières vidéos arrivent bientôt.</p>
+			<?php else : ?>
+				<?php
+				$idx = 0;
+				foreach ( $videos as $v ) {
+					// Priority loading uniquement sur la 1re vidéo de la 1re rangée affichée
+					// (heuristique LCP). Les autres images chargent en lazy.
+					$priority = ( $is_first_row && $idx === 0 );
+					seoflix_render_video_card( $v, [ 'priority' => $priority ] );
+					$idx++;
+				}
+				?>
+			<?php endif; ?>
 		</div>
 	</section>
 	<?php

@@ -158,9 +158,6 @@ $render_home_newsletter = static function (): void {
 					continue;
 				}
 				$featured_videos = $get_path_videos( (int) $featured_term->term_id, 12 );
-				if ( ! $featured_videos ) {
-					continue;
-				}
 				$featured_rows[] = [
 					'name'   => $path_names[ $featured_slug ] ?? $featured_slug,
 					'term'   => $featured_term,
@@ -173,7 +170,7 @@ $render_home_newsletter = static function (): void {
 					<h2 id="home-featured-paths-title">Suis le parcours de ton choix</h2>
 				</header>
 				<?php foreach ( $featured_rows as $featured_row_index => $featured_row ) : ?>
-					<?php seoflix_render_video_row( $featured_row['name'], $featured_row['videos'], get_term_link( $featured_row['term'] ) ); ?>
+					<?php seoflix_render_video_row( $featured_row['name'], $featured_row['videos'], get_term_link( $featured_row['term'] ), 'Tout voir', true ); ?>
 					<?php if ( $featured_row_index === 1 && ! empty( $blocks['newsletter'] ) && function_exists( 'seoflix_render_newsletter' ) ) : ?>
 						<?php $render_home_newsletter(); ?>
 						<?php $newsletter_rendered = true; ?>

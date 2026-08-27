@@ -59,7 +59,7 @@ Les noms exacts sont fournis par le manifeste de release :
 
 ```bash
 wp plugin install /chemin/release/weas-core-0.27.3-<HEAD>.zip --force --activate
-wp theme install /chemin/release/weas-theme-0.14.2-<HEAD>.zip --force --activate
+wp theme install /chemin/release/weas-theme-0.14.3-<HEAD>.zip --force --activate
 wp rewrite flush
 ```
 

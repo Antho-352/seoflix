@@ -71,6 +71,7 @@ class WeasHomeToolsRevisionContracts(unittest.TestCase):
         homepage = source("plugin/seoflix-core/includes/class-homepage.php")
         style = source("theme/seoflix/style.css")
         components = source("theme/seoflix/assets/css/components.css")
+        functions = source("theme/seoflix/functions.php")
         subtitle = "Des vidéos utiles, sélectionnées et organisées pour créer son premier business en ligne. Gratuitement."
         self.assertIn(subtitle, homepage)
         self.assertIn("LEGACY_HERO_SUBTITLE", homepage)
@@ -95,6 +96,18 @@ class WeasHomeToolsRevisionContracts(unittest.TestCase):
         self.assertIn("MAX_FEATURED_ROWS = 6", homepage)
         self.assertIn("$featured_row_index === 1", front)
         self.assertIn("$render_home_newsletter();", front[front.index("foreach ( $featured_rows"):front.index("endforeach", front.index("foreach ( $featured_rows"))])
+        self.assertIn("bool $show_empty = false", functions)
+        self.assertIn("if ( ! $videos && ! $show_empty )", functions)
+        self.assertIn("sx-row__empty", functions)
+        self.assertIn("Les premières vidéos arrivent bientôt.", functions)
+        featured_build_start = front.index("foreach ( $cfg['featured_path_slugs']")
+        featured_build_end = front.index("if ( $featured_rows )", featured_build_start)
+        featured_build = front[featured_build_start:featured_build_end]
+        self.assertNotIn("if ( $videos )", featured_build)
+        call_start = front.index("seoflix_render_video_row(", front.index("foreach ( $featured_rows"))
+        call_end = front.index(");", call_start)
+        self.assertIn("true", front[call_start:call_end])
+        self.assertIn(".sx-row__empty", source("theme/seoflix/assets/css/components.css"))
         self.assertNotIn("Explore les six parcours WEAS", front)
         self.assertNotIn("Voir tous les parcours", front)
 
