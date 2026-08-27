@@ -23,7 +23,7 @@ TOKENS = "theme/seoflix/assets/css/tokens.css"
 
 PROMISE = "Apprends l’affiliation sans perdre des heures sur YouTube."
 LEGACY_PROMISE = "Apprends le business web sans perdre des heures sur YouTube."
-PANEL_TITLE = "Choisis le business en ligne qui te correspond gratuitement"
+PANEL_TITLE = "Développe le business en ligne qui te correspond"
 PANEL_EDITING = "Apprends l’édition de sites sans y laisser 500€."
 PANEL_PARAGRAPH = (
 	"Crée ta compétence et développe ton business à partir d'une sélection complète "
@@ -52,9 +52,8 @@ FIXED_MARKERS = [
     'id="meilleurs-outils"',
     'id="promesse"',
     'id="parcours-selectionnes"',
-    'id="tous-les-parcours"',
+    "$render_home_newsletter();",
     'id="a-propos"',
-    "seoflix_render_newsletter(",
     'id="derniers-articles"',
 ]
 
@@ -177,7 +176,11 @@ class MadiasHomepageContracts(unittest.TestCase):
         self.assertIn("normalize_tool_ids", self.homepage)
         self.assertIn("normalize_path_slugs", self.homepage)
         self.assertRegex(self.homepage, r"array_slice\s*\([^;]+,\s*0\s*,\s*self::MAX_BEST_TOOLS")
-        self.assertRegex(self.homepage, r"array_slice\s*\([^;]+,\s*0\s*,\s*3\s*\)")
+        self.assertRegex(self.homepage, r"array_slice\s*\([^;]+,\s*0\s*,\s*self::MAX_FEATURED_ROWS\s*\)")
+        self.assertRegex(self.homepage, r"MAX_FEATURED_ROWS\s*=\s*6\s*;")
+        self.assertIn("count( $saved_featured ) === self::MAX_FEATURED_ROWS", config)
+        self.assertIn("Six rangées parcours", self.admin)
+        self.assertNotIn("Trois rangées parcours", self.admin)
 
     def test_admin_exposes_only_targeted_fixed_configuration(self) -> None:
         for field in (
@@ -263,6 +266,8 @@ class MadiasHomepageContracts(unittest.TestCase):
             re.compile(rf"<p[^>]*>\s*{re.escape(PANEL_DISCLAIMER)}\s*</p>", re.S),
         )
         self.assertEqual(self.front_page.count("seoflix_render_newsletter("), 1)
+        self.assertEqual(self.front_page.count("$render_home_newsletter();"), 2)
+        self.assertIn("$featured_row_index === 1", self.front_page)
         self.assertIn("! empty( $blocks['newsletter'] )", self.front_page)
         self.assertIn("! is_front_page()", self.footer)
         self.assertEqual(self.footer.count("seoflix_render_newsletter("), 1)

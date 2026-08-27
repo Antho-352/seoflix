@@ -10,12 +10,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * L'option historique `seoflix_homepage_config` est conservée. Le rendu public
  * utilise désormais un assemblage fixe : seuls les textes du hero, les outils,
- * les trois parcours mis en avant et la visibilité des blocs sont réglables.
+ * les six parcours mis en avant et la visibilité des blocs sont réglables.
  */
 final class Homepage {
 
 	public const OPTION = 'seoflix_homepage_config';
-	public const LEGACY_HERO_TITLE = 'Apprends le business web sans perdre des heures sur YouTube.';
+	public const LEGACY_HERO_TITLE    = 'Apprends le business web sans perdre des heures sur YouTube.';
+	public const LEGACY_HERO_SUBTITLE = 'Des vidéos utiles, sélectionnées et organisées pour avancer sans bruit inutile.';
 	public const PATH_ORDER_META    = 'seoflix_path_public_order';
 	public const FOCUS_ENABLED_META = 'seoflix_focus_enabled';
 	public const FOCUS_LABEL_META   = 'seoflix_focus_label';
@@ -28,7 +29,7 @@ final class Homepage {
 	public const TYPE_PATHS        = 'paths';
 	public const TYPE_TOPIC        = 'topic';
 	public const MAX_BEST_TOOLS    = 8;
-	public const MAX_FEATURED_ROWS = 3;
+	public const MAX_FEATURED_ROWS = 6;
 
 	/**
 	 * Catalogue public intentionnel. L'ordre est un contrat éditorial.
@@ -68,18 +69,24 @@ final class Homepage {
 		return [
 			'hero' => [
 				'title'     => 'Apprends l’affiliation sans perdre des heures sur YouTube.',
-				'subtitle'  => 'Des vidéos utiles, sélectionnées et organisées pour avancer sans bruit inutile.',
+				'subtitle'  => 'Des vidéos utiles, sélectionnées et organisées pour créer son premier business en ligne. Gratuitement.',
 				'cta_text'  => 'Commencer à apprendre',
 			],
 			'best_tool_ids'       => [],
-			'featured_path_slugs' => [ 'apprendre-ia-automatisation', 'apprendre-youtube', 'apprendre-la-vente-de-liens' ],
+			'featured_path_slugs' => [
+				'apprendre-ia-automatisation',
+				'apprendre-la-vente-de-liens',
+				'apprendre-l-affiliation',
+				'apprendre-youtube',
+				'apprendre-la-vente-de-leads',
+				'apprendre-le-freelancing',
+			],
 			'fixed_blocks'        => [
 				'paths'          => true,
 				'new'            => true,
 				'tools'          => true,
 				'promise'        => true,
 				'featured_paths' => true,
-				'paths_cta'      => true,
 				'about'          => true,
 				'newsletter'     => true,
 				'blog'           => true,
@@ -123,7 +130,7 @@ final class Homepage {
 				$normalized[] = $slug;
 			}
 		}
-		return array_slice( $normalized, 0, 3 );
+		return array_slice( $normalized, 0, self::MAX_FEATURED_ROWS );
 	}
 
 	/** @return array<string,mixed> */
@@ -144,18 +151,16 @@ final class Homepage {
 			if ( self::LEGACY_HERO_TITLE === $config['hero']['title'] ) {
 				$config['hero']['title'] = $defaults['hero']['title'];
 			}
+			if ( self::LEGACY_HERO_SUBTITLE === $config['hero']['subtitle'] ) {
+				$config['hero']['subtitle'] = $defaults['hero']['subtitle'];
+			}
 		}
 
 		$config['best_tool_ids'] = self::normalize_tool_ids( $saved['best_tool_ids'] ?? [] );
-		$featured = self::normalize_path_slugs( $saved['featured_path_slugs'] ?? [] );
-		foreach ( $defaults['featured_path_slugs'] as $fallback ) {
-			if ( count( $featured ) >= self::MAX_FEATURED_ROWS ) {
-				break;
-			}
-			if ( ! in_array( $fallback, $featured, true ) ) {
-				$featured[] = $fallback;
-			}
-		}
+		$saved_featured = self::normalize_path_slugs( $saved['featured_path_slugs'] ?? [] );
+		$featured      = count( $saved_featured ) === self::MAX_FEATURED_ROWS
+			? $saved_featured
+			: $defaults['featured_path_slugs'];
 		$config['featured_path_slugs'] = array_slice( $featured, 0, self::MAX_FEATURED_ROWS );
 
 		if ( isset( $saved['fixed_blocks'] ) && is_array( $saved['fixed_blocks'] ) ) {

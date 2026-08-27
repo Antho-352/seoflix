@@ -21,7 +21,7 @@ add_action( 'after_setup_theme', static function () {
 } );
 
 /* ============================================================
- *  Sidebars (zones de widgets) — 4 colonnes du footer
+ *  Sidebars (zones de widgets) — 3 colonnes du footer
  *  Configurables depuis Apparence → Widgets
  * ============================================================ */
 
@@ -29,7 +29,6 @@ add_action( 'widgets_init', static function () {
 	$columns = [
 		[ 'id' => 'sx-footer-1', 'name' => 'Pied de page — Colonne 1 (Branding)' ],
 		[ 'id' => 'sx-footer-2', 'name' => 'Pied de page — Colonne 2 (Explorer)' ],
-		[ 'id' => 'sx-footer-3', 'name' => 'Pied de page — Colonne 3 (Sujets)' ],
 		[ 'id' => 'sx-footer-4', 'name' => 'Pied de page — Colonne 4 (Légal)' ],
 	];
 	foreach ( $columns as $col ) {
@@ -974,8 +973,10 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 				</div>
 				<p class="sx-card-product__excerpt"><?php echo esc_html( wp_trim_words( get_the_excerpt( $product ) ?: $product->post_content, $opts['compact'] ? 14 : 20 ) ); ?></p>
 				<div class="sx-card-product__meta">
-					<?php if ( $opts['catalog'] && $cat_name ) : ?>
-						<span class="sx-card-product__category"><?php echo esc_html( $cat_name ); ?></span>
+					<?php if ( $opts['catalog'] ) : ?>
+						<?php if ( $cat_name ) : ?>
+							<span class="sx-card-product__category"><?php echo esc_html( $cat_name ); ?></span>
+						<?php endif; ?>
 					<?php elseif ( $opts['show_pricing'] && $pricing_label ) : ?>
 						<span class="sx-card-product__pricing sx-card-product__pricing--<?php echo esc_attr( $pricing ); ?>"><?php echo esc_html( $pricing_label ); ?></span>
 					<?php endif; ?>

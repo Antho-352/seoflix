@@ -129,9 +129,8 @@ class WeasUxCorrectionsContracts(unittest.TestCase):
         for old in ("/sujet/seo-technique/", "/sujet/affiliation/", ">SEO<", ">Affiliation<"):
             self.assertNotIn(old, fallback)
         self.assertIn("<h3>Parcours</h3>", footer)
-        self.assertIn("if ( $has_subject_widgets || $footer_topics )", footer)
-        self.assertIn("'seo-technique'", footer)
-        self.assertIn("'netlinking'", footer)
+        self.assertNotIn("<h3>Sujets</h3>", footer)
+        self.assertNotIn("$footer_topics", footer)
 
     def test_home_uses_real_description_fallback_and_hides_empty_rows(self) -> None:
         front = source("theme/seoflix/front-page.php")
@@ -140,8 +139,8 @@ class WeasUxCorrectionsContracts(unittest.TestCase):
         self.assertNotIn("Description indisponible.", front)
         self.assertNotIn("Aucune vidéo publiée dans ce parcours.", front)
         self.assertRegex(front, re.compile(r"if \( ! \$featured_videos \).*?continue;", re.S))
-        self.assertIn("Explore les six parcours WEAS", front)
-        self.assertNotIn("Tu sais déjà ce que tu veux apprendre ?", front)
+        self.assertNotIn("Explore les six parcours WEAS", front)
+        self.assertNotIn("Voir tous les parcours", front)
         content = re.search(r"\.sx-home__content\s*\{([^}]*)\}", css, re.S)
         self.assertIsNotNone(content)
         self.assertIn("gap: var(--sx-space-16)", content.group(1))

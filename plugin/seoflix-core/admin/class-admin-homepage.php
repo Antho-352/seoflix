@@ -52,8 +52,7 @@ final class Admin_Homepage {
 			'new'            => 'Nouveautés',
 			'tools'          => 'Meilleurs outils',
 			'promise'        => 'Encart promesse',
-			'featured_paths' => 'Trois rangées de parcours',
-			'paths_cta'      => 'CTA vers tous les parcours',
+			'featured_paths' => 'Six rangées de parcours',
 			'about'          => 'À propos',
 			'newsletter'     => 'Newsletter',
 			'blog'           => 'Derniers articles',
@@ -101,8 +100,8 @@ final class Admin_Homepage {
 				</div>
 
 				<div class="seoflix-card">
-					<h2>Trois rangées parcours</h2>
-					<p>Choisis exactement trois parcours. Leur position ci-dessous détermine l'ordre public.</p>
+					<h2>Six rangées parcours</h2>
+					<p>Choisis exactement six parcours. Leur position ci-dessous détermine l'ordre public.</p>
 					<?php for ( $slot = 0; $slot < Homepage::MAX_FEATURED_ROWS; $slot++ ) : ?>
 						<p>
 							<label for="featured_path_<?php echo (int) $slot; ?>">Rangée <?php echo (int) ( $slot + 1 ); ?></label><br>

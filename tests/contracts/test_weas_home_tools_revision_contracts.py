@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
 import re
+import subprocess
+import textwrap
 import unittest
 
-from php_source import source
+from php_source import REPO_ROOT, source
 
 
 class WeasHomeToolsRevisionContracts(unittest.TestCase):
@@ -52,7 +55,7 @@ class WeasHomeToolsRevisionContracts(unittest.TestCase):
         self.assertNotIn("Six parcours pour apprendre dans le bon ordre", front)
         self.assertIn("Six business en ligne à apprendre gratuitement", front)
         expected = (
-            "Choisis le business en ligne qui te correspond gratuitement",
+            "Développe le business en ligne qui te correspond",
             "Apprends l’édition de sites sans y laisser 500€.",
             "Crée ta compétence et développe ton business à partir d'une sélection complète des meilleures vidéos.",
             "Affiliation, YouTube, vente de liens, IA &amp; automatisation, vente de leads, freelancing.",
@@ -61,6 +64,109 @@ class WeasHomeToolsRevisionContracts(unittest.TestCase):
         )
         for copy in expected:
             self.assertIn(copy, front)
+        self.assertNotIn("Choisis le business en ligne qui te correspond gratuitement", front)
+
+    def test_homepage_second_pass_layout_and_six_rows_contract(self) -> None:
+        front = source("theme/seoflix/front-page.php")
+        homepage = source("plugin/seoflix-core/includes/class-homepage.php")
+        style = source("theme/seoflix/style.css")
+        components = source("theme/seoflix/assets/css/components.css")
+        subtitle = "Des vidéos utiles, sélectionnées et organisées pour créer son premier business en ligne. Gratuitement."
+        self.assertIn(subtitle, homepage)
+        self.assertIn("LEGACY_HERO_SUBTITLE", homepage)
+        inner = re.search(r"\.sx-home-hero__inner\s*\{([^}]*)\}", style, re.S)
+        self.assertIsNotNone(inner)
+        self.assertIn("text-align: center", inner.group(1))
+        self.assertRegex(style, re.compile(r"\.sx-home-hero__subtitle\s*\{[^}]*margin-inline:\s*auto", re.S))
+        self.assertRegex(style, re.compile(r"\.sx-home-hero__line\s*\{[^}]*margin-inline:\s*auto", re.S))
+        home_h2 = re.search(r"\.sx-home-section__header h2,.*?\{([^}]*)\}", style, re.S)
+        self.assertIsNotNone(home_h2)
+        self.assertRegex(home_h2.group(1), r"font-size:\s*clamp\([^;]*3rem\)")
+        paths_h1 = re.search(r"\.sx-paths-index__header h1\s*\{([^}]*)\}", style, re.S)
+        self.assertIsNotNone(paths_h1)
+        self.assertRegex(paths_h1.group(1), r"font-size:\s*clamp\([^;]*3\.5rem\)")
+        self.assertRegex(style, re.compile(r"#home-paths-title\s*\{[^}]*font-size:\s*clamp\([^;]*2\.25rem\)[^}]*white-space:\s*nowrap", re.S))
+        row_header = components[components.index(".sx-row__header"):components.index(".sx-row__title")]
+        self.assertIn("padding-bottom: 20px", row_header)
+        self.assertIn("margin-bottom: 0", row_header)
+        self.assertIn("Suis le parcours de ton choix", front)
+        self.assertNotIn("Commence par un parcours", front)
+        self.assertEqual(6, homepage[homepage.index("'featured_path_slugs'"):homepage.index("'fixed_blocks'")].count("apprendre-"))
+        self.assertIn("MAX_FEATURED_ROWS = 6", homepage)
+        self.assertIn("$featured_row_index === 1", front)
+        self.assertIn("$render_home_newsletter();", front[front.index("foreach ( $featured_rows"):front.index("endforeach", front.index("foreach ( $featured_rows"))])
+        self.assertNotIn("Explore les six parcours WEAS", front)
+        self.assertNotIn("Voir tous les parcours", front)
+
+    def test_homepage_config_migrates_legacy_three_rows_and_preserves_complete_six_row_order(self) -> None:
+        homepage_path = json.dumps(str(REPO_ROOT / "plugin/seoflix-core/includes/class-homepage.php"))
+        harness = textwrap.dedent(
+            """
+            <?php
+            define('ABSPATH', __DIR__);
+            $GLOBALS['saved'] = [];
+            function get_option($key, $default = []) { return $GLOBALS['saved']; }
+            function wp_parse_args($args, $defaults = []) { return array_merge($defaults, is_array($args) ? $args : []); }
+            function absint($value) { return abs((int) $value); }
+            function sanitize_key($value) { return preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $value)); }
+            function sanitize_text_field($value) { return trim((string) $value); }
+            function sanitize_textarea_field($value) { return trim((string) $value); }
+            function wp_parse_id_list($value) { return array_values(array_filter(array_map('absint', (array) $value))); }
+            require __SOURCE__;
+            $GLOBALS['saved'] = [
+                'hero' => ['subtitle' => \\Seoflix\\Homepage::LEGACY_HERO_SUBTITLE],
+                'featured_path_slugs' => ['apprendre-ia-automatisation', 'apprendre-youtube', 'apprendre-la-vente-de-liens'],
+            ];
+            $legacy = \\Seoflix\\Homepage::get_config();
+            $custom = [
+                'apprendre-le-freelancing', 'apprendre-la-vente-de-leads', 'apprendre-youtube',
+                'apprendre-l-affiliation', 'apprendre-la-vente-de-liens', 'apprendre-ia-automatisation',
+            ];
+            $GLOBALS['saved'] = ['featured_path_slugs' => $custom];
+            $complete = \\Seoflix\\Homepage::get_config();
+            echo json_encode([
+                'legacy_rows' => $legacy['featured_path_slugs'],
+                'legacy_subtitle' => $legacy['hero']['subtitle'],
+                'complete_rows' => $complete['featured_path_slugs'],
+                'custom' => $custom,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            """
+        ).lstrip().replace("__SOURCE__", homepage_path)
+        result = subprocess.run(["php"], input=harness, text=True, capture_output=True, check=False)
+        self.assertEqual(0, result.returncode, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(
+            [
+                "apprendre-ia-automatisation", "apprendre-la-vente-de-liens", "apprendre-l-affiliation",
+                "apprendre-youtube", "apprendre-la-vente-de-leads", "apprendre-le-freelancing",
+            ],
+            payload["legacy_rows"],
+        )
+        self.assertEqual(
+            "Des vidéos utiles, sélectionnées et organisées pour créer son premier business en ligne. Gratuitement.",
+            payload["legacy_subtitle"],
+        )
+        self.assertEqual(payload["custom"], payload["complete_rows"])
+
+    def test_footer_removes_subjects_column(self) -> None:
+        footer = source("theme/seoflix/footer.php")
+        functions = source("theme/seoflix/functions.php")
+        self.assertNotIn("<h3>Sujets</h3>", footer)
+        self.assertNotIn("$footer_topics", footer)
+        self.assertNotIn("sx-footer-3", functions)
+
+    def test_arsenal_rows_are_fully_clickable_hoverable_spaced_and_pricing_badge_free(self) -> None:
+        functions = source("theme/seoflix/functions.php")
+        css = source("theme/seoflix/assets/css/components.css")
+        block = functions[functions.index("function seoflix_render_product_card"):functions.index("function seoflix_render_video_row")]
+        catalog = css[css.index(".sx-tools-catalog"):css.index("/* Variante compacte")]
+        self.assertLess(block.index('class="sx-card-product__link"'), block.index('class="sx-card-product__body"'))
+        self.assertGreater(block.rindex("</a>"), block.index('class="sx-card-product__promotion"'))
+        self.assertRegex(catalog, re.compile(r"\.sx-card-product--catalog:hover\s*\{[^}]*(?:background|border-color):", re.S))
+        self.assertRegex(catalog, re.compile(r"\.sx-card-product--catalog \.sx-card-product__link\s*\{[^}]*width:\s*100%[^}]*padding:\s*28px", re.S))
+        self.assertIn("if ( $opts['catalog'] )", block)
+        catalog_branch = block[block.index("if ( $opts['catalog'] )"):block.index("</div>", block.index("if ( $opts['catalog'] )"))]
+        self.assertNotIn("sx-card-product__pricing", catalog_branch)
 
     def test_header_removes_wordmark_adds_arsenal_and_focus_moves_to_authenticated_dashboard(self) -> None:
         header = source("theme/seoflix/header.php")

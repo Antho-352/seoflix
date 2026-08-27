@@ -27,6 +27,10 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 		'orderby'        => 'post__in',
 	] );
 };
+
+$render_home_newsletter = static function (): void {
+	seoflix_render_newsletter( 'homepage', [ 'compact' => true ] );
+};
 ?>
 
 <div class="sx-home">
@@ -136,7 +140,7 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 
 		<?php if ( ! empty( $blocks['promise'] ) ) : ?>
 			<section id="promesse" class="sx-home-promise" aria-labelledby="home-promise-title">
-				<h2 id="home-promise-title">Choisis le business en ligne qui te correspond gratuitement</h2>
+				<h2 id="home-promise-title">Développe le business en ligne qui te correspond</h2>
 				<p>Apprends l’édition de sites sans y laisser 500€.</p>
 				<p>Crée ta compétence et développe ton business à partir d'une sélection complète des meilleures vidéos. Affiliation, YouTube, vente de liens, IA &amp; automatisation, vente de leads, freelancing.</p>
 				<p>Suis le parcours qui te permettra de générer tes premiers euros en ligne.</p>
@@ -144,7 +148,9 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 			</section>
 		<?php endif; ?>
 
-		<?php if ( ! empty( $blocks['featured_paths'] ) ) :
+		<?php
+		$newsletter_rendered = false;
+		if ( ! empty( $blocks['featured_paths'] ) ) :
 			$featured_rows = [];
 			foreach ( $cfg['featured_path_slugs'] as $featured_slug ) {
 				$featured_term = get_term_by( 'slug', $featured_slug, 'seoflix_path' );
@@ -164,20 +170,21 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 			if ( $featured_rows ) : ?>
 			<section id="parcours-selectionnes" class="sx-home-section" aria-labelledby="home-featured-paths-title">
 				<header class="sx-home-section__header">
-					<h2 id="home-featured-paths-title">Commence par un parcours</h2>
+					<h2 id="home-featured-paths-title">Suis le parcours de ton choix</h2>
 				</header>
-				<?php foreach ( $featured_rows as $featured_row ) : ?>
+				<?php foreach ( $featured_rows as $featured_row_index => $featured_row ) : ?>
 					<?php seoflix_render_video_row( $featured_row['name'], $featured_row['videos'], get_term_link( $featured_row['term'] ) ); ?>
+					<?php if ( $featured_row_index === 1 && ! empty( $blocks['newsletter'] ) && function_exists( 'seoflix_render_newsletter' ) ) : ?>
+						<?php $render_home_newsletter(); ?>
+						<?php $newsletter_rendered = true; ?>
+					<?php endif; ?>
 				<?php endforeach; ?>
 			</section>
 			<?php endif; ?>
 		<?php endif; ?>
 
-		<?php if ( ! empty( $blocks['paths_cta'] ) ) : ?>
-			<section id="tous-les-parcours" class="sx-home-paths-cta" aria-labelledby="home-paths-cta-title">
-				<h2 id="home-paths-cta-title">Explore les six parcours WEAS</h2>
-				<a class="sx-home-cta" href="<?php echo esc_url( home_url( '/parcours/' ) ); ?>">Voir tous les parcours</a>
-			</section>
+		<?php if ( ! $newsletter_rendered && ! empty( $blocks['newsletter'] ) && function_exists( 'seoflix_render_newsletter' ) ) : ?>
+			<?php $render_home_newsletter(); ?>
 		<?php endif; ?>
 
 		<?php if ( ! empty( $blocks['about'] ) ) : ?>
@@ -186,10 +193,6 @@ $get_path_videos = static function ( int $term_id, int $limit = -1 ): array {
 				<h2 id="home-about-title">À propos</h2>
 				<p>Cela fait plus de 5 ans que je fais du freelancing et de l'édition de sites (SEO, Affiliation, Youtube) et que je regarde tous les contenus sur ces sujets. Je voulais permettre aux débutants et aux initiés de perdre le moins de temps possible en sélectionnant les vidéos qui apportent de la valeur.</p>
 			</section>
-		<?php endif; ?>
-
-		<?php if ( ! empty( $blocks['newsletter'] ) && function_exists( 'seoflix_render_newsletter' ) ) : ?>
-			<?php seoflix_render_newsletter( 'homepage', [ 'compact' => true ] ); ?>
 		<?php endif; ?>
 
 		<?php if ( ! empty( $blocks['blog'] ) ) :

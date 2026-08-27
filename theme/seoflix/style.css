@@ -3,7 +3,7 @@ Theme Name: WEAS
 Theme URI: https://weas.fr
 Author: Anthony Russo
 Description: Thème éditorial WEAS pour apprendre le business web à partir de vidéos sélectionnées et organisées.
-Version: 0.14.1
+Version: 0.14.2
 Requires at least: 6.5
 Requires PHP: 8.0
 License: Proprietary
@@ -470,6 +470,7 @@ Text Domain: seoflix
 
 .sx-home-hero__inner {
 	padding-block: clamp(3.5rem, 7vw, 5.5rem) clamp(2.5rem, 5vw, 4rem);
+	text-align: center;
 }
 
 .sx-home-hero__brand,
@@ -494,12 +495,14 @@ Text Domain: seoflix
 	display: block;
 	width: max-content;
 	max-width: 100%;
+	margin-inline: auto;
 	white-space: nowrap;
 }
 
 .sx-home-hero__subtitle {
 	max-width: 58ch;
 	margin-top: var(--sx-space-6);
+	margin-inline: auto;
 	color: var(--sx-color-text-muted);
 	font-size: clamp(1rem, 2vw, 1.25rem);
 	line-height: 1.65;
@@ -563,12 +566,23 @@ Text Domain: seoflix
 .sx-home-section__header h2,
 .sx-home-promise h2,
 .sx-home-about h2,
-.sx-home-paths-cta h2,
+.sx-home-paths-cta h2 {
+	font-size: clamp(1.7rem, 3.2vw, 3rem);
+	line-height: 1.05;
+	letter-spacing: -0.04em;
+	overflow-wrap: anywhere;
+}
+
 .sx-paths-index__header h1 {
 	font-size: clamp(1.8rem, 5vw, 3.5rem);
 	line-height: 1.05;
 	letter-spacing: -0.04em;
 	overflow-wrap: anywhere;
+}
+
+#home-paths-title {
+	font-size: clamp(1.7rem, 2.7vw, 2.25rem);
+	white-space: nowrap;
 }
 
 .sx-home-paths__grid,
@@ -763,6 +777,10 @@ Text Domain: seoflix
 @media (max-width: 60rem) {
 	.sx-home-hero__line {
 		width: auto;
+		white-space: normal;
+	}
+
+	#home-paths-title {
 		white-space: normal;
 	}
 }
