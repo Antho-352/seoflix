@@ -285,6 +285,7 @@ $render_home_newsletter = static function (): void {
 		startRotation();
 	}).catch(function() {
 		stopRotation();
+		video.pause();
 		setPaused(true);
 	});
 	button.addEventListener('click', function() {
@@ -299,6 +300,7 @@ $render_home_newsletter = static function (): void {
 			startRotation();
 		}).catch(function() {
 			stopRotation();
+			video.pause();
 			setPaused(true);
 		});
 	});

@@ -84,13 +84,26 @@ class WeasHomeHeroCinematicContracts(unittest.TestCase):
             "setAttribute('aria-pressed'",
         ):
             self.assertIn(token, script)
-        self.assertIn("stopRotation();\n\t\tsetPaused(true);", script)
+        self.assertIn("stopRotation();\n\t\tvideo.pause();\n\t\tsetPaused(true);", script)
+        self.assertGreaterEqual(script.count("video.pause();"), 4)
         self.assertNotIn("catch(function() {})", script)
         self.assertNotIn("aria-live", script)
 
+    def test_red_terms_are_centered_and_mobile_video_remains_visible(self) -> None:
+        css = source("theme/seoflix/style.css")
+        term = css[css.index(".sx-home-hero__term {"):css.index(".sx-home-hero__term.is-active")]
+        medium = css[css.index(".sx-home-hero__term--medium {"):css.index(".sx-home-hero__term--long {")]
+        mobile = css[css.index("@media (max-width: 48rem)"):css.index("@media (max-width: 20rem)")]
+        self.assertIn("align-items: center", term)
+        self.assertIn("font-size: 1em", medium)
+        for token in ("width: 135%", "right: -35%", "opacity: 0.48"):
+            self.assertIn(token, mobile)
+        mobile_medium = mobile[mobile.index(".sx-home-hero__term--medium {"):mobile.index(".sx-home-hero__term--long {")]
+        self.assertIn("font-size: 1em", mobile_medium)
+
     def test_theme_version_is_bumped_for_cache_invalidation(self) -> None:
         style = source("theme/seoflix/style.css")
-        self.assertRegex(style[:300], re.compile(r"Version:\s+0\.14\.6\b"))
+        self.assertRegex(style[:300], re.compile(r"Version:\s+0\.14\.7\b"))
 
 
 if __name__ == "__main__":
