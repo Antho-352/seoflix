@@ -47,7 +47,7 @@ class WeasBrandContracts(unittest.TestCase):
         self.assertRegex(plugin, r"Plugin Name:\s+WEAS Core\b")
         self.assertRegex(plugin, r"Plugin URI:\s+https://weas\.fr\b")
         self.assertRegex(plugin, r"Description:\s+.*\bWEAS\b")
-        self.assertRegex(plugin, r"Version:\s+0\.27\.4\b")
+        self.assertRegex(plugin, r"Version:\s+0\.27\.5\b")
         self.assertRegex(theme, r"Theme Name:\s+WEAS\b")
         self.assertRegex(theme, r"Theme URI:\s+https://weas\.fr\b")
         self.assertRegex(theme, r"Description:\s+.*\bWEAS\b")

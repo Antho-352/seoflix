@@ -30,6 +30,7 @@ final class Plugin {
 		Focus::init();
 
 		Affiliate::init();
+		Analytics_Consent::init();
 		Security::init();
 		Frontend::init();
 		Channel_Meta::init();
@@ -64,6 +65,7 @@ final class Plugin {
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-focus.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-importer.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-affiliate.php';
+		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-analytics-consent.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-security.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-business-finder.php';
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-frontend.php';

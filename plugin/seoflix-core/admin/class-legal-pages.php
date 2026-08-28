@@ -243,7 +243,8 @@ HTML;
 </ul><!-- /wp:list -->
 
 <!-- wp:heading --><h2>Cookies</h2><!-- /wp:heading -->
-<!-- wp:paragraph --><p>WEAS utilise uniquement des cookies fonctionnels strictement nécessaires (session WordPress pour l'administration). Aucun cookie publicitaire ni de tracking tiers n'est déposé par WEAS.</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>WEAS utilise des cookies fonctionnels strictement nécessaires. Microsoft Clarity n'est activé qu'après ton consentement explicite aux statistiques. Le refus n'empêche pas d'utiliser le site et ton choix peut être modifié à tout moment via « Gérer mes cookies ».</p><!-- /wp:paragraph -->
+<!-- wp:paragraph --><p>Après acceptation, WEAS et Microsoft utilisent Clarity pour traiter des données techniques et d'interaction, produire des statistiques, des cartes de chaleur et des relectures de session afin d'améliorer l'ergonomie du site. Clarity peut alors utiliser des cookies de première et de tierce parties. Consulte la <a href="https://privacy.microsoft.com/fr-fr/privacystatement" target="_blank" rel="noopener noreferrer">Politique de confidentialité Microsoft</a>.</p><!-- /wp:paragraph -->
 <!-- wp:paragraph --><p>Le lecteur vidéo YouTube intégré utilise le mode <code>youtube-nocookie.com</code> qui ne dépose des cookies qu'au moment où tu démarres la lecture d'une vidéo. Les cookies déposés à ce moment sont gérés par YouTube/Google et soumis à leur propre politique de confidentialité.</p><!-- /wp:paragraph -->
 
 <!-- wp:heading --><h2>Tes droits (RGPD)</h2><!-- /wp:heading -->

@@ -68,15 +68,18 @@ final class Security {
 	}
 
 	private static function build_csp(): string {
+		$clarity_script  = Analytics_Consent::is_configured() ? ' https://*.clarity.ms' : '';
+		$clarity_connect = Analytics_Consent::is_configured() ? ' https://*.clarity.ms https://c.bing.com' : '';
+		$clarity_image   = Analytics_Consent::is_configured() ? ' https://*.clarity.ms https://c.bing.com' : '';
 		$directives = [
 			"default-src 'self'",
-			"script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+			"script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://challenges.cloudflare.com{$clarity_script}",
 			"style-src 'self' 'unsafe-inline'",
-			"img-src 'self' data: https://i.ytimg.com https://yt3.googleusercontent.com https://yt3.ggpht.com https://*.gravatar.com",
+			"img-src 'self' data: https://i.ytimg.com https://yt3.googleusercontent.com https://yt3.ggpht.com https://*.gravatar.com{$clarity_image}",
 			"font-src 'self' data:",
 			"frame-src https://www.youtube-nocookie.com https://www.youtube.com https://challenges.cloudflare.com",
 			"frame-ancestors 'self'",
-			"connect-src 'self' https://cloudflareinsights.com https://challenges.cloudflare.com",
+			"connect-src 'self' https://cloudflareinsights.com https://challenges.cloudflare.com{$clarity_connect}",
 			"worker-src 'self' blob:",
 			"base-uri 'self'",
 			"form-action 'self'",

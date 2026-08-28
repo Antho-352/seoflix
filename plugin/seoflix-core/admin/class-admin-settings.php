@@ -14,8 +14,9 @@ final class Admin_Settings {
 	// efface les options gérées par un autre formulaire (limitation Settings API).
 	private const GROUP_YOUTUBE  = 'seoflix_settings_youtube';
 	private const GROUP_BEHAVIOR = 'seoflix_settings_behavior';
-	private const GROUP_CONTACT  = 'seoflix_settings_contact';
-	private const PAGE_SLUG      = 'seoflix-settings';
+	private const GROUP_CONTACT   = 'seoflix_settings_contact';
+	private const GROUP_ANALYTICS = 'seoflix_settings_analytics';
+	private const PAGE_SLUG       = 'seoflix-settings';
 
 	public static function init(): void {
 		add_action( 'admin_init', [ self::class, 'register_settings' ] );
@@ -90,6 +91,12 @@ final class Admin_Settings {
 		register_setting( self::GROUP_CONTACT, \Seoflix\Contact::OPTION_TURNSTILE_SECRET, [
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => '',
+		] );
+
+		register_setting( self::GROUP_ANALYTICS, \Seoflix\Analytics_Consent::OPTION_PROJECT_ID, [
+			'type'              => 'string',
+			'sanitize_callback' => [ \Seoflix\Analytics_Consent::class, 'sanitize_project_id' ],
 			'default'           => '',
 		] );
 	}
@@ -287,6 +294,23 @@ final class Admin_Settings {
 						</tr>
 					</table>
 					<?php submit_button( 'Enregistrer' ); ?>
+				</form>
+			</div>
+
+			<div class="seoflix-card">
+				<h2>Microsoft Clarity</h2>
+				<form method="post" action="options.php">
+					<?php settings_fields( self::GROUP_ANALYTICS ); ?>
+					<table class="form-table">
+						<tr>
+							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_PROJECT_ID ); ?>">Identifiant du projet</label></th>
+							<td>
+								<input type="password" id="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_PROJECT_ID ); ?>" name="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_PROJECT_ID ); ?>" value="<?php echo esc_attr( (string) get_option( \Seoflix\Analytics_Consent::OPTION_PROJECT_ID, '' ) ); ?>" class="regular-text code" autocomplete="off">
+								<p class="description">Clarity reste désactivé si ce champ est vide. S'il est configuré, le script ne se charge qu'après consentement explicite aux statistiques.</p>
+							</td>
+						</tr>
+					</table>
+					<?php submit_button( 'Enregistrer Clarity' ); ?>
 				</form>
 			</div>
 

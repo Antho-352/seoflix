@@ -187,8 +187,8 @@ class WeasToolsDensityContracts(unittest.TestCase):
     def test_linkquiver_logo_and_cuik_pricing_are_seeded_without_overwrite(self) -> None:
         plugin = source("plugin/seoflix-core/seoflix-core.php")
         activator = source("plugin/seoflix-core/includes/class-activator.php")
-        self.assertIn("Version:           0.27.4", plugin)
-        self.assertIn("define( 'SEOFLIX_VERSION', '0.27.4' )", plugin)
+        self.assertIn("Version:           0.27.5", plugin)
+        self.assertIn("define( 'SEOFLIX_VERSION', '0.27.5' )", plugin)
         self.assertIn("TERMS_SEED_VERSION = 4", activator)
         catalog_method = activator[
             activator.index("public static function ensure_product_catalog_seeded") :
