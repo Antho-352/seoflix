@@ -10,19 +10,18 @@ from php_source import REPO_ROOT, source
 
 
 class WeasHomeToolsRevisionContracts(unittest.TestCase):
-    def test_home_hero_copy_is_two_explicit_lines_without_legacy_dashes_or_brand(self) -> None:
+    def test_home_hero_copy_is_three_explicit_lines_without_legacy_dashes_or_brand(self) -> None:
         front = source("theme/seoflix/front-page.php")
         homepage = source("plugin/seoflix-core/includes/class-homepage.php")
         self.assertNotIn('sx-home-hero__brand', front)
-        self.assertIn('class="sx-home-hero__line sx-home-hero__line--business"', front)
-        self.assertIn('class="sx-home-hero__line sx-home-hero__line--promise"', front)
-        self.assertIn('<span>Apprends </span>', front)
-        self.assertIn('sans perdre des heures sur YouTube.', front)
+        self.assertIn('class="sx-home-hero__lead" aria-hidden="true">Apprends</span>', front)
+        self.assertIn('class="sx-home-hero__rotator" aria-hidden="true"', front)
+        self.assertIn('class="sx-home-hero__tail" aria-hidden="true">gratuitement.</span>', front)
         rendered_title = front[front.index('id="madias-home-title"'):front.index('</h1>', front.index('id="madias-home-title"'))]
         self.assertNotIn('business web', rendered_title)
         self.assertNotIn('—', rendered_title)
+        self.assertNotIn('sans perdre des heures sur YouTube.', rendered_title)
         self.assertIn("Apprends l’affiliation sans perdre des heures sur YouTube.", homepage)
-        self.assertIn("Apprends l’affiliation sans perdre des heures sur YouTube.", front)
         self.assertIn("Apprends le business web sans perdre des heures sur YouTube.", homepage)
         self.assertIn("LEGACY_HERO_TITLE", homepage)
 
@@ -36,18 +35,15 @@ class WeasHomeToolsRevisionContracts(unittest.TestCase):
         self.assertIsNotNone(title)
         self.assertNotIn("76vh", hero.group(1))
         self.assertNotIn("48rem", hero.group(1))
-        self.assertRegex(inner.group(1), r"padding-block:\s*clamp\([^;]*3\.5rem[^;]*\)\s+clamp\([^;]*2\.5rem")
+        self.assertRegex(inner.group(1), r"width:\s*calc\(100%\s*-\s*40px\)")
+        self.assertIn("text-align: left", inner.group(1))
+        self.assertIn("padding: 70px 0 74px", inner.group(1))
         self.assertRegex(title.group(1), r"font-size:\s*clamp\([^;]*4\.5rem\)")
         fluid_size = re.search(r"font-size:\s*clamp\([^,]+,\s*([0-9.]+)vw,\s*4\.5rem\)", title.group(1))
         self.assertIsNotNone(fluid_size)
-        self.assertLessEqual(float(fluid_size.group(1)), 4.6)
+        self.assertLessEqual(float(fluid_size.group(1)), 5.2)
         self.assertIn("white-space: nowrap", css)
-        start_60 = css.find("@media (max-width: 60rem)")
-        end_60 = css.find("@media (max-width: 48rem)")
-        self.assertGreaterEqual(start_60, 0)
-        self.assertGreater(end_60, start_60)
-        media_60 = css[start_60:end_60]
-        self.assertIn("white-space: normal", media_60)
+        self.assertIn(".sx-home-hero__term--long", css)
 
     def test_paths_heading_and_exact_new_promise_are_present_without_kicker(self) -> None:
         front = source("theme/seoflix/front-page.php")
@@ -77,9 +73,9 @@ class WeasHomeToolsRevisionContracts(unittest.TestCase):
         self.assertIn("LEGACY_HERO_SUBTITLE", homepage)
         inner = re.search(r"\.sx-home-hero__inner\s*\{([^}]*)\}", style, re.S)
         self.assertIsNotNone(inner)
-        self.assertIn("text-align: center", inner.group(1))
-        self.assertRegex(style, re.compile(r"\.sx-home-hero__subtitle\s*\{[^}]*margin-inline:\s*auto", re.S))
-        self.assertRegex(style, re.compile(r"\.sx-home-hero__line\s*\{[^}]*margin-inline:\s*auto", re.S))
+        self.assertIn("text-align: left", inner.group(1))
+        self.assertRegex(style, re.compile(r"\.sx-home-hero__subtitle\s*\{[^}]*margin-inline:\s*0", re.S))
+        self.assertRegex(style, re.compile(r"\.sx-home-hero__inner\s*\{[^}]*width:\s*calc\(100%\s*-\s*40px\)", re.S))
         home_h2 = re.search(r"\.sx-home-section__header h2,.*?\{([^}]*)\}", style, re.S)
         self.assertIsNotNone(home_h2)
         self.assertRegex(home_h2.group(1), r"font-size:\s*clamp\([^;]*3rem\)")

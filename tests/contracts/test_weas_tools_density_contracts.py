@@ -236,7 +236,7 @@ class WeasToolsDensityContracts(unittest.TestCase):
 
     def test_theme_version_is_bumped_for_catalog_css(self) -> None:
         style = source("theme/seoflix/style.css")
-        self.assertIn("Version: 0.14.5", style)
+        self.assertIn("Version: 0.14.6", style)
 
 
 if __name__ == "__main__":

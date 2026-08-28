@@ -221,16 +221,16 @@ class MadiasHomepageContracts(unittest.TestCase):
         catalog = method_body(self.homepage, "path_definitions")
         self.assertEqual(catalog.count("'hero_label'"), 6)
         for token in (
-            'id="sx-rotate"',
-            'class="sx-rotate"',
+            'class="sx-home-hero__rotator"',
+            "foreach ( $hero_labels as $hero_label_index => $hero_label )",
             'class="screen-reader-text"',
             'aria-hidden="true"',
-            "wp_json_encode",
             "prefers-reduced-motion: reduce",
-            "setInterval",
-            "2200",
         ):
             self.assertIn(token, self.front_page)
+        self.assertIn("classList.toggle('is-active', current === termIndex)", self.front_page)
+        self.assertIn("window.setInterval(function()", self.front_page)
+        self.assertIn("3000", self.front_page)
         self.assertNotIn('aria-live=', self.front_page)
 
     def test_homepage_queries_real_ordered_content_without_fake_data(self) -> None:

@@ -35,14 +35,32 @@ $render_home_newsletter = static function (): void {
 
 <div class="sx-home">
 	<section class="sx-home-hero" aria-labelledby="madias-home-title">
+		<div class="sx-home-hero__media" aria-hidden="true">
+			<video class="sx-home-hero__video" autoplay muted loop playsinline preload="metadata" aria-hidden="true">
+				<source src="<?php echo esc_url( get_theme_file_uri( 'assets/video/weas-cerveau-neural-loop.mp4' ) ); ?>" type="video/mp4">
+			</video>
+		</div>
 		<div class="sx-container sx-home-hero__inner">
 			<h1 id="madias-home-title" class="sx-home-hero__title">
 				<?php if ( $rotate_hero && $hero_labels ) : ?>
-					<span class="screen-reader-text"><?php echo esc_html( $default_title ); ?></span>
-					<span aria-hidden="true">
-						<span class="sx-home-hero__line sx-home-hero__line--business"><span>Apprends </span><span id="sx-rotate" class="sx-rotate"><?php echo esc_html( $hero_labels[0] ); ?></span></span>
-						<span class="sx-home-hero__line sx-home-hero__line--promise">sans perdre des heures sur YouTube.</span>
+					<span class="screen-reader-text">Apprends gratuitement l’affiliation SEO, YouTube, la vente de liens, l’IA et l’automatisation, la vente de leads et le freelancing.</span>
+					<span class="sx-home-hero__lead" aria-hidden="true">Apprends</span>
+					<span class="sx-home-hero__rotator" aria-hidden="true">
+						<?php foreach ( $hero_labels as $hero_label_index => $hero_label ) :
+							$hero_term_class = 'sx-home-hero__term';
+							if ( 0 === $hero_label_index ) {
+								$hero_term_class .= ' is-active';
+							}
+							if ( 3 === $hero_label_index ) {
+								$hero_term_class .= ' sx-home-hero__term--long';
+							} elseif ( in_array( $hero_label_index, [ 1, 2, 4, 5 ], true ) ) {
+								$hero_term_class .= ' sx-home-hero__term--medium';
+							}
+							?>
+							<span class="<?php echo esc_attr( $hero_term_class ); ?>"><?php echo esc_html( $hero_label ); ?></span>
+						<?php endforeach; ?>
 					</span>
+					<span class="sx-home-hero__tail" aria-hidden="true">gratuitement.</span>
 				<?php else : ?>
 					<?php echo esc_html( $hero['title'] ?: $default_title ); ?>
 				<?php endif; ?>
@@ -52,6 +70,7 @@ $render_home_newsletter = static function (): void {
 			<?php endif; ?>
 			<a class="sx-home-hero__cta" href="<?php echo esc_url( home_url( '/commencer/' ) ); ?>"><?php echo esc_html( $hero['cta_text'] ?: 'Commencer à apprendre' ); ?></a>
 		</div>
+		<button class="sx-home-hero__motion" type="button" aria-pressed="false">Pause animation</button>
 	</section>
 
 	<div class="sx-container sx-page sx-home__content">
@@ -219,26 +238,71 @@ $render_home_newsletter = static function (): void {
 	</div>
 </div>
 
-<?php if ( $rotate_hero && count( $hero_labels ) > 1 ) : ?>
 <script>
 (function() {
-	const el = document.getElementById('sx-rotate');
-	if (!el) return;
-	const words = <?php echo wp_json_encode( $hero_labels ); ?>;
-	if (!Array.isArray(words) || words.length < 2) return;
+	const hero = document.querySelector('.sx-home-hero');
+	const video = hero && hero.querySelector('.sx-home-hero__video');
+	const button = hero && hero.querySelector('.sx-home-hero__motion');
+	const terms = hero ? Array.from(hero.querySelectorAll('.sx-home-hero__term')) : [];
+	if (!hero || !video || !button) return;
+	let termIndex = 0;
+	let rotationId = null;
+	const showTerm = function(index) {
+		if (!terms.length) return;
+		termIndex = index % terms.length;
+		terms.forEach(function(term, current) {
+			term.classList.toggle('is-active', current === termIndex);
+		});
+	};
+	const stopRotation = function() {
+		if (rotationId !== null) {
+			window.clearInterval(rotationId);
+			rotationId = null;
+		}
+	};
+	const startRotation = function() {
+		stopRotation();
+		if (terms.length > 1) {
+			rotationId = window.setInterval(function() {
+				showTerm(termIndex + 1);
+			}, 3000);
+		}
+	};
+	const setPaused = function(paused) {
+		hero.classList.toggle('is-paused', paused);
+		button.textContent = paused ? 'Relancer l’animation' : 'Pause animation';
+		button.setAttribute('aria-pressed', paused ? 'true' : 'false');
+	};
 	const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	if (reduced) { el.textContent = words[0]; return; }
-	let index = 0;
-	setInterval(function() {
-		el.classList.add('is-out');
-		setTimeout(function() {
-			index = (index + 1) % words.length;
-			el.textContent = words[index];
-			el.classList.remove('is-out');
-		}, 280);
-	}, 2200);
+	if (reduced) {
+		stopRotation();
+		showTerm(0);
+		video.pause();
+		return;
+	}
+	video.play().then(function() {
+		setPaused(false);
+		startRotation();
+	}).catch(function() {
+		stopRotation();
+		setPaused(true);
+	});
+	button.addEventListener('click', function() {
+		if ( ! hero.classList.contains('is-paused') ) {
+			stopRotation();
+			video.pause();
+			setPaused(true);
+			return;
+		}
+		video.play().then(function() {
+			setPaused(false);
+			startRotation();
+		}).catch(function() {
+			stopRotation();
+			setPaused(true);
+		});
+	});
 })();
 </script>
-<?php endif; ?>
 
 <?php get_footer();

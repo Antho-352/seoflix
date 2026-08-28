@@ -3,7 +3,7 @@ Theme Name: WEAS
 Theme URI: https://weas.fr
 Author: Anthony Russo
 Description: Thème éditorial WEAS pour apprendre le business web à partir de vidéos sélectionnées et organisées.
-Version: 0.14.5
+Version: 0.14.6
 Requires at least: 6.5
 Requires PHP: 8.0
 License: Proprietary
@@ -459,53 +459,142 @@ Text Domain: seoflix
 
 .sx-home-hero {
 	position: relative;
-	display: grid;
-	min-height: 0;
-	align-items: center;
-	background:
-		radial-gradient(circle at 82% 18%, rgb(255 45 63 / 18%), transparent 36rem),
-		linear-gradient(150deg, var(--sx-color-bg) 20%, var(--sx-color-surface-2));
+	min-height: 570px;
+	overflow: hidden;
+	isolation: isolate;
+	background: var(--sx-color-bg);
 	border-bottom: 1px solid var(--sx-color-border);
 }
 
-.sx-home-hero__inner {
-	padding-block: clamp(3.5rem, 7vw, 5.5rem) clamp(2.5rem, 5vw, 4rem);
-	text-align: center;
+.sx-home-hero__media {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	overflow: hidden;
+	pointer-events: none;
 }
 
-.sx-home-hero__brand,
-.sx-home-section__kicker {
-	margin: 0 0 var(--sx-space-3);
-	color: var(--sx-color-accent);
-	font-size: 0.78rem;
-	font-weight: 800;
-	letter-spacing: 0.14em;
-	text-transform: uppercase;
+.sx-home-hero__video {
+	position: absolute;
+	width: min(70vw, 1060px);
+	height: 122%;
+	right: -8%;
+	top: -11%;
+	object-fit: cover;
+	object-position: center;
+	mix-blend-mode: screen;
+	opacity: 0.72;
+}
+
+.sx-home-hero::after {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	background:
+		linear-gradient(90deg, var(--sx-color-bg) 0%, rgb(11 11 15 / 98%) 27%, rgb(11 11 15 / 66%) 46%, rgb(11 11 15 / 8%) 67%, rgb(11 11 15 / 4%) 84%, var(--sx-color-bg) 100%),
+		linear-gradient(180deg, var(--sx-color-bg) 0%, transparent 16%, transparent 78%, var(--sx-color-bg) 100%);
+	content: "";
+	pointer-events: none;
+}
+
+.sx-home-hero__inner {
+	position: relative;
+	z-index: 2;
+	width: calc(100% - 40px);
+	max-width: none;
+	margin-inline: auto;
+	padding: 70px 0 74px;
+	text-align: left;
+}
+
+.sx-home-hero__inner::after {
+	position: absolute;
+	z-index: -1;
+	inset: 42px auto 42px -70px;
+	width: min(900px, 75%);
+	background: radial-gradient(ellipse at left, rgb(255 45 63 / 8%), transparent 68%);
+	content: "";
+	filter: blur(6px);
 }
 
 .sx-home-hero__title {
-	max-width: none;
-	font-size: clamp(2.5rem, 4.6vw, 4.5rem);
-	line-height: 1.02;
+	max-width: 900px;
+	margin: 0;
+	font-size: clamp(3.25rem, 5.2vw, 4.5rem);
+	font-weight: 420;
+	line-height: 0.98;
 	letter-spacing: -0.055em;
 	overflow-wrap: normal;
 }
 
-.sx-home-hero__line {
+.sx-home-hero__lead,
+.sx-home-hero__tail {
 	display: block;
-	width: max-content;
-	max-width: 100%;
-	margin-inline: auto;
+}
+
+.sx-home-hero__rotator {
+	position: relative;
+	display: block;
+	height: 1.05em;
+	overflow: hidden;
+	color: var(--sx-color-accent);
+	font-weight: 500;
+}
+
+.sx-home-hero__term {
+	position: absolute;
+	inset: 0 auto auto 0;
+	display: flex;
+	width: 100%;
+	height: 100%;
+	align-items: baseline;
+	opacity: 0;
+	transform: translateY(0.32em);
 	white-space: nowrap;
 }
 
+.sx-home-hero__term.is-active {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.sx-home-hero__term--medium {
+	font-size: 0.88em;
+}
+
+.sx-home-hero__term--long {
+	font-size: 0.74em;
+	letter-spacing: -0.04em;
+}
+
 .sx-home-hero__subtitle {
-	max-width: 58ch;
-	margin-top: var(--sx-space-6);
-	margin-inline: auto;
+	max-width: 43ch;
+	margin-top: 25px;
+	margin-inline: 0;
 	color: var(--sx-color-text-muted);
-	font-size: clamp(1rem, 2vw, 1.25rem);
+	font-size: clamp(1rem, 2vw, 1.2rem);
 	line-height: 1.65;
+}
+
+.sx-home-hero__motion {
+	position: absolute;
+	right: 24px;
+	bottom: 22px;
+	z-index: 3;
+	padding: 8px 12px;
+	background: rgb(11 11 15 / 76%);
+	border: 1px solid var(--sx-color-border);
+	border-radius: 999px;
+	color: var(--sx-color-text-muted);
+	font-size: 0.75rem;
+	cursor: pointer;
+	backdrop-filter: blur(8px);
+}
+
+.sx-home-hero__motion:hover,
+.sx-home-hero__motion:focus-visible {
+	border-color: var(--sx-color-accent);
+	color: var(--sx-color-text);
 }
 
 .sx-home-hero__cta,
@@ -775,9 +864,8 @@ Text Domain: seoflix
 }
 
 @media (max-width: 60rem) {
-	.sx-home-hero__line {
-		width: auto;
-		white-space: normal;
+	.sx-home-hero__title {
+		font-size: clamp(2.75rem, 6.4vw, 3.875rem);
 	}
 
 	#home-paths-title {
@@ -786,8 +874,57 @@ Text Domain: seoflix
 }
 
 @media (max-width: 48rem) {
+	.sx-home-hero {
+		min-height: 555px;
+	}
+
+	.sx-home-hero__inner {
+		width: calc(100% - 32px);
+		padding-block: 62px 90px;
+	}
+
+	.sx-home-hero__inner::after {
+		inset: 34px auto 34px -44px;
+		width: 105%;
+	}
+
+	.sx-home-hero__video {
+		width: 175%;
+		max-width: none;
+		height: 100%;
+		right: -86%;
+		top: 0;
+		opacity: 0.24;
+	}
+
+	.sx-home-hero::after {
+		background:
+			linear-gradient(90deg, rgb(11 11 15 / 98%) 0%, rgb(11 11 15 / 90%) 50%, rgb(11 11 15 / 55%) 100%),
+			linear-gradient(180deg, var(--sx-color-bg) 0%, transparent 22%, transparent 72%, var(--sx-color-bg) 100%);
+	}
+
 	.sx-home-hero__title {
-		font-size: clamp(2.35rem, 11vw, 3.5rem);
+		max-width: none;
+		font-size: clamp(2.375rem, 11.2vw, 3rem);
+	}
+
+	.sx-home-hero__term--medium {
+		font-size: 0.8em;
+	}
+
+	.sx-home-hero__term--long {
+		font-size: 0.64em;
+		letter-spacing: -0.035em;
+	}
+
+	.sx-home-hero__subtitle {
+		max-width: 33ch;
+		font-size: 1rem;
+	}
+
+	.sx-home-hero__motion {
+		right: 16px;
+		bottom: 14px;
 	}
 
 	.sx-home-paths__grid,
@@ -807,7 +944,6 @@ Text Domain: seoflix
 }
 
 @media (max-width: 20rem) {
-	.sx-home-hero__inner,
 	.sx-home-promise,
 	.sx-home-about,
 	.sx-home-paths-cta,
@@ -821,6 +957,23 @@ Text Domain: seoflix
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.sx-home-hero__video,
+	.sx-home-hero__motion {
+		display: none;
+	}
+
+	.sx-home-hero__term {
+		display: none;
+		opacity: 0;
+		transform: none;
+		animation: none;
+	}
+
+	.sx-home-hero__term:first-child {
+		display: flex;
+		opacity: 1;
+	}
+
 	.sx-path-card,
 	.sx-home-hero__cta,
 	.sx-home-cta {
