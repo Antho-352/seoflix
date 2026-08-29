@@ -30,7 +30,7 @@ $categories = get_terms( [
 	<?php if ( have_posts() ) : ?>
 		<div class="sx-grid sx-grid--products sx-tools-catalog">
 			<?php while ( have_posts() ) : the_post();
-				seoflix_render_product_card( get_post(), [ 'catalog' => true ] );
+				seoflix_render_product_card( get_post(), [ 'catalog' => true, 'catalog_promotions' => true ] );
 			endwhile; ?>
 		</div>
 	<?php else : ?>

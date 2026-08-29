@@ -21,22 +21,29 @@ class WeasToolsDensityContracts(unittest.TestCase):
             css.index("/* Variante compacte")
         ]
 
-    def test_catalog_uses_logo_meta_and_promotion_only_aside(self) -> None:
+    def test_tools_archive_uses_promotion_only_aside_without_changing_categories(self) -> None:
+        archive = source("theme/seoflix/archive-seoflix_product.php")
+        taxonomy = source("theme/seoflix/taxonomy-seoflix_product_category.php")
         self.assertIn("$opts['catalog'] && ! $thumb_url", self.card)
         self.assertIn("Meta_Keys::PRODUCT_LOGO_URL", self.card)
         self.assertIn("wp_http_validate_url", self.card)
+        self.assertIn("'catalog_promotions' => false", self.card)
+        self.assertIn("[ 'catalog' => true, 'catalog_promotions' => true ]", archive)
+        self.assertIn("[ 'catalog' => true ]", taxonomy)
+        self.assertNotIn("catalog_promotions", taxonomy)
         self.assertIn('class="sx-card-product__aside"', self.card)
-        aside_start = self.card.index('class="sx-card-product__aside"')
-        aside = self.card[aside_start:self.card.index('</a>', aside_start)]
-        self.assertNotIn("sx-card-product__pricing", aside)
-        self.assertNotIn("$opts['catalog'] && $pricing_label", self.card)
+        branch_start = self.card.index("if ( $catalog_promotions )")
+        branch_end = self.card.index("<?php else : ?>", branch_start)
+        promotion_branch = self.card[branch_start:branch_end]
+        legacy_branch = self.card[branch_end:self.card.index('</a>', branch_end)]
+        self.assertNotIn("sx-card-product__pricing", promotion_branch)
+        self.assertIn("sx-card-product__pricing", legacy_branch)
         self.assertIn("$has_promotion", self.card)
-        self.assertRegex(self.card, r"\$has_aside\s*=\s*\$opts\['catalog'\]\s*&&\s*\$has_promotion")
-        self.assertIn("if ( $promo_offer )", aside)
-        self.assertIn("sx-card-product__promotion--offer", aside)
-        self.assertIn("if ( $promo_code )", aside)
-        self.assertIn("sx-card-product__promotion--code", aside)
-        self.assertLess(aside.index("promotion--offer"), aside.index("promotion--code"))
+        self.assertIn("'' !== $promo_offer", promotion_branch)
+        self.assertIn("sx-card-product__promotion--offer", promotion_branch)
+        self.assertIn("'' !== $promo_code", promotion_branch)
+        self.assertIn("sx-card-product__promotion--code", promotion_branch)
+        self.assertLess(promotion_branch.index("promotion--offer"), promotion_branch.index("promotion--code"))
         self.assertLess(
             self.card.index('class="sx-card-product__body"'),
             self.card.index('class="sx-card-product__aside"'),

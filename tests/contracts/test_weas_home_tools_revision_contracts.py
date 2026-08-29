@@ -175,11 +175,12 @@ class WeasHomeToolsRevisionContracts(unittest.TestCase):
         self.assertRegex(catalog, re.compile(r"\.sx-card-product--catalog \.sx-card-product__link\s*\{[^}]*width:\s*100%[^}]*padding:\s*\.75rem \.5rem", re.S))
         self.assertNotIn("$opts['catalog'] && $pricing_label", block)
         self.assertIn('class="sx-card-product__aside"', block)
-        aside_start = block.index('class="sx-card-product__aside"')
-        aside = block[aside_start:block.index('</a>', aside_start)]
-        self.assertNotIn("sx-card-product__pricing", aside)
-        self.assertIn("sx-card-product__promotion--offer", aside)
-        self.assertIn("sx-card-product__promotion--code", aside)
+        branch_start = block.index("if ( $catalog_promotions )")
+        branch_end = block.index("<?php else : ?>", branch_start)
+        promotion_branch = block[branch_start:branch_end]
+        self.assertNotIn("sx-card-product__pricing", promotion_branch)
+        self.assertIn("sx-card-product__promotion--offer", promotion_branch)
+        self.assertIn("sx-card-product__promotion--code", promotion_branch)
 
     def test_header_removes_wordmark_adds_arsenal_and_focus_moves_to_authenticated_dashboard(self) -> None:
         header = source("theme/seoflix/header.php")
