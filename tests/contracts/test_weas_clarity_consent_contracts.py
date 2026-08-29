@@ -16,8 +16,8 @@ class WeasClarityConsentContracts(unittest.TestCase):
     def test_plugin_version_and_module_registration(self):
         main = MAIN.read_text()
         loader = LOADER.read_text()
-        self.assertIn("Version:           0.27.5", main)
-        self.assertIn("define( 'SEOFLIX_VERSION', '0.27.5' )", main)
+        self.assertIn("Version:           0.27.6", main)
+        self.assertIn("define( 'SEOFLIX_VERSION', '0.27.6' )", main)
         self.assertTrue(CONSENT.is_file())
         self.assertIn("class-analytics-consent.php", loader)
         self.assertIn("Analytics_Consent::init();", loader)
@@ -68,6 +68,33 @@ class WeasClarityConsentContracts(unittest.TestCase):
         self.assertIn("cookies de première et de tierce parties", consent)
         self.assertIn("uniquement après ton consentement", consent)
         self.assertIn("Politique de confidentialité Microsoft", consent)
+
+    def test_banner_wording_is_editable_from_admin_and_escaped(self):
+        settings = SETTINGS.read_text()
+        consent = CONSENT.read_text()
+        option_constants = (
+            "OPTION_BANNER_TITLE",
+            "OPTION_BANNER_DESCRIPTION",
+            "OPTION_PRIVACY_LABEL",
+            "OPTION_ACCEPT_LABEL",
+            "OPTION_DENY_LABEL",
+            "OPTION_MANAGE_LABEL",
+        )
+        for constant in option_constants:
+            self.assertIn(constant, settings)
+            self.assertIn(constant, consent)
+        self.assertIn("sanitize_short_copy", settings)
+        self.assertIn("sanitize_description", settings)
+        self.assertIn("preg_match_all( '/./us'", consent)
+        self.assertIn("Analytics_Consent::wording()", settings)
+        self.assertIn("self::wording()", consent)
+        self.assertRegex(consent, re.compile(r"esc_html\(\s*\$wording\['title'\]\s*\)"))
+        self.assertRegex(consent, re.compile(r"esc_html\(\s*\$wording\['description'\]\s*\)"))
+        self.assertRegex(consent, re.compile(r"esc_html\(\s*\$wording\['privacy'\]\s*\)"))
+        self.assertRegex(consent, re.compile(r"esc_html\(\s*\$wording\['accept'\]\s*\)"))
+        self.assertRegex(consent, re.compile(r"esc_html\(\s*\$wording\['deny'\]\s*\)"))
+        self.assertRegex(consent, re.compile(r"esc_html\(\s*\$wording\['manage'\]\s*\)"))
+        self.assertIn("bouton « ' . esc_html( $wording['manage'] ) . ' »", consent)
 
     def test_project_identifier_is_not_hardcoded_in_versioned_sources(self):
         php = CONSENT.read_text()

@@ -99,6 +99,24 @@ final class Admin_Settings {
 			'sanitize_callback' => [ \Seoflix\Analytics_Consent::class, 'sanitize_project_id' ],
 			'default'           => '',
 		] );
+		foreach ( [
+			\Seoflix\Analytics_Consent::OPTION_BANNER_TITLE,
+			\Seoflix\Analytics_Consent::OPTION_PRIVACY_LABEL,
+			\Seoflix\Analytics_Consent::OPTION_ACCEPT_LABEL,
+			\Seoflix\Analytics_Consent::OPTION_DENY_LABEL,
+			\Seoflix\Analytics_Consent::OPTION_MANAGE_LABEL,
+		] as $option ) {
+			register_setting( self::GROUP_ANALYTICS, $option, [
+				'type'              => 'string',
+				'sanitize_callback' => [ \Seoflix\Analytics_Consent::class, 'sanitize_short_copy' ],
+				'default'           => '',
+			] );
+		}
+		register_setting( self::GROUP_ANALYTICS, \Seoflix\Analytics_Consent::OPTION_BANNER_DESCRIPTION, [
+			'type'              => 'string',
+			'sanitize_callback' => [ \Seoflix\Analytics_Consent::class, 'sanitize_description' ],
+			'default'           => '',
+		] );
 	}
 
 	public static function render(): void {
@@ -115,6 +133,7 @@ final class Admin_Settings {
 		$cron_on      = (bool) get_option( 'seoflix_ingestion_cron_enabled', true );
 		$lock_videos  = (bool) get_option( 'seoflix_lock_videos_to_users', false );
 		$fallback_ids = (array) get_option( 'seoflix_default_fallback_products', [] );
+		$clarity_wording = \Seoflix\Analytics_Consent::wording();
 
 		require_once SEOFLIX_PLUGIN_DIR . 'includes/class-youtube-api.php';
 		$today_usage = \Seoflix\YouTube_API::get_today_usage();
@@ -307,6 +326,33 @@ final class Admin_Settings {
 							<td>
 								<input type="password" id="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_PROJECT_ID ); ?>" name="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_PROJECT_ID ); ?>" value="<?php echo esc_attr( (string) get_option( \Seoflix\Analytics_Consent::OPTION_PROJECT_ID, '' ) ); ?>" class="regular-text code" autocomplete="off">
 								<p class="description">Clarity reste désactivé si ce champ est vide. S'il est configuré, le script ne se charge qu'après consentement explicite aux statistiques.</p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_BANNER_TITLE ); ?>">Titre du bandeau</label></th>
+							<td><input type="text" id="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_BANNER_TITLE ); ?>" name="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_BANNER_TITLE ); ?>" value="<?php echo esc_attr( $clarity_wording['title'] ); ?>" class="large-text" maxlength="120"></td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_BANNER_DESCRIPTION ); ?>">Texte du bandeau</label></th>
+							<td><textarea id="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_BANNER_DESCRIPTION ); ?>" name="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_BANNER_DESCRIPTION ); ?>" class="large-text" rows="4" maxlength="500"><?php echo esc_textarea( $clarity_wording['description'] ); ?></textarea></td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_PRIVACY_LABEL ); ?>">Lien de confidentialité</label></th>
+							<td><input type="text" id="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_PRIVACY_LABEL ); ?>" name="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_PRIVACY_LABEL ); ?>" value="<?php echo esc_attr( $clarity_wording['privacy'] ); ?>" class="large-text" maxlength="120"></td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_ACCEPT_LABEL ); ?>">Bouton d’acceptation</label></th>
+							<td><input type="text" id="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_ACCEPT_LABEL ); ?>" name="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_ACCEPT_LABEL ); ?>" value="<?php echo esc_attr( $clarity_wording['accept'] ); ?>" class="regular-text" maxlength="120"></td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_DENY_LABEL ); ?>">Bouton de refus</label></th>
+							<td><input type="text" id="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_DENY_LABEL ); ?>" name="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_DENY_LABEL ); ?>" value="<?php echo esc_attr( $clarity_wording['deny'] ); ?>" class="regular-text" maxlength="120"></td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_MANAGE_LABEL ); ?>">Bouton de gestion</label></th>
+							<td>
+								<input type="text" id="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_MANAGE_LABEL ); ?>" name="<?php echo esc_attr( \Seoflix\Analytics_Consent::OPTION_MANAGE_LABEL ); ?>" value="<?php echo esc_attr( $clarity_wording['manage'] ); ?>" class="regular-text" maxlength="120">
+								<p class="description">Les champs vides utilisent automatiquement les textes par défaut. Le lien reste dirigé vers la politique de confidentialité WEAS.</p>
 							</td>
 						</tr>
 					</table>
