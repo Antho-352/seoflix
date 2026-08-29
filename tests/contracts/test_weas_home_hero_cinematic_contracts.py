@@ -103,7 +103,7 @@ class WeasHomeHeroCinematicContracts(unittest.TestCase):
 
     def test_theme_version_is_bumped_for_cache_invalidation(self) -> None:
         style = source("theme/seoflix/style.css")
-        self.assertRegex(style[:300], re.compile(r"Version:\s+0\.14\.7\b"))
+        self.assertRegex(style[:300], re.compile(r"Version:\s+0\.14\.8\b"))
 
 
 if __name__ == "__main__":

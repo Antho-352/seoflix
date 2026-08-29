@@ -943,10 +943,10 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 		'paid'     => 'Payant',
 		default    => '',
 	};
-	$promo_code  = trim( (string) get_post_meta( $product->ID, \Seoflix\Meta_Keys::PRODUCT_PROMO_CODE, true ) );
-	$promo_offer = trim( (string) get_post_meta( $product->ID, \Seoflix\Meta_Keys::PRODUCT_PROMO_OFFER, true ) );
-	$promotion = $promo_code ?: $promo_offer;
-	$has_aside = $opts['catalog'] && ( $pricing_label || $promotion );
+	$promo_code    = trim( (string) get_post_meta( $product->ID, \Seoflix\Meta_Keys::PRODUCT_PROMO_CODE, true ) );
+	$promo_offer   = trim( (string) get_post_meta( $product->ID, \Seoflix\Meta_Keys::PRODUCT_PROMO_OFFER, true ) );
+	$has_promotion = '' !== $promo_code || '' !== $promo_offer;
+	$has_aside     = $opts['catalog'] && $has_promotion;
 
 	$has_aff = (bool) seoflix_product_affiliate_url( $product->ID );
 	$link_url = ( $opts['affiliate_link'] && $has_aff )
@@ -961,7 +961,7 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 	if ( $opts['catalog'] )  { $classes[] = 'sx-card-product--catalog'; }
 	if ( $thumb_url )        { $classes[] = 'sx-card-product--has-image'; }
 	if ( $has_aside )        { $classes[] = 'sx-card-product--has-aside'; }
-	if ( $opts['catalog'] && $promotion ) { $classes[] = 'sx-card-product--has-promotion'; }
+	if ( $opts['catalog'] && $has_promotion ) { $classes[] = 'sx-card-product--has-promotion'; }
 	?>
 	<article class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
 		<a href="<?php echo esc_url( $link_url ); ?>"<?php echo $link_attrs; ?> class="sx-card-product__link">
@@ -986,13 +986,16 @@ function seoflix_render_product_card( WP_Post $product, array $opts = [] ): void
 			</div>
 			<?php if ( $has_aside ) : ?>
 				<span class="sx-card-product__aside">
-					<?php if ( $opts['catalog'] && $pricing_label ) : ?>
-						<span class="sx-card-product__pricing sx-card-product__pricing--<?php echo esc_attr( $pricing ); ?>"><?php echo esc_html( $pricing_label ); ?></span>
+					<?php if ( $promo_offer ) : ?>
+						<span class="sx-card-product__promotion sx-card-product__promotion--offer">
+							<small>Remise</small>
+							<strong><?php echo esc_html( $promo_offer ); ?></strong>
+						</span>
 					<?php endif; ?>
-					<?php if ( $promotion ) : ?>
-						<span class="sx-card-product__promotion<?php echo $promo_code ? ' sx-card-product__promotion--code' : ''; ?>">
-							<?php if ( $promo_code ) : ?><small>Code</small><?php endif; ?>
-							<strong><?php echo esc_html( $promotion ); ?></strong>
+					<?php if ( $promo_code ) : ?>
+						<span class="sx-card-product__promotion sx-card-product__promotion--code">
+							<small>Code</small>
+							<strong><?php echo esc_html( $promo_code ); ?></strong>
 						</span>
 					<?php endif; ?>
 				</span>

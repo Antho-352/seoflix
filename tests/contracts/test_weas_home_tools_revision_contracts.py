@@ -164,7 +164,7 @@ class WeasHomeToolsRevisionContracts(unittest.TestCase):
         self.assertNotIn("$footer_topics", footer)
         self.assertNotIn("sx-footer-3", functions)
 
-    def test_arsenal_rows_are_fully_clickable_dense_and_show_right_hand_pricing(self) -> None:
+    def test_arsenal_rows_are_fully_clickable_dense_and_show_promotions_only(self) -> None:
         functions = source("theme/seoflix/functions.php")
         css = source("theme/seoflix/assets/css/components.css")
         block = functions[functions.index("function seoflix_render_product_card"):functions.index("function seoflix_render_video_row")]
@@ -173,9 +173,13 @@ class WeasHomeToolsRevisionContracts(unittest.TestCase):
         self.assertGreater(block.rindex("</a>"), block.index('class="sx-card-product__promotion'))
         self.assertRegex(catalog, re.compile(r"\.sx-card-product--catalog:hover\s*\{[^}]*background:", re.S))
         self.assertRegex(catalog, re.compile(r"\.sx-card-product--catalog \.sx-card-product__link\s*\{[^}]*width:\s*100%[^}]*padding:\s*\.75rem \.5rem", re.S))
-        self.assertIn("$opts['catalog'] && $pricing_label", block)
+        self.assertNotIn("$opts['catalog'] && $pricing_label", block)
         self.assertIn('class="sx-card-product__aside"', block)
-        self.assertIn("sx-card-product__pricing", block[block.index('class="sx-card-product__aside"'):])
+        aside_start = block.index('class="sx-card-product__aside"')
+        aside = block[aside_start:block.index('</a>', aside_start)]
+        self.assertNotIn("sx-card-product__pricing", aside)
+        self.assertIn("sx-card-product__promotion--offer", aside)
+        self.assertIn("sx-card-product__promotion--code", aside)
 
     def test_header_removes_wordmark_adds_arsenal_and_focus_moves_to_authenticated_dashboard(self) -> None:
         header = source("theme/seoflix/header.php")

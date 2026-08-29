@@ -450,6 +450,15 @@
 	align-items: center;
 	flex-direction: row;
 	gap: .25rem;
+	padding: .2rem .5rem;
+	background: rgba(255, 45, 63, .2);
+	border: 1px solid rgba(255, 45, 63, .32);
+	border-radius: 3px;
+	color: #FF6673;
+}
+
+.sx-card-product--catalog .sx-card-product__promotion small {
+	color: var(--sx-color-text);
 }
 
 .sx-card-product__promotion small {

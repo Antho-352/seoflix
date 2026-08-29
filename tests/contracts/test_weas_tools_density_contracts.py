@@ -21,19 +21,22 @@ class WeasToolsDensityContracts(unittest.TestCase):
             css.index("/* Variante compacte")
         ]
 
-    def test_catalog_uses_logo_meta_fallback_and_right_hand_pricing(self) -> None:
+    def test_catalog_uses_logo_meta_and_promotion_only_aside(self) -> None:
         self.assertIn("$opts['catalog'] && ! $thumb_url", self.card)
         self.assertIn("Meta_Keys::PRODUCT_LOGO_URL", self.card)
         self.assertIn("wp_http_validate_url", self.card)
         self.assertIn('class="sx-card-product__aside"', self.card)
-        self.assertRegex(
-            self.card,
-            re.compile(
-                r"sx-card-product__aside.*?sx-card-product__pricing.*?sx-card-product__promotion",
-                re.S,
-            ),
-        )
-        self.assertIn("$opts['catalog'] && $pricing_label", self.card)
+        aside_start = self.card.index('class="sx-card-product__aside"')
+        aside = self.card[aside_start:self.card.index('</a>', aside_start)]
+        self.assertNotIn("sx-card-product__pricing", aside)
+        self.assertNotIn("$opts['catalog'] && $pricing_label", self.card)
+        self.assertIn("$has_promotion", self.card)
+        self.assertRegex(self.card, r"\$has_aside\s*=\s*\$opts\['catalog'\]\s*&&\s*\$has_promotion")
+        self.assertIn("if ( $promo_offer )", aside)
+        self.assertIn("sx-card-product__promotion--offer", aside)
+        self.assertIn("if ( $promo_code )", aside)
+        self.assertIn("sx-card-product__promotion--code", aside)
+        self.assertLess(aside.index("promotion--offer"), aside.index("promotion--code"))
         self.assertLess(
             self.card.index('class="sx-card-product__body"'),
             self.card.index('class="sx-card-product__aside"'),
@@ -128,7 +131,7 @@ class WeasToolsDensityContracts(unittest.TestCase):
         self.assertIn("text-overflow: ellipsis", excerpt.group(1))
         self.assertIn("overflow: hidden", excerpt.group(1))
 
-    def test_pricing_badge_stays_right_aligned_on_desktop_and_mobile(self) -> None:
+    def test_promotion_badges_stay_right_aligned_on_desktop_and_mobile(self) -> None:
         aside = re.search(
             r"\.sx-card-product--catalog \.sx-card-product__aside\s*\{([^}]*)\}",
             self.catalog,
@@ -156,7 +159,7 @@ class WeasToolsDensityContracts(unittest.TestCase):
         for forbidden in ("surench", "enchère", "sponsorisé", "classement"):
             self.assertNotIn(forbidden, (self.card + self.catalog).lower())
 
-    def test_paid_badge_is_wcag_aa_on_catalog_rest_and_hover(self) -> None:
+    def test_promotion_badges_are_wcag_aa_on_catalog_rest_and_hover(self) -> None:
         def rgb(hex_color: str) -> tuple[float, float, float]:
             return tuple(int(hex_color[index : index + 2], 16) / 255 for index in (1, 3, 5))
 
@@ -171,6 +174,10 @@ class WeasToolsDensityContracts(unittest.TestCase):
         accent = rgb("#FF2D3F")
         text = "#FF6673"
         self.assertIn("color: #FF6673", self.css)
+        self.assertRegex(
+            self.catalog,
+            re.compile(r"\.sx-card-product--catalog \.sx-card-product__promotion\s*\{[^}]*background:\s*rgba\(255,\s*45,\s*63,\s*\.2\)", re.S),
+        )
         for base in ("#0B0B0F", "#16161D"):
             base_rgb = rgb(base)
             blended = tuple(0.2 * front + 0.8 * back for front, back in zip(accent, base_rgb))
@@ -178,6 +185,7 @@ class WeasToolsDensityContracts(unittest.TestCase):
 
     def test_mobile_promotion_code_remains_complete_and_wraps(self) -> None:
         self.assertIn("sx-card-product__promotion--code", self.card)
+        self.assertIn("sx-card-product__promotion--offer", self.card)
         mobile = self.catalog[self.catalog.index("@media (max-width: 640px)") :]
         self.assertIn("overflow-wrap: anywhere", mobile)
         self.assertIn("overflow: visible", mobile)
@@ -236,7 +244,7 @@ class WeasToolsDensityContracts(unittest.TestCase):
 
     def test_theme_version_is_bumped_for_catalog_css(self) -> None:
         style = source("theme/seoflix/style.css")
-        self.assertIn("Version: 0.14.7", style)
+        self.assertIn("Version: 0.14.8", style)
 
 
 if __name__ == "__main__":
